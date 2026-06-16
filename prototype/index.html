@@ -1,0 +1,1547 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>快麦取货通 - 原型</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #2563EB;
+    --primary-light-bg: #DBEAFE;
+    --primary-light-text: #1D4ED8;
+    --success-bg: #DCFCE7;
+    --success-text: #15803D;
+    --danger-bg: #FEE2E2;
+    --danger-text: #B91C1C;
+    --supplier: #DC2626;
+    --warning: #EAB308;
+    --error: #DC2626;
+    --bg: #FFFFFF;
+    --bg-secondary: #F3F4F6;
+    --text: #111827;
+    --text-secondary: #6B7280;
+    --text-muted: #9CA3AF;
+    --border: #E5E7EB;
+    --radius-card: 12px;
+    --radius-btn: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-hover: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    font-family: 'Noto Sans SC', -apple-system, 'PingFang SC', sans-serif;
+    background: #E5E7EB;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  .pda-frame {
+    width: 390px;
+    background: var(--bg);
+    border-radius: 28px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.08);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .pda-notch {
+    width: 160px;
+    height: 30px;
+    background: #111827;
+    border-radius: 0 0 16px 16px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 10;
+  }
+
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 20px 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    height: 24px;
+  }
+  .status-bar .icons { display: flex; gap: 4px; align-items: center; }
+
+  .network-bar {
+    height: 3px;
+    background: #16A34A;
+    transition: background 0.3s;
+    margin: 0 20px;
+    border-radius: 2px;
+  }
+
+  .page-content {
+    padding: 0 16px 16px;
+    min-height: 640px;
+  }
+
+  /* Tab navigation for prototype */
+  .proto-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 5;
+  }
+  .proto-tab {
+    flex: 1;
+    padding: 10px 0;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .proto-tab:hover { background: var(--bg-secondary); }
+  .proto-tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+    font-weight: 600;
+  }
+  .proto-page { display: none; }
+  .proto-page.active { display: block; }
+
+  /* ===== Shared Components ===== */
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+  }
+  .page-header .title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .page-header .back {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+  .page-header .back:hover { color: var(--text); }
+  .btn-new {
+    background: var(--primary-light-bg);
+    color: var(--primary-light-text);
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--radius-btn);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-new:hover {
+    background: #BFDBFE;
+    transform: translateY(-1px);
+  }
+
+  /* ===== Home Page ===== */
+  .home-logo {
+    text-align: center;
+    padding: 48px 0 36px;
+  }
+  .home-logo .icon {
+    width: 56px;
+    height: 56px;
+    background: var(--primary-light-bg);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+    font-size: 28px;
+  }
+  .home-logo h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .home-logo p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+  }
+
+  .home-modules {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding-bottom: 40px;
+  }
+
+  .module-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    border-radius: var(--radius-card);
+    background: var(--bg);
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    transition: all 0.25s;
+    border: 1px solid var(--border);
+  }
+  .module-card:hover {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-2px);
+    border-color: var(--primary);
+  }
+  .module-card .icon-box {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+  .module-card .icon-box.blue { background: var(--primary-light-bg); }
+  .module-card .icon-box.red { background: var(--danger-bg); }
+  .module-card .info h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .module-card .info p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+
+  /* ===== Pick List ===== */
+  .pick-list { display: flex; flex-direction: column; gap: 8px; padding-bottom: 20px; }
+
+  .pick-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: var(--shadow);
+  }
+  .pick-card:hover { border-color: var(--primary); box-shadow: var(--shadow-hover); }
+  .pick-card .top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .pick-card .order-no {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .pick-card .progress-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+  .pick-card .bottom-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+  }
+  .pick-card .status-tag {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--primary);
+    background: var(--primary-light-bg);
+    padding: 2px 10px;
+    border-radius: 20px;
+  }
+  .pick-card .dots {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .pick-card .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+  .pick-card .dot.done { background: #16A34A; }
+  .pick-card .dot.pending { background: #D1D5DB; }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .empty-state .hint {
+    display: inline-block;
+    background: var(--bg-secondary);
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-weight: 500;
+    color: var(--primary);
+    margin-top: 8px;
+  }
+
+  /* ===== Pick Detail ===== */
+  .scan-input-wrap {
+    padding: 8px 0 10px;
+  }
+  .scan-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--primary);
+    border-radius: var(--radius-btn);
+    font-size: 16px;
+    font-family: inherit;
+    color: var(--text);
+    background: var(--bg);
+    outline: none;
+    transition: all 0.2s;
+  }
+  .scan-input::placeholder { color: var(--text-muted); }
+  .scan-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+  }
+
+  .supplier-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 4px 0 10px;
+  }
+  .filter-chip {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    background: var(--bg);
+    user-select: none;
+  }
+  .filter-chip:hover { border-color: var(--primary); color: var(--primary); }
+  .filter-chip.active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+  }
+
+  .item-list { display: flex; flex-direction: column; gap: 6px; }
+
+  .item-row {
+    display: flex;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: var(--radius-card);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    min-height: 72px;
+    transition: all 0.2s;
+    box-shadow: var(--shadow);
+  }
+  .item-row.completed {
+    opacity: 0.55;
+  }
+  .item-row.completed .item-sku-img { filter: grayscale(1); }
+  .item-row.completed .item-name,
+  .item-row.completed .item-supplier {
+    text-decoration: line-through;
+    color: var(--text-muted) !important;
+  }
+
+  .item-sku-img {
+    width: 52px;
+    height: 52px;
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+    cursor: pointer;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    transition: all 0.2s;
+    position: relative;
+  }
+  .item-sku-img:hover { border-color: var(--primary); transform: scale(1.05); }
+  .item-sku-img .img-label {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    text-align: center;
+    padding: 1px 0;
+    line-height: 1.4;
+    pointer-events: none;
+  }
+
+  .item-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    min-width: 0;
+  }
+  .item-name {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .item-supplier {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--supplier);
+  }
+  .item-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .item-img-boxes {
+    display: flex;
+    gap: 4px;
+  }
+  .item-img-box {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    background: var(--bg-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    transition: all 0.2s;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .item-img-box:hover { border-color: var(--primary); }
+  .item-img-box .img-label {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 600;
+    text-align: center;
+    padding: 1px 0;
+    line-height: 1.3;
+    pointer-events: none;
+  }
+
+  .btn-complete {
+    padding: 4px 14px;
+    border-radius: var(--radius-btn);
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    min-width: 56px;
+    text-align: center;
+  }
+  .btn-complete.do {
+    background: var(--success-bg);
+    color: var(--success-text);
+  }
+  .btn-complete.do:hover { background: #BBF7D0; }
+  .btn-complete.undo {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+  }
+  .btn-complete.undo:hover { background: var(--border); }
+
+  .bottom-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0 4px;
+    margin-top: 4px;
+  }
+  .progress-summary {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+  .progress-summary strong { color: var(--text); }
+  .btn-complete-all {
+    padding: 8px 20px;
+    border-radius: var(--radius-btn);
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    background: var(--primary-light-bg);
+    color: var(--primary-light-text);
+    transition: all 0.2s;
+  }
+  .btn-complete-all:hover { background: #BFDBFE; }
+
+  /* ===== Product Detail ===== */
+  .product-sku-card {
+    display: flex;
+    gap: 14px;
+    padding: 14px;
+    border-radius: var(--radius-card);
+    border: 1px solid var(--border);
+    background: var(--bg);
+    box-shadow: var(--shadow);
+    margin-bottom: 12px;
+  }
+  .product-sku-img {
+    width: 72px;
+    height: 72px;
+    border-radius: 10px;
+    background: var(--bg-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+  }
+  .product-sku-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+  }
+  .product-sku-info .sku-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .product-sku-info .sku-code {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+  .product-sku-info .sku-supplier {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--supplier);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .product-sku-info .sku-supplier:active {
+    opacity: 0.7;
+  }
+  .supplier-edit-icon {
+    font-size: 14px;
+    opacity: 0.6;
+  }
+
+  .section-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+    margin-top: 4px;
+  }
+
+  .remark-area {
+    margin-bottom: 14px;
+  }
+  .remark-input-wrap {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .remark-input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-btn);
+    font-size: 15px;
+    font-family: inherit;
+    color: var(--text);
+    background: var(--bg);
+    outline: none;
+    transition: all 0.2s;
+  }
+  .remark-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+  }
+  .btn-save {
+    padding: 10px 20px;
+    border-radius: var(--radius-btn);
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    background: var(--primary-light-bg);
+    color: var(--primary-light-text);
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .btn-save:hover { background: #BFDBFE; }
+
+  .image-upload-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .upload-box {
+    aspect-ratio: 1;
+    border-radius: var(--radius-card);
+    border: 2px dashed var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--bg-secondary);
+    min-height: 120px;
+  }
+  .upload-box:hover {
+    border-color: var(--primary);
+    background: var(--primary-light-bg);
+  }
+  .upload-box .upload-icon {
+    font-size: 28px;
+    color: var(--text-muted);
+  }
+  .upload-box .upload-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+  .upload-box.has-image {
+    border-style: solid;
+    border-color: var(--success-text);
+    background-size: cover;
+    background-position: center;
+  }
+  .upload-box.has-image .upload-label {
+    color: var(--success-text);
+  }
+
+  /* ===== Image Preview Modal ===== */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 100;
+    justify-content: center;
+    align-items: center;
+    padding: 30px;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-box {
+    background: var(--bg);
+    border-radius: 16px;
+    padding: 20px;
+    max-width: 340px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .modal-box .modal-img {
+    width: 100%;
+    height: 200px;
+    background: var(--bg-secondary);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    margin-bottom: 12px;
+  }
+  .modal-box .modal-label {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .modal-close {
+    padding: 8px 24px;
+    border-radius: var(--radius-btn);
+    border: none;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    background: var(--bg-secondary);
+    color: var(--text);
+    transition: all 0.2s;
+  }
+  .modal-close:hover { background: var(--border); }
+
+  /* ===== New Order Modal ===== */
+  .modal-overlay-areas {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 100;
+    justify-content: center;
+    align-items: center;
+    padding: 30px;
+  }
+  .modal-overlay-areas.show { display: flex; }
+  .modal-areas-box {
+    background: var(--bg);
+    border-radius: 16px;
+    padding: 24px 20px 20px;
+    max-width: 340px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .modal-areas-box .modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .areas-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+  }
+  .area-btn {
+    padding: 12px 24px;
+    border-radius: var(--radius-btn);
+    font-size: 16px;
+    font-weight: 600;
+    border: 2px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    min-width: 100px;
+    text-align: center;
+  }
+  .area-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: var(--primary-light-bg);
+  }
+  .area-btn.cancel {
+    border-color: transparent;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    font-size: 14px;
+    min-width: auto;
+    padding: 8px 20px;
+  }
+  .area-btn.cancel:hover {
+    background: var(--border);
+    color: var(--text);
+  }
+
+  /* ===== Settings Modal ===== */
+  .modal-overlay-settings {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 100;
+    justify-content: center;
+    align-items: center;
+    padding: 30px;
+  }
+  .modal-overlay-settings.show { display: flex; }
+  .modal-settings-box {
+    background: var(--bg);
+    border-radius: 16px;
+    padding: 24px 20px 20px;
+    max-width: 340px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .modal-settings-box .modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .setting-area-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .setting-area-row:last-child { border-bottom: none; }
+  .setting-area-row .area-name {
+    flex: 1;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .setting-area-row .btn-delete-area {
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid var(--danger-bg);
+    background: var(--danger-bg);
+    color: var(--danger-text);
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  .setting-area-row .btn-delete-area:hover { background: #FECACA; }
+  .add-area-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    align-items: center;
+  }
+  .add-area-input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-btn);
+    font-size: 15px;
+    font-family: inherit;
+    color: var(--text);
+    background: var(--bg);
+    outline: none;
+  }
+  .add-area-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+  }
+  .btn-add-area {
+    padding: 10px 16px;
+    border-radius: var(--radius-btn);
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    background: var(--primary-light-bg);
+    color: var(--primary-light-text);
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  .btn-add-area:hover { background: #BFDBFE; }
+  .btn-settings-close {
+    display: block;
+    margin: 16px auto 0;
+    padding: 8px 24px;
+    border-radius: var(--radius-btn);
+    font-size: 15px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    background: var(--bg-secondary);
+    color: var(--text);
+    transition: all 0.2s;
+  }
+  .btn-settings-close:hover { background: var(--border); }
+
+  /* Toast / Snackbar */
+  .toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 200;
+    display: none;
+    white-space: nowrap;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    animation: toastIn 0.3s ease;
+  }
+  .toast.show { display: block; }
+  .toast.success { background: #DCFCE7; color: #15803D; }
+  .toast.error { background: #FEE2E2; color: #B91C1C; }
+  .toast.warning { background: #FEF9C3; color: #A16207; }
+
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+
+  /* Snackbar bar style (matches top bar) */
+  .snackbar-bar {
+    display: none;
+    padding: 6px 16px;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 6px;
+    margin: 0 16px 8px;
+    text-align: center;
+    animation: snackIn 0.25s ease;
+  }
+  .snackbar-bar.show { display: block; }
+  .snackbar-bar.success { background: #DCFCE7; color: #15803D; }
+  .snackbar-bar.error { background: #FEE2E2; color: #B91C1C; }
+
+  @keyframes snackIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Responsive */
+  @media (max-width: 420px) {
+    html, body { padding: 0; background: var(--bg); align-items: flex-start; }
+    .pda-frame { width: 100%; border-radius: 0; box-shadow: none; }
+    .pda-notch { display: none; }
+    .status-bar { padding-top: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="pda-frame">
+  <!-- PDA Notch -->
+  <div class="pda-notch"></div>
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <span>09:24</span>
+    <span class="icons">
+      <span>📶</span>
+      <span>🔋</span>
+    </span>
+  </div>
+
+  <!-- Network Bar -->
+  <div class="network-bar" style="background:#16A34A;"></div>
+
+  <!-- Tab Navigation -->
+  <div class="proto-tabs">
+    <div class="proto-tab active" data-page="0">🏠 主页</div>
+    <div class="proto-tab" data-page="1">📋 取货列表</div>
+    <div class="proto-tab" data-page="2">📦 取货单详情</div>
+    <div class="proto-tab" data-page="3">🔍 商品详情</div>
+  </div>
+
+  <div class="page-content">
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- ============ PAGE 0: HOME ============ -->
+    <div class="proto-page active" id="page-0">
+      <div class="home-logo">
+        <div class="icon">📦</div>
+        <h1>快麦取货通</h1>
+        <p>扫码取货 · 高效管理</p>
+      </div>
+      <!-- 首次使用引导提示（F23） -->
+      <div id="guideTip" style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:8px;padding:10px 14px;margin:0 0 12px;font-size:13px;color:#92400E;display:flex;justify-content:space-between;align-items:center;">
+        <span>首次使用？点击设置配置服务器地址和扫码方式</span>
+        <button onclick="document.getElementById('guideTip').style.display='none'" style="background:none;border:none;color:#92400E;font-size:16px;cursor:pointer;">✕</button>
+      </div>
+      <div class="home-modules">
+        <div class="module-card" onclick="switchTab(1)">
+          <div class="icon-box blue">📋</div>
+          <div class="info">
+            <h3>取货列表</h3>
+            <p>查看和管理取货单</p>
+          </div>
+        </div>
+        <div class="module-card" onclick="switchTab(3)">
+          <div class="icon-box red">🔍</div>
+          <div class="info">
+            <h3>商品详情</h3>
+            <p>扫码查看规格信息</p>
+          </div>
+        </div>
+        <div class="module-card" onclick="showSettingsModal()">
+          <div class="icon-box" style="background:#F3F4F6;">⚙️</div>
+          <div class="info">
+            <h3>设置</h3>
+            <p>管理拣货区与系统配置</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ PAGE 1: PICK LIST ============ -->
+    <div class="proto-page" id="page-1">
+      <div class="page-header">
+        <span class="back" onclick="switchTab(0)">← 返回</span>
+        <span class="title">取货列表</span>
+        <button class="btn-new" onclick="showNewOrderModal()">+ 新建</button>
+      </div>
+
+      <div class="snackbar-bar success" id="snack-new">已新建取货单 20260614-拣货区A</div>
+
+      <div class="pick-list">
+        <div class="pick-card" onclick="switchTab(2)" oncontextmenu="event.preventDefault();if(confirm('确认删除取货单 20260614-拣货区A？'))showToast('success','取货单已删除')">
+          <div class="top-row">
+            <span class="order-no">20260614-拣货区A</span>
+            <span class="progress-text">进行中 · 3/5</span>
+          </div>
+          <div class="bottom-row">
+            <span class="status-tag">拣货区A</span>
+            <div class="dots">
+              <span class="dot done"></span>
+              <span class="dot done"></span>
+              <span class="dot done"></span>
+              <span class="dot pending"></span>
+              <span class="dot pending"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="pick-card" onclick="switchTab(2)">
+          <div class="top-row">
+            <span class="order-no">20260614-拣货区A（1）</span>
+            <span class="progress-text">进行中 · 0/2</span>
+          </div>
+          <div class="bottom-row">
+            <span class="status-tag">拣货区A</span>
+            <div class="dots">
+              <span class="dot pending"></span>
+              <span class="dot pending"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="pick-card" onclick="switchTab(2)">
+          <div class="top-row">
+            <span class="order-no">20260614-拣货区B</span>
+            <span class="progress-text">进行中 · 2/4</span>
+          </div>
+          <div class="bottom-row">
+            <span class="status-tag">拣货区B</span>
+            <div class="dots">
+              <span class="dot done"></span>
+              <span class="dot done"></span>
+              <span class="dot pending"></span>
+              <span class="dot pending"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 已完成取货单入口（F21） -->
+      <div style="text-align:center;padding:12px 0;">
+        <button onclick="showToast('success','已加载最近7天已完成的取货单')" style="background:none;border:none;color:var(--primary);font-size:14px;cursor:pointer;">查看已完成取货单 ▼</button>
+      </div>
+    </div>
+    <div class="proto-page" id="page-2">
+      <div class="page-header">
+        <span class="back" onclick="switchTab(1)">← 返回</span>
+        <span class="title" style="font-size:17px;">20260614-拣货区A</span>
+        <span style="width:50px;"></span>
+      </div>
+
+      <!-- Scan Input -->
+      <div class="scan-input-wrap">
+        <input class="scan-input" type="text" placeholder="按PDA扫码键扫描规格编码" autofocus>
+      </div>
+
+      <!-- Supplier Filter -->
+      <div class="supplier-filter">
+        <span class="filter-chip active">全部</span>
+        <span class="filter-chip">备货①</span>
+        <span class="filter-chip">备货②</span>
+        <span class="filter-chip">备货③</span>
+      </div>
+
+      <!-- Item List -->
+      <div class="item-list">
+        <!-- Uncompleted item -->
+        <div class="item-row" oncontextmenu="event.preventDefault();if(confirm('确认删除此待办行？'))showToast('success','待办行已删除')">
+          <div class="item-sku-img" onclick="showModal('sku','规格图片')">
+            📷<span class="img-label">规格图</span>
+          </div>
+          <div class="item-info">
+            <span class="item-name">Type-C 数据线 1.2米 红色</span>
+            <span class="item-supplier">★ 备货①</span>
+          </div>
+          <div class="item-actions">
+            <div class="item-img-boxes">
+              <div class="item-img-box" onclick="showModal('area','库区图')">
+                🏭<span class="img-label">库区</span>
+              </div>
+              <div class="item-img-box" onclick="showModal('box','装箱图')">
+                📦<span class="img-label">箱图</span>
+              </div>
+            </div>
+            <button class="btn-complete do" onclick="toggleComplete(this)">✓ 完成</button>
+          </div>
+        </div>
+
+        <!-- Another uncompleted item -->
+        <div class="item-row">
+          <div class="item-sku-img" onclick="showModal('sku','规格图片')">
+            📷<span class="img-label">规格图</span>
+          </div>
+          <div class="item-info">
+            <span class="item-name">快充充电头 20W 白色</span>
+            <span class="item-supplier">★ 备货②</span>
+          </div>
+          <div class="item-actions">
+            <div class="item-img-boxes">
+              <div class="item-img-box" onclick="showModal('area','库区图')">
+                🏭<span class="img-label">库区</span>
+              </div>
+              <div class="item-img-box" onclick="showModal('box','装箱图')">
+                📦<span class="img-label">箱图</span>
+              </div>
+            </div>
+            <button class="btn-complete do" onclick="toggleComplete(this)">✓ 完成</button>
+          </div>
+        </div>
+
+        <!-- 3rd uncompleted -->
+        <div class="item-row">
+          <div class="item-sku-img" onclick="showModal('sku','规格图片')">
+            📷<span class="img-label">规格图</span>
+          </div>
+          <div class="item-info">
+            <span class="item-name">手机支架 铝合金 黑色</span>
+            <span class="item-supplier">★ 备货③</span>
+          </div>
+          <div class="item-actions">
+            <div class="item-img-boxes">
+              <div class="item-img-box" onclick="showModal('area','库区图')">
+                🏭<span class="img-label">库区</span>
+              </div>
+              <div class="item-img-box" onclick="showModal('box','装箱图')">
+                📦<span class="img-label">箱图</span>
+              </div>
+            </div>
+            <button class="btn-complete do" onclick="toggleComplete(this)">✓ 完成</button>
+          </div>
+        </div>
+
+        <!-- Completed item example -->
+        <div class="item-row completed">
+          <div class="item-sku-img" onclick="showModal('sku','规格图片')">
+            📷<span class="img-label">规格图</span>
+          </div>
+          <div class="item-info">
+            <span class="item-name">Type-C 数据线 1米 白色</span>
+            <span class="item-supplier" style="color:#9CA3AF !important;">★ 备货①</span>
+          </div>
+          <div class="item-actions">
+            <div class="item-img-boxes">
+              <div class="item-img-box" onclick="showModal('area','库区图')">
+                🏭<span class="img-label">库区</span>
+              </div>
+              <div class="item-img-box" onclick="showModal('box','装箱图')">
+                📦<span class="img-label">箱图</span>
+              </div>
+            </div>
+            <button class="btn-complete undo" onclick="toggleComplete(this)">↩ 恢复</button>
+          </div>
+        </div>
+
+        <!-- 2nd completed item -->
+        <div class="item-row completed">
+          <div class="item-sku-img" onclick="showModal('sku','规格图片')">
+            📷<span class="img-label">规格图</span>
+          </div>
+          <div class="item-info">
+            <span class="item-name">Type-C 数据线 2米 黑色</span>
+            <span class="item-supplier" style="color:#9CA3AF !important;">★ 备货②</span>
+          </div>
+          <div class="item-actions">
+            <div class="item-img-boxes">
+              <div class="item-img-box" onclick="showModal('area','库区图')">
+                🏭<span class="img-label">库区</span>
+              </div>
+              <div class="item-img-box" onclick="showModal('box','装箱图')">
+                📦<span class="img-label">箱图</span>
+              </div>
+            </div>
+            <button class="btn-complete undo" onclick="toggleComplete(this)">↩ 恢复</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Bar -->
+      <div class="bottom-bar">
+        <span class="progress-summary">进度 <strong>3</strong>/<strong>5</strong></span>
+        <button class="btn-complete-all" onclick="showToast('success', '全部完成！取货单已标记完成')">全部完成</button>
+      </div>
+    </div>
+
+    <!-- ============ PAGE 3: PRODUCT DETAIL ============ -->
+    <div class="proto-page" id="page-3">
+      <div class="page-header">
+        <span class="back" onclick="switchTab(0)">← 返回</span>
+        <span class="title">商品详情</span>
+        <span style="width:50px;"></span>
+      </div>
+
+      <!-- Scan Input -->
+      <div class="scan-input-wrap">
+        <input class="scan-input" type="text" placeholder="按PDA扫码键扫描规格编码" autofocus>
+      </div>
+
+      <!-- SKU Info Card -->
+      <div class="product-sku-card">
+        <div class="product-sku-img">📷</div>
+        <div class="product-sku-info">
+          <span class="sku-name">Type-C 数据线 1.2米 红色</span>
+          <span class="sku-code">编码：SKU-OUTER-001-RED</span>
+          <span class="sku-supplier" onclick="showSupplierModal()">★ 深圳市源丰电子有限公司 <span class="supplier-edit-icon">✏️</span></span>
+        </div>
+      </div>
+
+      <!-- Remark Edit -->
+      <div class="remark-area">
+        <div class="section-title">规格备注</div>
+        <div class="remark-input-wrap">
+          <input class="remark-input" type="text" value="注意：此批次线缆有轻微色差" placeholder="输入备注内容...">
+          <button class="btn-save" onclick="if(confirm('确认修改规格备注？\n修改后将同步至快麦ERP，下次扫码获取最新信息'))showToast('success', '备注已修改，下次扫码获取最新信息')">💾 保存</button>
+        </div>
+      </div>
+
+      <!-- Image Upload -->
+      <div class="section-title">图片上传</div>
+      <div class="image-upload-grid">
+        <div class="upload-box" onclick="simulateUpload(this, 'area')">
+          <span class="upload-icon">📷</span>
+          <span class="upload-label">库区图</span>
+        </div>
+        <div class="upload-box has-image" style="background-image: linear-gradient(135deg, #DBEAFE 0%, #EFF6FF 100%);" onclick="if(confirm('替换装箱图？'))simulateUpload(this,'box')" oncontextmenu="event.preventDefault();if(confirm('确认删除装箱图？')){this.classList.remove('has-image');this.querySelector('.upload-icon').textContent='📷';this.querySelector('.upload-label').textContent='装箱图';this.onclick=function(){simulateUpload(this,'box')};showToast('success','装箱图已删除')}">
+          <span class="upload-icon">✅</span>
+          <span class="upload-label">箱图（已上传）</span>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:6px;text-align:center;">点击上传/替换 · 右键删除 · 上传前自动压缩</p>
+    </div>
+
+  </div><!-- /page-content -->
+</div><!-- /pda-frame -->
+
+<!-- Settings Modal -->
+<div class="modal-overlay-settings" id="modalSettings">
+  <div class="modal-settings-box">
+    <div class="modal-title">⚙️ 设置</div>
+    <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px;">拣货区管理</div>
+    <div id="areaList"></div>
+    <div class="add-area-row">
+      <input class="add-area-input" id="newAreaInput" placeholder="输入新拣货区名称" maxlength="20">
+      <button class="btn-add-area" onclick="addArea()">+ 添加</button>
+    </div>
+    <button class="btn-settings-close" onclick="closeSettingsModal()">关闭</button>
+  </div>
+</div>
+
+<!-- New Order Area Modal -->
+<div class="modal-overlay-areas" id="modalAreas">
+  <div class="modal-areas-box">
+    <div class="modal-title">选择拣货区</div>
+    <div class="areas-grid" id="areasGrid">
+    </div>
+  </div>
+</div>
+
+<!-- Supplier Selection Modal -->
+<div class="modal-overlay" id="supplierModal" style="display:none;">
+  <div class="modal-areas-box" style="max-height:70vh;">
+    <div class="modal-title">选择供应商</div>
+    <div id="supplierList" style="max-height:55vh;overflow-y:auto;padding:0 4px;">
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal-box">
+    <div class="modal-img" id="modalImg">📷</div>
+    <div class="modal-label" id="modalLabel">图片预览</div>
+    <button class="modal-close" onclick="closeModal()">关闭</button>
+  </div>
+</div>
+
+<script>
+  // Dynamic areas data
+  let areas = ['拣货区A', '拣货区B', '拣货区C', '拣货区D'];
+
+  // Area order counter
+  const areaCounters = {};
+
+  function renderAreasUi() {
+    // Render settings list
+    const list = document.getElementById('areaList');
+    list.innerHTML = areas.map((a, i) =>
+      `<div class="setting-area-row">
+        <span class="area-name">${a}</span>
+        <button class="btn-delete-area" onclick="deleteArea(${i})">删除</button>
+      </div>`
+    ).join('');
+
+    // Render new order modal areas
+    const grid = document.getElementById('areasGrid');
+    grid.innerHTML = areas.map(a =>
+      `<button class="area-btn" onclick="createOrder('${a}')">${a}</button>`
+    ).join('') + '<button class="area-btn cancel" onclick="closeAreaModal()">取消</button>';
+  }
+
+  function showSettingsModal() {
+    renderAreasUi();
+    document.getElementById('modalSettings').classList.add('show');
+  }
+
+  function closeSettingsModal() {
+    document.getElementById('modalSettings').classList.remove('show');
+  }
+
+  function addArea() {
+    const input = document.getElementById('newAreaInput');
+    const name = input.value.trim();
+    if (!name) return showToast('error', '请输入拣货区名称');
+    if (areas.includes(name)) return showToast('error', '该拣货区已存在');
+    areas.push(name);
+    input.value = '';
+    renderAreasUi();
+    showToast('success', '已添加拣货区 ' + name);
+  }
+
+  function deleteArea(index) {
+    const name = areas[index];
+    areas.splice(index, 1);
+    renderAreasUi();
+    showToast('warning', '已删除拣货区 ' + name);
+  }
+
+  document.getElementById('modalSettings').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeSettingsModal();
+  });
+
+  function showNewOrderModal() {
+    renderAreasUi();
+    document.getElementById('modalAreas').classList.add('show');
+  }
+
+  function closeAreaModal() {
+    document.getElementById('modalAreas').classList.remove('show');
+  }
+
+  function createOrder(area) {
+    closeAreaModal();
+    if (!areaCounters[area]) areaCounters[area] = 0;
+    areaCounters[area]++;
+    const today = '20260614';
+    const suffix = areaCounters[area] === 1 ? '' : '（' + areaCounters[area] + '）';
+    const orderNo = today + '-' + area + suffix;
+    const snack = document.getElementById('snack-new');
+    snack.textContent = '已新建取货单 ' + orderNo;
+    snack.classList.add('show');
+    setTimeout(() => snack.classList.remove('show'), 2500);
+  }
+
+  document.getElementById('modalAreas').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeAreaModal();
+  });
+
+  // Initial render
+  renderAreasUi();
+
+  // Tab switching
+  function switchTab(idx) {
+    document.querySelectorAll('.proto-tab').forEach((t,i) => t.classList.toggle('active', i===idx));
+    document.querySelectorAll('.proto-page').forEach((p,i) => p.classList.toggle('active', i===idx));
+    // Re-focus scan input if any
+    const input = document.querySelector('.proto-page.active .scan-input');
+    if (input) setTimeout(() => input.focus(), 100);
+  }
+
+  document.querySelectorAll('.proto-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const idx = parseInt(tab.dataset.page);
+      switchTab(idx);
+    });
+  });
+
+  // Scan input auto-focus on page enter
+  document.querySelectorAll('.scan-input').forEach(inp => {
+    inp.addEventListener('focus', () => {
+      inp.parentElement.style.transform = 'scale(1.01)';
+    });
+    inp.addEventListener('blur', () => {
+      inp.parentElement.style.transform = 'scale(1)';
+    });
+  });
+
+  // Toggle complete / restore
+  function toggleComplete(btn) {
+    const row = btn.closest('.item-row');
+    const isComplete = row.classList.contains('completed');
+    if (isComplete) {
+      row.classList.remove('completed');
+      btn.className = 'btn-complete do';
+      btn.textContent = '✓ 完成';
+      showToast('warning', '已恢复为待办');
+    } else {
+      row.classList.add('completed');
+      btn.className = 'btn-complete undo';
+      btn.textContent = '↩ 恢复';
+      // Move to bottom animation is simulated
+      const parent = row.parentElement;
+      parent.appendChild(row);
+      showToast('success', '已标记完成');
+    }
+  }
+
+  // Supplier filter with actual filtering
+  document.querySelectorAll('.filter-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      const supplier = chip.textContent.trim();
+      const items = document.querySelectorAll('#page-2 .item-row');
+      items.forEach(item => {
+        const itemSupplier = item.querySelector('.item-supplier').textContent.trim();
+        if (supplier === '全部') {
+          item.style.display = 'flex';
+        } else {
+          item.style.display = itemSupplier.includes(supplier) ? 'flex' : 'none';
+        }
+      });
+    });
+  });
+
+  // Image upload simulation
+  function simulateUpload(box, type) {
+    const label = box.querySelector('.upload-label');
+    box.classList.add('has-image');
+    box.style.backgroundImage = 'linear-gradient(135deg, #DBEAFE 0%, #EFF6FF 100%)';
+    box.querySelector('.upload-icon').textContent = '✅';
+    label.textContent = type === 'area' ? '库区图（已上传）' : '箱图（已上传）';
+    box.onclick = () => showModal(type, label.textContent);
+    showToast('success', (type === 'area' ? '库区图' : '箱图') + '上传成功');
+  }
+
+  // Modal
+  function showModal(type, label) {
+    const modal = document.getElementById('modal');
+    const img = document.getElementById('modalImg');
+    const lbl = document.getElementById('modalLabel');
+    const icons = { 'sku':'📦', 'area':'🏭', 'box':'📦' };
+    const labels = { 'sku':'规格图片', 'area':'库区图', 'box':'箱图' };
+    img.textContent = icons[type] || '📷';
+    lbl.textContent = labels[type] || label || '图片预览';
+    modal.classList.add('show');
+  }
+  function closeModal() {
+    document.getElementById('modal').classList.remove('show');
+  }
+  document.getElementById('modal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeModal();
+  });
+
+  // 供应商选择弹窗（F18）
+  const suppliers = [
+    { code: 'SUP001', name: '深圳市源丰电子有限公司' },
+    { code: 'SUP002', name: '广州华强通讯科技' },
+    { code: 'SUP003', name: '上海锐科仪器' },
+    { code: 'SUP004', name: '东莞恒达光电' },
+    { code: 'SUP005', name: '杭州芯联半导体' },
+    { code: 'SUP006', name: '北京中科智控' },
+  ];
+
+  function showSupplierModal() {
+    const list = document.getElementById('supplierList');
+    list.innerHTML = suppliers.map(s =>
+      `<button style="display:block;width:100%;padding:12px 16px;margin-bottom:8px;border:1px solid var(--border);border-radius:8px;background:var(--bg);text-align:left;font-size:15px;cursor:pointer;" onclick="selectSupplier('${s.code}','${s.name}')">
+        <span style="font-weight:600;">${s.name}</span>
+        <span style="color:var(--text-secondary);font-size:12px;margin-left:8px;">${s.code}</span>
+      </button>`
+    ).join('');
+    document.getElementById('supplierModal').style.display = 'flex';
+  }
+
+  function selectSupplier(code, name) {
+    document.getElementById('supplierModal').style.display = 'none';
+    // 二次确认弹窗，防止PDA误触
+    if (confirm('确认将供应商修改为：' + name + '？\n修改后将同步到快麦ERP，下次扫码获取最新信息')) {
+      // 更新页面上的供应商名称（仅UI展示，本地字段不修改）
+      const supplierEl = document.querySelector('.sku-supplier');
+      if (supplierEl) {
+        supplierEl.innerHTML = `★ ${name} <span class="supplier-edit-icon">✏️</span>`;
+      }
+      showToast('success', `供应商关联已修改为：${name}，下次扫码获取最新信息`);
+    }
+  }
+
+  document.getElementById('supplierModal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) {
+      document.getElementById('supplierModal').style.display = 'none';
+    }
+  });
+
+  // Toast
+  function showToast(type, msg) {
+    const toast = document.getElementById('toast');
+    toast.className = 'toast ' + type + ' show';
+    toast.textContent = msg;
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // Auto-focus first scan input
+  setTimeout(() => {
+    const firstInput = document.querySelector('.scan-input');
+    if (firstInput) firstInput.focus();
+  }, 300);
+
+  // "New order" also shows snackbar
+  document.querySelector('.btn-new')?.addEventListener('click', function() {
+    const snack = document.getElementById('snack-new');
+    snack.classList.add('show');
+    setTimeout(() => snack.classList.remove('show'), 2500);
+  });
+</script>
+</body>
+</html>

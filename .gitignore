@@ -1,0 +1,33 @@
+# Android 构建产物
+build/
+.gradle/
+local.properties
+
+# IDE
+.idea/
+*.iml
+
+# 环境变量与密钥
+.env
+.env.local
+.env.*.local
+credentials.json
+
+# Python 缓存
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Docker 部署包（由同步脚本生成）
+docker-deploy/
+
+# Node modules
+node_modules/
+
+# OS 文件
+.DS_Store
+Thumbs.db
+
+# 日志
+*.log

@@ -1,0 +1,373 @@
+package com.kuaimai.pda.ui.product
+
+import android.content.SharedPreferences
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.kuaimai.pda.data.api.KuaimaiApiService
+import com.kuaimai.pda.data.api.dto.SupplierDto
+import com.kuaimai.pda.data.db.dao.PendingOperationDao
+import com.kuaimai.pda.data.db.dao.PickItemDao
+import com.kuaimai.pda.data.db.dao.ProductImageDao
+import com.kuaimai.pda.data.db.entity.PendingOperationEntity
+import com.kuaimai.pda.data.db.entity.PickItemEntity
+import com.kuaimai.pda.data.db.entity.ProductImageEntity
+import com.kuaimai.pda.data.repository.ImageRepository
+import com.kuaimai.pda.util.TimeUtils
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import java.io.File
+import javax.inject.Inject
+
+/**
+ * 商品详情UI状态
+ */
+data class ProductUiState(
+    val isLoading: Boolean = false,
+    val skuOuterId: String = "",
+    val propertiesName: String = "",
+    val picPath: String = "",
+    val supplierName: String = "",
+    val supplierCode: String = "",
+    val remark: String = "",
+    val areaImageUrl: String? = null,
+    val boxImageUrl: String? = null,
+    val isUploading: Boolean = false,
+    val uploadProgress: Int = 0,
+    val error: String? = null,
+    val isSavingRemark: Boolean = false,
+    val isSavingSupplier: Boolean = false,
+    val showSupplierDialog: Boolean = false,
+    val showConfirmDialog: ConfirmType? = null,
+    val scanInput: String = ""
+)
+
+/** 确认对话框类型 */
+sealed class ConfirmType {
+    data class Remark(val remark: String) : ConfirmType()
+    data class Supplier(val name: String, val code: String) : ConfirmType()
+}
+
+/**
+ * 商品详情ViewModel
+ * 管理SKU信息加载、扫码切换、备注编辑、供应商切换、图片上传
+ */
+@HiltViewModel
+class ProductViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
+    private val pickItemDao: PickItemDao,
+    private val productImageDao: ProductImageDao,
+    private val pendingOperationDao: PendingOperationDao,
+    private val imageRepository: ImageRepository,
+    private val apiService: KuaimaiApiService,
+    private val prefs: SharedPreferences
+) : ViewModel() {
+
+    companion object {
+        private const val KEY_SERVER_URL = "server_url"
+        private const val DEFAULT_SERVER_URL = "http://10.0.2.2:8000"
+    }
+
+    private val _uiState = MutableStateFlow(ProductUiState())
+    val uiState: StateFlow<ProductUiState> = _uiState.asStateFlow()
+
+    private val _suppliers = MutableStateFlow<List<SupplierDto>>(emptyList())
+    val suppliers: StateFlow<List<SupplierDto>> = _suppliers.asStateFlow()
+
+    /** 当前SKU对应的PickItem（可能为null，如果不在取货单中） */
+    private var currentItem: PickItemEntity? = null
+
+    init {
+        val skuOuterId: String = savedStateHandle["skuOuterId"] ?: ""
+        if (skuOuterId.isNotEmpty()) {
+            loadSkuInfo(skuOuterId)
+        }
+    }
+
+    /**
+     * 加载SKU信息
+     * @param skuOuterId SKU外部编码
+     */
+    fun loadSkuInfo(skuOuterId: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            try {
+                // 先从本地数据库查询
+                val item = pickItemDao.getBySkuOuterId(skuOuterId)
+                if (item != null) {
+                    currentItem = item
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        skuOuterId = skuOuterId,
+                        propertiesName = item.propertiesName,
+                        picPath = item.picPath,
+                        supplierName = item.supplierName,
+                        supplierCode = item.supplierCode,
+                        remark = item.remark
+                    )
+                } else {
+                    // 本地无数据，仅设置ID等待扫码
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        skuOuterId = skuOuterId
+                    )
+                }
+                // 加载图片
+                loadImages(skuOuterId)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = "加载SKU信息失败: ${e.message}"
+                )
+            }
+        }
+    }
+
+    /**
+     * 加载SKU图片
+     */
+    private suspend fun loadImages(skuOuterId: String) {
+        try {
+            val serverUrl = prefs.getString(KEY_SERVER_URL, DEFAULT_SERVER_URL) ?: DEFAULT_SERVER_URL
+            productImageDao.getBySkuOuterId(skuOuterId).collect { images ->
+                val areaImage = images.find { it.imageType == "area" }
+                val boxImage = images.find { it.imageType == "box" }
+                _uiState.value = _uiState.value.copy(
+                    areaImageUrl = areaImage?.let { "$serverUrl${it.imageUrl}" },
+                    boxImageUrl = boxImage?.let { "$serverUrl${it.imageUrl}" }
+                )
+            }
+        } catch (_: Exception) {
+            // 图片加载失败不阻塞主流程
+        }
+    }
+
+    /**
+     * 扫码切换SKU
+     * @param barcode 扫描到的条码
+     */
+    fun onScanBarcode(barcode: String) {
+        if (barcode.isBlank()) return
+        _uiState.value = _uiState.value.copy(scanInput = barcode)
+        loadSkuInfo(barcode)
+    }
+
+    /**
+     * 更新扫码输入框
+     */
+    fun updateScanInput(input: String) {
+        _uiState.value = _uiState.value.copy(scanInput = input)
+    }
+
+    /**
+     * 确认扫码输入
+     */
+    fun confirmScanInput() {
+        val input = _uiState.value.scanInput.trim()
+        if (input.isNotEmpty()) {
+            loadSkuInfo(input)
+        }
+    }
+
+    /**
+     * 更新备注
+     */
+    fun updateRemark(remark: String) {
+        _uiState.value = _uiState.value.copy(remark = remark)
+    }
+
+    /**
+     * 请求保存备注（弹出确认对话框）
+     */
+    fun requestSaveRemark() {
+        val remark = _uiState.value.remark
+        _uiState.value = _uiState.value.copy(
+            showConfirmDialog = ConfirmType.Remark(remark)
+        )
+    }
+
+    /**
+     * 确认保存备注
+     */
+    fun confirmSaveRemark() {
+        val state = _uiState.value
+        val confirmType = state.showConfirmDialog as? ConfirmType.Remark ?: return
+        _uiState.value = state.copy(isSavingRemark = true, showConfirmDialog = null)
+
+        viewModelScope.launch {
+            try {
+                val item = currentItem
+                if (item != null) {
+                    // 更新本地
+                    pickItemDao.updateRemark(item.id, confirmType.remark)
+                    // 写入离线队列
+                    enqueuePendingOperation(
+                        operationType = "update_remark",
+                        orderId = item.orderId,
+                        targetId = item.id,
+                        payload = """{"remark":"${confirmType.remark}"}"""
+                    )
+                }
+                _uiState.value = _uiState.value.copy(isSavingRemark = false)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isSavingRemark = false,
+                    error = "保存备注失败: ${e.message}"
+                )
+            }
+        }
+    }
+
+    /**
+     * 显示供应商选择对话框
+     */
+    fun showSupplierDialog() {
+        _uiState.value = _uiState.value.copy(showSupplierDialog = true)
+        loadSuppliers()
+    }
+
+    /**
+     * 隐藏供应商选择对话框
+     */
+    fun hideSupplierDialog() {
+        _uiState.value = _uiState.value.copy(showSupplierDialog = false)
+    }
+
+    /**
+     * 加载供应商列表
+     */
+    private fun loadSuppliers() {
+        viewModelScope.launch {
+            try {
+                val result = apiService.querySupplierList(emptyMap())
+                _suppliers.value = result.suppliers
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    error = "加载供应商列表失败: ${e.message}"
+                )
+            }
+        }
+    }
+
+    /**
+     * 选择供应商（弹出确认对话框）
+     */
+    fun selectSupplier(supplier: SupplierDto) {
+        _uiState.value = _uiState.value.copy(
+            showSupplierDialog = false,
+            showConfirmDialog = ConfirmType.Supplier(supplier.supplierName, supplier.supplierCode)
+        )
+    }
+
+    /**
+     * 确认切换供应商
+     */
+    fun confirmChangeSupplier() {
+        val state = _uiState.value
+        val confirmType = state.showConfirmDialog as? ConfirmType.Supplier ?: return
+        _uiState.value = state.copy(isSavingSupplier = true, showConfirmDialog = null)
+
+        viewModelScope.launch {
+            try {
+                val item = currentItem
+                if (item != null) {
+                    // 更新本地
+                    pickItemDao.updateSupplier(item.id, confirmType.name, confirmType.code)
+                    // 写入离线队列
+                    enqueuePendingOperation(
+                        operationType = "update_supplier",
+                        orderId = item.orderId,
+                        targetId = item.id,
+                        payload = """{"supplier_name":"${confirmType.name}","supplier_code":"${confirmType.code}"}"""
+                    )
+                }
+                _uiState.value = _uiState.value.copy(
+                    isSavingSupplier = false,
+                    supplierName = confirmType.name,
+                    supplierCode = confirmType.code
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isSavingSupplier = false,
+                    error = "切换供应商失败: ${e.message}"
+                )
+            }
+        }
+    }
+
+    /**
+     * 取消确认对话框
+     */
+    fun dismissConfirmDialog() {
+        _uiState.value = _uiState.value.copy(showConfirmDialog = null)
+    }
+
+    /**
+     * 上传图片
+     * @param imageFile 图片文件
+     * @param imageType 图片类型 area/box
+     */
+    fun uploadImage(imageFile: File, imageType: String) {
+        val skuOuterId = _uiState.value.skuOuterId
+        if (skuOuterId.isBlank()) return
+
+        _uiState.value = _uiState.value.copy(isUploading = true, uploadProgress = 0)
+        viewModelScope.launch {
+            try {
+                val imageUrl = imageRepository.uploadImage(imageFile, imageType, skuOuterId)
+                // 保存到本地数据库
+                val entity = ProductImageEntity(
+                    skuOuterId = skuOuterId,
+                    imageType = imageType,
+                    imageUrl = imageUrl,
+                    createdAt = TimeUtils.now()
+                )
+                imageRepository.saveImage(entity)
+
+                val serverUrl = prefs.getString(KEY_SERVER_URL, DEFAULT_SERVER_URL) ?: DEFAULT_SERVER_URL
+                val fullUrl = "$serverUrl$imageUrl"
+                _uiState.value = if (imageType == "area") {
+                    _uiState.value.copy(areaImageUrl = fullUrl)
+                } else {
+                    _uiState.value.copy(boxImageUrl = fullUrl)
+                }
+                _uiState.value = _uiState.value.copy(isUploading = false, uploadProgress = 100)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isUploading = false,
+                    error = "上传图片失败: ${e.message}"
+                )
+            }
+        }
+    }
+
+    /**
+     * 写入离线操作队列
+     */
+    private suspend fun enqueuePendingOperation(
+        operationType: String,
+        orderId: Long,
+        targetId: Long,
+        payload: String
+    ) {
+        val operation = PendingOperationEntity(
+            operationType = operationType,
+            orderId = orderId,
+            targetId = targetId,
+            payload = payload,
+            createdAt = TimeUtils.now(),
+            retryCount = 0
+        )
+        pendingOperationDao.insert(operation)
+    }
+
+    /**
+     * 清除错误信息
+     */
+    fun clearError() {
+        _uiState.value = _uiState.value.copy(error = null)
+    }
+}

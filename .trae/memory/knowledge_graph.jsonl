@@ -1,0 +1,110 @@
+{"type":"entity","name":"快麦取货通项目","entityType":"项目","observations":["运行在PDA手持终端上的Android App","通过快麦ERP开放平台API实现扫码取货","核心概念为取货单，每个取货单包含多条待办商品行","目标用户为仓库拣货人员","PDA自带二维扫描头获取商品规格编码","修复冲突：供应商名称字号统一为20sp Bold #DC2626（原型规范映射表已更新）","修复冲突：F1单号格式统一为yyyyMMdd-拣货区X（旧格式2026-06-14-01已清除）","修复冲突：项目结构home注释从'底部导航'改为'模块卡片入口，无底部导航'","修复冲突：App端ProductImageEntity统一为后端窄表方案（imageType+imageUrl，一行存一图）","修复冲突：PDA扫码配置存储统一为DataStore（清除SharedPreferences残留）","修复遗漏：验证清单补充'更新知识图谱'和'同步到docker-deploy'两个步骤","修复遗漏：项目结构速览补充scripts/和docker-deploy/目录","修复遗漏：后端API补充拣货区管理接口（GET/POST/DELETE /api/areas）+ pick_areas表","修复遗漏：CSS变量映射补充WarningBg(#FEF9C3)","修复遗漏：Docker部署配置补充多阶段构建+时区+健康检查+BuildKit缓存","修复遗漏：创建.gitignore/CHANGELOG.md/gradle.properties基础文件","数据库约束补充：所有表字段添加NOT NULL/DEFAULT/CHECK约束，status字段CHECK IN (0,1)，image_type字段CHECK IN ('area','box')，count字段CHECK >= 0","pick_items表添加UNIQUE(order_id, sku_outer_id)约束：同一取货单内不允许重复SKU，App端查重+后端约束双重保障","pick_items表order_id外键添加ON DELETE CASCADE：删除取货单时级联删除待办行，避免孤立数据","数据库排序规范：取货单列表ORDER BY created_at DESC，待办行ORDER BY status ASC + 时间DESC，App端和后端必须使用完全相同的排序规则","快麦ERP字段同步策略：只读字段(properties_name/pic_path/sys_id)通过后端缓存24小时被动同步；可修改字段(supplier/remark)修改后立即回写快麦ERP；已完成取货单是历史快照不更新","数据清理策略：已完成取货单保留30天、sku_cache保留24小时、crash日志保留30天、孤立图片7天安全期后删除，后端每天凌晨3:00定时清理","F4备注修改和F18供应商修改均增加二次确认弹窗，防止PDA误触导致错误修改同步到快麦ERP","核心纠正：supplier_name/supplier_code是从快麦API获取的只读快照，不可直接修改。F18仅修改商品与供应商的关联关系，不直接改字段值","核心纠正：备注也是从快麦API获取的只读快照，F4修改后回传快麦ERP不直接改本地字段，后端缓存失效后下次扫码获取最新值","F18和F4修改后的统一流程：修改→回传快麦ERP→后端sku_cache失效→下次扫码从快麦API获取最新信息→更新pick_items表","纠正：supplier_name/code和备注不是纯只读快照，F18/F4修改回传快麦ERP成功后必须立即更新本地字段，否则用户改完还看到旧值","权威数据源原则：这些字段的权威数据来自快麦ERP，App端不能绕过快麦ERP直接修改，但通过快麦ERP API修改成功后必须同步更新本地","修复：App端PickItemEntity和后端pick_items表补充remark字段（VARCHAR(512)/String?），F4修改备注后立即更新本地字段","修复：后端sku_cache缓存表补充remark字段，缓存失效机制补充invalidate_sku_cache()函数（DELETE记录而非更新cached_at）","修复：后端check_expired_orders中删除conn.close()，连接池模式下不关闭连接","修复：F18功能描述与流程9统一，明确“成功后立即更新本地字段+后端缓存失效”","修复：App端数据策略表中规格备注改为“Room缓存（存于pick_items.remark字段）”","Tailscale免费版：最多6用户、每用户无限设备、3个ACL分组、永久免费，多台PDA登录同一账号即可","Tailscale NAS端部署：绿联NAS通过Docker部署tailscale/tailscale镜像，需映射/dev/net/tun+TS_AUTH_KEY环境变量+特权模式","Tailscale PDA端安装：iData PDA无Google Play，从GitHub Release/F-Droid/APKPure下载APK安装","取消frp/ZeroTier/NAS自带VPN等其他内网穿透方案，仅保留Tailscale+绿联UGREENlink备选","绿联UGREENlink不支持Docker容器访问，仅作为NAS文件管理远程访问备选"]}
+{"type":"entity","name":"F1_取货单管理","entityType":"功能需求","observations":["新建取货时弹出选择拣货区弹窗","自动生成单号格式：yyyyMMdd-拣货区X","同一拣货区当天第2单起加(1)(2)后缀","查看未完成取货单列表","已完成的取货单从列表中消失"]}
+{"type":"entity","name":"F2_扫码待办","entityType":"功能需求","observations":["在取货单内扫码规格编码生成待办行","待办行按状态+添加时间自动排序","未完成在上方，已完成在下方","待办行显示：规格图、规格名称、供应商名称、库区图、箱图","供应商名称如备货①/②/③，红色加粗","可点击完成/恢复","重复扫码检测与提示"]}
+{"type":"entity","name":"F3_取货单自动完成","entityType":"功能需求","observations":["所有待办行完成后取货单自动标记完成","12小时未全部完成则自动完成","12小时超时是后台逻辑，前端不显示倒计时"]}
+{"type":"entity","name":"F4_商品详情","entityType":"功能需求","observations":["按规格维度显示，扫描规格编码(skuOuterId)","展示SKU图、规格名称、规格编码、供应商","规格备注可编辑修改并同步至快麦ERP","库区图和箱图2个上传位","上传前自动压缩到1024px宽/质量80%"]}
+{"type":"entity","name":"F5_图片上传","entityType":"功能需求","observations":["商品详情页可上传库区图和箱图","后端数据库通过image_type字段严格区分","上传时携带imageType参数：area/box","显示上传进度条","上传失败自动重试最多3次"]}
+{"type":"entity","name":"F6_PDA扫码适配","entityType":"功能需求","observations":["PDA硬件扫描头广播模式为主方案","摄像头扫码(ML Kit)为降级方案","300ms防抖处理","Activity生命周期管理：onResume注册、onPause注销"]}
+{"type":"entity","name":"F7_离线操作队列","entityType":"功能需求","observations":["断网时操作写入本地Room队列","网络恢复后通过WorkManager自动同步","冲突策略后端优先","重试最多3次，失败标记为冲突"]}
+{"type":"entity","name":"F8_扫码反馈","entityType":"功能需求","observations":["扫码成功→短振动+提示音","扫码失败(商品未找到)→长振动+错误音","重复扫码→中等振动+提示'已存在'","设置中可开关声音和振动"]}
+{"type":"entity","name":"F9_重复扫码检测","entityType":"功能需求","observations":["同一取货单内重复扫同一SKU时提示","高亮并滚动到已存在的行","不静默添加重复行"]}
+{"type":"entity","name":"F10_图片压缩","entityType":"功能需求","observations":["最大宽度1024px","JPEG质量80%","约200KB","显示上传进度条"]}
+{"type":"entity","name":"F11_后端安全认证","entityType":"功能需求","observations":["FastAPI后端添加API Key认证","App端请求携带X-API-Key Header","图片静态资源不需要认证"]}
+{"type":"entity","name":"F12_网络状态指示","entityType":"功能需求","observations":["全局显示在线/离线/弱网状态","离线时操作按钮标记'待同步'","顶部薄条渐变：绿/黄/红"]}
+{"type":"entity","name":"F13_屏幕常亮","entityType":"功能需求","observations":["取货单详情页保持屏幕常亮","商品详情页保持屏幕常亮","退出页面时恢复默认"]}
+{"type":"entity","name":"F14_全部完成","entityType":"功能需求","observations":["一键将取货单内所有待办行标记完成","底部'全部完成'按钮"]}
+{"type":"entity","name":"F15_下拉刷新","entityType":"功能需求","observations":["取货单详情页支持下拉刷新","同步其他PDA的操作数据"]}
+{"type":"entity","name":"F16_会话预警","entityType":"功能需求","observations":["accessToken过期前3-5天提醒用户刷新","而非过期后才提示"]}
+{"type":"entity","name":"F17_PDA触摸优化","entityType":"功能需求","observations":["所有可点击元素最小56dp×56dp","供应商名称等关键信息字体20sp+","待办行72dp高","图片上传位64dp×64dp"]}
+{"type":"entity","name":"技术栈","entityType":"技术选型","observations":["语言：Kotlin","最低SDK：API 24 (Android 7.0)","UI框架：Jetpack Compose","架构：MVVM + Repository","网络库：Retrofit2 + OkHttp3","本地存储：Room + DataStore","依赖注入：Hilt","图片加载：Coil","离线同步：WorkManager","摄像头扫码降级：ML Kit Barcode Scanning"]}
+{"type":"entity","name":"UI设计规范","entityType":"设计规范","observations":["主色：#2563EB(品牌蓝)","按钮语义色：浅底深字","供应商名称：#DC2626(红色强调)","字体：Noto Sans SC","页面切换：Fade过渡200ms","对齐方式统一使用Modifier.align()+Arrangement","间距系统统一16dp/12dp/8dp/4dp","待办行72dp高","供应商名称20sp+Bold+红色"]}
+{"type":"entity","name":"快麦ERP_API","entityType":"外部API","observations":["查询商品列表：item.list.query","查询商品SKU列表V2：erp.item.sku.list.get","查询商品关联供应商信息V2：erp.item.supplier.list.get","修改/新增商品V2：erp.item.general.addorupdate","刷新会话：session.refresh","签名算法：HMAC-MD5","accessToken有效期30天"]}
+{"type":"entity","name":"后端FastAPI服务","entityType":"后端服务","observations":["Python FastAPI框架","SQLite数据库","Docker容器化部署","端口8900","API Key认证","定时任务：12小时超时检查","图片文件存储到本地磁盘"]}
+{"type":"entity","name":"后端API","entityType":"后端API端点","observations":["POST /api/orders：创建取货单","GET /api/orders：获取取货单列表","GET /api/orders/{id}：获取取货单详情","POST /api/orders/{id}/items：添加待办行","PUT /api/orders/{id}/items/{itemId}/complete：完成待办行","PUT /api/orders/{id}/items/{itemId}/restore：恢复待办行","PUT /api/orders/{id}/complete-all：全部完成","GET /api/orders/{id}/suppliers：获取供应商列表","POST /api/upload：上传图片","GET /api/images/{skuOuterId}：获取图片"]}
+{"type":"entity","name":"数据库设计","entityType":"数据模型","observations":["pick_orders：取货单表，含orderNo/status/totalCount/expireAt","pick_items：取货商品行表，含skuOuterId/supplierName/status","product_images：商品图片表，含image_type(area/box)严格区分","后端的取货单数据通过唯一索引orderNo去重","后端使用SQLite，App端Room作为离线缓存"]}
+{"type":"entity","name":"安装部署","entityType":"部署方案","observations":["后端：Docker Compose部署","端口映射：8900:8000","数据卷挂载图片目录和数据库文件","持续运行：restart: unless-stopped","多PDA访问同一后端服务"]}
+{"type":"entity","name":"API契约一致性方案","entityType":"开发规范","observations":["使用OpenAPI Contract-First方案","先写api.yaml规范文件","用openapi-generator生成两端代码","后端生成Python FastAPI代码","前端生成Android Retrofit代码","快麦外部API通过DTO映射层隔离"]}
+{"type":"entity","name":"Docker部署方案","entityType":"Deployment","observations":["后端FastAPI服务需Docker部署到NAS","采用多阶段构建(builder+runner)减小镜像体积","容器内必须设置时区Asia/Shanghai确保北京时间","BuildKit缓存挂载加速pip install层: --mount=type=cache,target=/root/.cache/pip","绿联NAS Docker GUI只识别.yaml扩展名，需维护docker-compose.yml为源文件并自动生成.yaml副本",".env.docker提供环境变量模板，敏感值在NAS上手动填入，.dockerignore忽略.env文件","docker-compose.yml中BUILD_VERSION需与代码版本号同步","FastAPI健康检查端点/health + curl","图片存储目录需挂载volume持久化","API Key认证密钥通过环境变量注入，不硬编码","开发流程Step6: Git提交前必须运行同步脚本 .\\scripts\\sync-to-docker-deploy.ps1 -Force","同步脚本将backend/目录和Docker配置文件同步到docker-deploy/目录","同步脚本自动生成docker-compose.yaml副本（绿联NAS兼容）","同步脚本支持-DryRun预览和-Force强制覆盖","同步脚本自动清理docker-deploy中的孤立文件和空目录","前端UI原型规范已写入计划文档，prototype/index.html为唯一UI设计权威来源","CSS变量已映射到Compose Color.kt属性名：BrandBlue/PrimaryLightBg/SupplierRed等","9类组件规格已映射CSS→Compose：模块卡片/取货单卡片/扫码输入框/供应商Chip/待办行/商品详情/弹窗/Toast/网络状态条","7个原型页面对应Compose Screen：HomeScreen/PickListScreen/PickDetailScreen/ProductScreen + 3个Dialog","开发时禁止直接写色值，必须引用ui/theme/Color.kt中的命名常量","网络部署方案：支持同网络（内网IP直连）和跨网络（Tailscale组网穿透）两种场景","跨网络推荐Tailscale：零配置P2P+WireGuard端到端加密，NAS端Docker部署Tailscale容器，PDA端安装Tailscale Android App","Tailscale IP格式：100.64.x.x:8900，内网IP格式：192.168.x.x:8900","App设置页支持配置服务器地址，DataStore持久化，启动时自动检测连通性","Tailscale隧道内已加密，无需额外配置HTTPS"]}
+{"type":"entity","name":"前端UI原型规范","entityType":"DesignSpec","observations":["prototype/index.html为唯一UI设计权威来源，开发必须遵循","15个CSS变量映射到Compose Color.kt：BrandBlue(#2563EB)/PrimaryLightBg(#DBEAFE)/SupplierRed(#DC2626)等","9类组件规格已映射CSS→Compose：模块卡片/取货单卡片/扫码输入框/供应商Chip/待办行/商品详情/弹窗/Toast/网络状态条","7个原型页面对应Compose Screen：HomeScreen/PickListScreen/PickDetailScreen/ProductScreen + SettingsDialog/NewOrderDialog/ImagePreviewDialog","交互规格：扫码自动聚焦/扫码替换内容/完成动画/供应商筛选/图片预览弹窗/新建取货单弹窗/设置管理","禁止直接写色值，必须引用ui/theme/Color.kt命名常量"]}
+{"type":"entity","name":"F18_供应商修改","entityType":"功能需求","observations":["商品详情页点击供应商名称可修改关联供应商","点击后弹出供应商选择列表（调用supplier.list.query获取）","选择新供应商后自动保存并回传快麦ERP","回传使用erp.item.general.addorupdate，传入id+suppliers[].code","成功后更新页面显示和本地缓存","供应商名称显示编辑图标✏️提示可点击"]}
+{"type":"entity","name":"F19_取货单删除","entityType":"功能需求","observations":["可删除误建的取货单","仅限无待办行或全部未完成的单","删除后不可恢复","长按取货单卡片弹出删除选项"]}
+{"type":"entity","name":"F20_待办行删除","entityType":"功能需求","observations":["可删除误扫的待办行","长按待办行弹出删除选项","删除后不可恢复"]}
+{"type":"entity","name":"F21_已完成取货单查看","entityType":"功能需求","observations":["取货列表页底部提供'查看已完成'入口","展示最近7天内已完成的取货单"]}
+{"type":"entity","name":"F22_图片删除替换","entityType":"功能需求","observations":["已上传的库区图/装箱图可重新上传替换","可删除已上传的图片","替换时先删旧图再传新图"]}
+{"type":"entity","name":"F23_首次使用引导","entityType":"功能需求","observations":["首次启动App显示引导页","引导配置服务器地址+选择扫码方式","引导完成后不再显示"]}
+{"type":"entity","name":"F24_取货单排序","entityType":"功能需求","observations":["取货列表按创建时间倒序排列","最新在上","同一拣货区的单据相邻显示"]}
+{"type":"entity","name":"F25_长按操作","entityType":"功能需求","observations":["长按待办行弹出操作菜单：删除、查看商品详情","长按取货单卡片弹出删除选项"]}
+{"type":"entity","name":"技术保障措施","entityType":"技术保障","observations":["Room数据库迁移：每次schema变更编写Migration对象，禁止fallbackToDestructiveMigration","并发冲突处理：后端数据为准，幂等操作返回成功，冲突返回409，App端刷新数据","快麦API限流与缓存：SKU信息Room缓存24小时，供应商列表Room缓存24小时，取货单不缓存","错误上报：集成ACRA，crash日志发送到后端/api/crash-report，禁止第三方SaaS","App版本更新：后端/api/app-version接口，App启动检查版本，下载APK调用系统安装器"]}
+{"type":"entity","name":"性能优化方案","entityType":"性能优化","observations":["后端SQLite连接池：应用启动时初始化连接+PRAGMA（仅执行一次），避免每次请求新建连接","后端PRAGMA busy_timeout=5000：写锁冲突时等待5秒而非立即SQLITE_BUSY","product_images表UNIQUE(sku_outer_id, image_type)约束：上传时INSERT OR REPLACE自动覆盖旧图，防止多PDA同时上传产生重复","PendingOperationEntity补充orderId字段：方便按取货单维度查询和管理待同步操作","Room索引定义：PickItemEntity(orderId, skuOuterId, orderId+status)、ProductImageEntity(skuOuterId, skuOuterId+imageType唯一)、PendingOperationEntity(orderId)","扫码流程优化：App只发1次请求给后端(POST /api/orders/{id}/items)，后端负责查询快麦API+创建待办行，多PDA共享后端缓存","全部完成使用批量SQL：UPDATE pick_items SET status=1 WHERE order_id=? AND status=0，一次SQL完成","后端快麦API缓存层：sku_cache表缓存SKU信息24小时，多PDA共享缓存，减少快麦API调用","OkHttp连接池：ConnectionPool(5, 30s) + 令牌桶限流RateLimitInterceptor(5次/秒) + ApiKeyInterceptor","离线同步按取货单分组并行：不同取货单的离线操作并行同步，同一取货单内串行","下拉刷新并行请求：取货单详情+供应商列表+图片信息并行请求，总耗时=max而非sum","Room批量写入事务：@Transaction + insertAll一次性写入，避免逐条插入","SQLite WAL并发说明：WAL模式写写互斥，3-5台PDA场景TPS约50-100足够，超过10台需升级PostgreSQL","数据流向更新：快麦ERP API ←→ 后端服务(代理+缓存) ←→ App，App不再直接调快麦API查SKU"]}
+{"type":"entity","name":"快麦API凭证独立存储方案","entityType":"设计决策","observations":["快麦ERP凭证（APP_KEY/APP_SECRET/SESSION）从.env分离到独立的kuaimai.json文件，存储在/data/目录下","kuaimai.json格式：{app_key, app_secret, session, updated_at}","更换凭证只需替换JSON文件，无需编辑.env或重启Docker容器","后端检测kuaimai.json文件修改时自动热更新凭证（无需重启）","SESSION过期预警：每24小时检查，距过期3-5天时日志预警",".env精简为仅后端服务配置（API_KEY+SERVER_PORT）","新建backend/.env.example和backend/kuaimai.example.json模板文件","计划文件：.trae/documents/plan-kuaimai-api-key-separation.md"]}
+{"type":"entity","name":"F27_连续扫码模式","entityType":"功能需求","observations":["取货单详情页可开启连续扫码模式（默认关闭）","扫码→自动添加待办行→光标回到扫码框→等待下一个扫码","不自动标记完成，完成操作仍需手动点击","重复SKU时中等振动+高亮提示，不中断连续扫码","适用场景：批量快速扫货"]}
+{"type":"entity","name":"F28_API_Key加密存储","entityType":"功能需求","observations":["App端使用Jetpack Security加密存储敏感信息","使用EncryptedSharedPreferences（AES256加密）","加密存储：API Key、服务器地址、快麦Session","非加密存储：扫码配置（普通DataStore）","防止PDA丢失后数据泄露","依赖：androidx.security:security-crypto:1.1.0-alpha06"]}
+{"type":"entity","name":"F31_条码格式兼容","entityType":"功能需求","observations":["后端对扫码结果做清洗（trim、去除控制字符、零宽字符）","支持纯数字（EAN-13）、字母数字混合（Code128）、URL（QR码）","条码长度限制64字符","异常条码友好提示+短振动+错误音","清洗函数：clean_barcode() + validate_barcode()"]}
+{"type":"entity","name":"F32_App冷启动优化","entityType":"功能需求","observations":["目标冷启动<2秒","Application.onCreate仅初始化Hilt，不做网络/数据库操作","首页数据用Room缓存秒加载，后台异步刷新","数据库预填充、LazyColumn布局、Coil图片缓存"]}
+{"type":"entity","name":"F35_Token刷新失败处理","entityType":"功能需求","observations":["OkHttp Authenticator自动检测401并调用session.refresh","刷新成功：重试原请求","刷新失败：弹窗提示+一键跳转快麦后台重新授权","刷新期间暂停所有写操作（离线队列接管）","弹窗不可关闭，必须处理才能继续","新Token获取后自动重试之前失败的请求"]}
+{"type":"entity","name":"Phase1-项目搭建","entityType":"开发里程碑","observations":["Phase 1已完成：Android项目骨架44个Kotlin文件+6个配置文件","FastAPI后端22个文件已创建","版本号0.2（build.gradle.kts + gradle.properties + CHANGELOG.md 三处一致）","Color.kt包含16个设计规范色彩常量","PickItemEntity.remark为String不可空，与后端NOT NULL DEFAULT ''一致","HomeScreen为3个模块入口卡片（取货列表+商品详情+设置），无底部导航","6张数据库表已定义：pick_orders/pick_items/pick_areas/product_images/sku_cache/crash_logs","快麦API签名拦截器KuaimaiInterceptor已实现HMAC-MD5","EncryptedSharedPreferences加密存储3类敏感信息（API Key/服务器地址/快麦Session）","后端定时任务：超时检查1分钟/数据清理凌晨3:00+每小时+凌晨4:00","后端kuaimai.json热更新（watchfiles库）","Phase 2-5全部完成","版本号0.3（3处一致）","后端6张表完整+6个定时任务+kuaimai.json热更新+条码清洗验证"]}
+{"type":"entity","name":"Phase2-扫码模块","entityType":"开发里程碑","observations":["待开发：PDA硬件扫码+ML Kit降级+条码清洗+连续扫码模式","已完成：4种设备配置(iData/Urovo/新大陆/通用)+300ms防抖+ML Kit降级+摄像头扫码"]}
+{"type":"entity","name":"Phase3-取货单功能","entityType":"开发里程碑","observations":["待开发：取货单CRUD+扫码添加待办行+供应商筛选+完成/恢复+12小时超时","已完成：CRUD+扫码添加+供应商筛选+完成/恢复+全部完成+12小时超时+连续扫码+排序+长按操作"]}
+{"type":"entity","name":"Phase4-商品详情与图片","entityType":"开发里程碑","observations":["待开发：商品详情页+供应商修改+备注修改+图片上传","已完成：商品详情页+供应商修改+备注修改+图片上传2列网格"]}
+{"type":"entity","name":"Phase5-优化与发布","entityType":"开发里程碑","observations":["待开发：离线操作队列+网络状态指示+扫码反馈+Docker部署+Tailscale组网","已完成：离线操作队列+网络状态指示+扫码反馈+首次引导+ANR检测+Token刷新+Docker部署"]}
+{"type":"relation","from":"F1_取货单管理","to":"快麦取货通项目","relationType":"属于"}
+{"type":"relation","from":"F2_扫码待办","to":"快麦取货通项目","relationType":"属于"}
+{"type":"relation","from":"F3_取货单自动完成","to":"快麦取货通项目","relationType":"属于"}
+{"type":"relation","from":"F4_商品详情","to":"快麦取货通项目","relationType":"属于"}
+{"type":"relation","from":"F5_图片上传","to":"快麦取货通项目","relationType":"属于"}
+{"type":"relation","from":"F6_PDA扫码适配","to":"快麦取货通项目","relationType":"属于"}
+{"type":"relation","from":"F7_离线操作队列","to":"快麦取货通项目","relationType":"属于"}
+{"type":"relation","from":"F8_扫码反馈","to":"快麦取货通项目","relationType":"属于"}
+{"type":"relation","from":"F9_重复扫码检测","to":"快麦取货通项目","relationType":"属于"}
+{"type":"relation","from":"F10_图片压缩","to":"快麦取货通项目","relationType":"属于"}
+{"type":"relation","from":"F11_后端安全认证","to":"快麦取货通项目","relationType":"属于"}
+{"type":"relation","from":"F12_网络状态指示","to":"快麦取货通项目","relationType":"属于"}
+{"type":"relation","from":"F13_屏幕常亮","to":"快麦取货通项目","relationType":"属于"}
+{"type":"relation","from":"F14_全部完成","to":"快麦取货通项目","relationType":"属于"}
+{"type":"relation","from":"F15_下拉刷新","to":"快麦取货通项目","relationType":"属于"}
+{"type":"relation","from":"F16_会话预警","to":"快麦取货通项目","relationType":"属于"}
+{"type":"relation","from":"F17_PDA触摸优化","to":"快麦取货通项目","relationType":"属于"}
+{"type":"relation","from":"技术栈","to":"快麦取货通项目","relationType":"属于"}
+{"type":"relation","from":"UI设计规范","to":"快麦取货通项目","relationType":"属于"}
+{"type":"relation","from":"快麦ERP_API","to":"快麦取货通项目","relationType":"集成"}
+{"type":"relation","from":"后端FastAPI服务","to":"快麦取货通项目","relationType":"属于"}
+{"type":"relation","from":"后端API","to":"后端FastAPI服务","relationType":"由_提供"}
+{"type":"relation","from":"数据库设计","to":"后端FastAPI服务","relationType":"属于"}
+{"type":"relation","from":"安装部署","to":"后端FastAPI服务","relationType":"属于"}
+{"type":"relation","from":"API契约一致性方案","to":"快麦取货通项目","relationType":"属于"}
+{"type":"relation","from":"F1_取货单管理","to":"后端API","relationType":"调用"}
+{"type":"relation","from":"F2_扫码待办","to":"后端API","relationType":"调用"}
+{"type":"relation","from":"F4_商品详情","to":"快麦ERP_API","relationType":"调用"}
+{"type":"relation","from":"F5_图片上传","to":"后端API","relationType":"调用"}
+{"type":"relation","from":"F6_PDA扫码适配","to":"技术栈","relationType":"使用"}
+{"type":"relation","from":"F7_离线操作队列","to":"技术栈","relationType":"使用"}
+{"type":"relation","from":"F8_扫码反馈","to":"F6_PDA扫码适配","relationType":"关联"}
+{"type":"relation","from":"F9_重复扫码检测","to":"F2_扫码待办","relationType":"关联"}
+{"type":"relation","from":"F10_图片压缩","to":"F5_图片上传","relationType":"关联"}
+{"type":"relation","from":"F11_后端安全认证","to":"后端FastAPI服务","relationType":"关联"}
+{"type":"relation","from":"F12_网络状态指示","to":"F7_离线操作队列","relationType":"关联"}
+{"type":"relation","from":"F15_下拉刷新","to":"F7_离线操作队列","relationType":"关联"}
+{"type":"relation","from":"F17_PDA触摸优化","to":"UI设计规范","relationType":"遵循"}
+{"type":"relation","from":"Docker部署方案","to":"后端服务设计","relationType":"部署方式"}
+{"type":"relation","from":"Docker部署方案","to":"NAS部署","relationType":"部署环境"}
+{"type":"relation","from":"F18_供应商修改","to":"快麦取货通项目","relationType":"属于"}
+{"type":"relation","from":"F18_供应商修改","to":"F4_商品详情","relationType":"调用API"}
+{"type":"relation","from":"F18_供应商修改","to":"supplier.list.query","relationType":"使用API"}
+{"type":"relation","from":"F18_供应商修改","to":"erp.item.general.addorupdate","relationType":"使用API"}
+{"type":"relation","from":"性能优化方案","to":"快麦取货通项目","relationType":"优化"}
+{"type":"relation","from":"性能优化方案","to":"F2_扫码待办","relationType":"优化"}
+{"type":"relation","from":"性能优化方案","to":"F14_全部完成按钮","relationType":"优化"}
+{"type":"relation","from":"性能优化方案","to":"F7_离线操作队列","relationType":"优化"}
+{"type":"relation","from":"性能优化方案","to":"F15_下拉刷新","relationType":"优化"}
+{"type":"relation","from":"快麦API凭证独立存储方案","to":"快麦取货通项目","relationType":"关联"}
+{"type":"relation","from":"快麦API凭证独立存储方案","to":"后端服务","relationType":"关联"}
+{"type":"relation","from":"F27_连续扫码模式","to":"F2_扫码待办","relationType":"增强"}
+{"type":"relation","from":"F28_API_Key加密存储","to":"快麦取货通项目","relationType":"属于"}
+{"type":"relation","from":"F31_条码格式兼容","to":"F2_扫码待办","relationType":"增强"}
+{"type":"relation","from":"F32_App冷启动优化","to":"性能优化方案","relationType":"属于"}
+{"type":"relation","from":"F35_Token刷新失败处理","to":"后端服务","relationType":"增强"}
+{"type":"relation","from":"Phase1-项目搭建","to":"Phase2-扫码模块","relationType":"推进到"}
+{"type":"relation","from":"Phase2-扫码模块","to":"Phase3-取货单功能","relationType":"推进到"}
+{"type":"relation","from":"Phase3-取货单功能","to":"Phase4-商品详情与图片","relationType":"推进到"}
+{"type":"relation","from":"Phase4-商品详情与图片","to":"Phase5-优化与发布","relationType":"推进到"}
+{"type":"relation","from":"Phase1-项目搭建","to":"快麦取货通项目","relationType":"属于"}
