@@ -25,6 +25,7 @@ interface PickOrderRepository {
     fun getItemsByOrderId(orderId: Long): Flow<List<PickItemEntity>>
     fun getItemsByOrderIdAndStatus(orderId: Long, status: Int): Flow<List<PickItemEntity>>
     suspend fun getItemBySkuOuterId(skuOuterId: String): PickItemEntity?
+    suspend fun getItemByOrderIdAndSkuOuterId(orderId: Long, skuOuterId: String): PickItemEntity?
     suspend fun insertItem(item: PickItemEntity): Long
     suspend fun updateItemStatus(id: Long, status: Int, completedAt: Long? = null)
     suspend fun updateItemRemark(id: Long, remark: String)
@@ -87,6 +88,10 @@ class PickOrderRepositoryImpl @Inject constructor(
 
     override suspend fun getItemBySkuOuterId(skuOuterId: String): PickItemEntity? {
         return pickItemDao.getBySkuOuterId(skuOuterId)
+    }
+
+    override suspend fun getItemByOrderIdAndSkuOuterId(orderId: Long, skuOuterId: String): PickItemEntity? {
+        return pickItemDao.getByOrderIdAndSkuOuterId(orderId, skuOuterId)
     }
 
     override suspend fun insertItem(item: PickItemEntity): Long {

@@ -51,10 +51,16 @@ interface PickItemDao {
     fun getByOrderIdAndStatus(orderId: Long, status: Int): Flow<List<PickItemEntity>>
 
     /**
-     * 根据SKU外部编码获取明细
+     * 根据SKU外部编码获取明细（全局查询，可能返回其他订单的记录）
      */
     @Query("SELECT * FROM pick_item WHERE sku_outer_id = :skuOuterId LIMIT 1")
     suspend fun getBySkuOuterId(skuOuterId: String): PickItemEntity?
+
+    /**
+     * 根据订单ID和SKU外部编码获取明细（精确查询当前订单）
+     */
+    @Query("SELECT * FROM pick_item WHERE order_id = :orderId AND sku_outer_id = :skuOuterId LIMIT 1")
+    suspend fun getByOrderIdAndSkuOuterId(orderId: Long, skuOuterId: String): PickItemEntity?
 
     /**
      * 插入明细

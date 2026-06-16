@@ -46,30 +46,41 @@ def create_order(req: CreateOrderRequest) -> OrderResponse:
         (f"{prefix}%",)
     )
     existing = cursor.fetchall()
-    if len(existing) == 0:
-        order_no = prefix
-    else:
-        # 同区域同日第2+单加(1)(2)...
-        order_no = f"{prefix}({len(existing)})"
+    # 单号格式：yyyyMMdd-拣货区X（X从1开始递增）
+    order_no = f"{prefix}{len(existing) + 1}"
 
     # 默认12小时后过期
     expire_at = now + timedelta(hours=12)
 
-    try:
-        cursor.execute(
-            """INSERT INTO pick_orders (order_no, status, completion_type, total_count, completed_count, created_at, expire_at)
-               VALUES (?, 0, 0, 0, 0, ?, ?)""",
-            (order_no, format_beijing(now), format_beijing(expire_at))
-        )
-        db.commit()
+    # 并发重试：UNIQUE约束冲突时重新生成单号
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            cursor.execute(
+                """INSERT INTO pick_orders (order_no, status, completion_type, total_count, completed_count, created_at, expire_at)
+                   VALUES (?, 0, 0, 0, 0, ?, ?)""",
+                (order_no, format_beijing(now), format_beijing(expire_at))
+            )
+            db.commit()
+            break
+        except Exception as e:
+            db.rollback()
+            if "UNIQUE constraint" in str(e) and attempt < max_retries - 1:
+                # 单号冲突，重新查询并生成
+                cursor.execute(
+                    "SELECT order_no FROM pick_orders WHERE order_no LIKE ? ORDER BY id DESC",
+                    (f"{prefix}%",)
+                )
+                existing = cursor.fetchall()
+                order_no = f"{prefix}{len(existing) + 1}"
+                logger.warning(f"单号冲突，重试生成: {order_no} (attempt={attempt + 1})")
+            else:
+                logger.error(f"创建取货单失败: {e}")
+                raise HTTPException(status_code=500, detail=f"创建取货单失败: {e}")
 
-        cursor.execute("SELECT * FROM pick_orders WHERE order_no = ?", (order_no,))
-        row = cursor.fetchone()
-        return _row_to_order_response(row)
-    except Exception as e:
-        db.rollback()
-        logger.error(f"创建取货单失败: {e}")
-        raise HTTPException(status_code=500, detail=f"创建取货单失败: {e}")
+    cursor.execute("SELECT * FROM pick_orders WHERE order_no = ?", (order_no,))
+    row = cursor.fetchone()
+    return _row_to_order_response(row)
 
 
 @router.get("", response_model=OrderListResponse)
@@ -161,7 +172,7 @@ async def add_item(order_id: int, req: AddItemRequest) -> ItemResponse:
         raise HTTPException(status_code=409, detail="该SKU已存在于取货单中")
 
     # 查询SKU信息（先查缓存，再查快麦API）
-    sku_info = get_sku_info(sku_outer_id)
+    sku_info = await get_sku_info(sku_outer_id)
     if not sku_info:
         raise HTTPException(status_code=404, detail=f"未找到SKU信息: {sku_outer_id}")
 
@@ -267,6 +278,17 @@ def restore_item(order_id: int, item_id: int) -> BaseResponse:
             "UPDATE pick_orders SET completed_count = completed_count - 1 WHERE id = ?",
             (order_id,)
         )
+        # 检查是否需要将取货单状态从已完成恢复为进行中
+        cursor.execute(
+            "SELECT total_count, completed_count - 1 as new_completed FROM pick_orders WHERE id = ?",
+            (order_id,)
+        )
+        order_info = cursor.fetchone()
+        if order_info and order_info["new_completed"] < order_info["total_count"]:
+            cursor.execute(
+                "UPDATE pick_orders SET status = 0, completed_at = NULL WHERE id = ?",
+                (order_id,)
+            )
         db.commit()
         return BaseResponse(message="取货明细已恢复")
     except Exception as e:

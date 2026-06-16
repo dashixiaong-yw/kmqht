@@ -106,9 +106,9 @@ class PickDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                // 检查重复扫码
-                val existing = pickOrderRepository.getItemBySkuOuterId(barcode)
-                if (existing != null && existing.orderId == orderId) {
+                // 检查重复扫码（精确查询当前订单下的SKU）
+                val existing = pickOrderRepository.getItemByOrderIdAndSkuOuterId(orderId, barcode)
+                if (existing != null) {
                     _duplicateScan.value = true
                     return@launch
                 }

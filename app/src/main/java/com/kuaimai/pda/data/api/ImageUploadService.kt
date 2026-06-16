@@ -86,7 +86,7 @@ class ImageUploadService @Inject constructor(
             .addFormDataPart(
                 "file",
                 imageFile.name,
-                imageFile.asRequestBody("image/jpeg".toMediaType())
+                imageFile.asRequestBody(guessMediaType(imageFile.name).toMediaType())
             )
             .build()
 
@@ -115,6 +115,19 @@ class ImageUploadService @Inject constructor(
 
         // 解析响应JSON获取图片URL
         return parseImageUrlFromResponse(responseBody)
+    }
+
+    /**
+     * 根据文件扩展名推断MediaType
+     */
+    private fun guessMediaType(fileName: String): String {
+        val ext = fileName.substringAfterLast('.', "").lowercase()
+        return when (ext) {
+            "png" -> "image/png"
+            "webp" -> "image/webp"
+            "jpg", "jpeg" -> "image/jpeg"
+            else -> "image/jpeg" // 默认jpeg
+        }
     }
 
     /**

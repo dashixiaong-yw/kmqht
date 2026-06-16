@@ -1,5 +1,18 @@
 # 快麦取货通 - 变更日志
 
+## 0.4 (2026-06-17)
+
+### 修复
+- 修复后端add_item调用async函数缺少await导致SKU信息为coroutine对象的致命bug
+- 修复后端restore_item恢复明细后不将取货单状态从已完成恢复为进行中
+- 修复App端重复扫码检查可能漏检（改为精确查询当前订单下的SKU）
+- 修复后端单号生成并发冲突无重试机制
+- 修复后端图片上传无文件大小限制（添加2MB上限）
+- 修复App端ImageUploadService硬编码image/jpeg MediaType（改为根据扩展名动态设置）
+- 修复PickOrderEntity/PickItemEntity status注释与后端语义不一致
+- 修复后端completion_type CHECK约束与App端定义不一致
+- 修复后端单号格式与项目规范不一致（统一为yyyyMMdd-拣货区X）
+
 ## 0.3 (2026-06-16)
 
 ### 新增

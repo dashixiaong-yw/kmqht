@@ -74,7 +74,7 @@ def init_db() -> None:
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             order_no VARCHAR(30) UNIQUE NOT NULL,
             status INTEGER NOT NULL DEFAULT 0 CHECK(status IN (0,1,2)),
-            completion_type INTEGER NOT NULL DEFAULT 0 CHECK(completion_type IN (0,1)),
+            completion_type INTEGER NOT NULL DEFAULT 0 CHECK(completion_type IN (0,1,2)),
             total_count INTEGER NOT NULL DEFAULT 0 CHECK(total_count >= 0),
             completed_count INTEGER NOT NULL DEFAULT 0 CHECK(completed_count >= 0),
             created_at DATETIME NOT NULL,

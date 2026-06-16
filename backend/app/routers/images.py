@@ -19,6 +19,9 @@ router = APIRouter(prefix="/api", tags=["图片管理"])
 # 允许的图片扩展名
 _ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 
+# 最大文件大小（2MB）
+_MAX_FILE_SIZE = 2 * 1024 * 1024
+
 
 @router.post("/upload", response_model=ImageResponse)
 async def upload_image(
@@ -67,6 +70,9 @@ async def upload_image(
 
     try:
         content = await file.read()
+        # 检查文件大小
+        if len(content) > _MAX_FILE_SIZE:
+            raise HTTPException(status_code=400, detail=f"文件大小超过限制（最大2MB），当前{len(content) // 1024}KB")
         with open(file_path, "wb") as f:
             f.write(content)
     except IOError as e:

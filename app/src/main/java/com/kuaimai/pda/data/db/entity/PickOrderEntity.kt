@@ -15,10 +15,10 @@ data class PickOrderEntity(
     @ColumnInfo(name = "order_no")
     val orderNo: String,
 
-    /** 状态：0-待取货 1-取货中 2-已完成 */
+    /** 状态：0-进行中 1-已完成 */
     val status: Int = 0,
 
-    /** 完成类型：0-未完成 1-全部完成 2-部分完成 */
+    /** 完成类型：0-未完成 1-全部完成 */
     @ColumnInfo(name = "completion_type")
     val completionType: Int = 0,
 

@@ -48,7 +48,7 @@ data class PickItemEntity(
     @ColumnInfo(name = "pic_path")
     val picPath: String = "",
 
-    /** 状态：0-待取货 1-已取货 2-跳过 */
+    /** 状态：0-待取货 1-已取货 */
     val status: Int = 0,
 
     @ColumnInfo(name = "supplier_name")
