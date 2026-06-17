@@ -1,5 +1,22 @@
 # 快麦取货通 - 变更日志
 
+## 1.16 (2026-06-17)
+
+### 修复
+- P0: 修复管理后台XSS安全漏洞——用户名直接嵌入HTML onclick属性和innerHTML渲染
+- P1: 修复WorkManager触发机制缺失——OrderSyncWorker从未被enqueue，离线队列永不同步
+- P1: 修复ScannerManager.register()从未被调用——PDA硬件扫码广播接收器未注册，扫码完全失效
+- P1: 修复kuaimai/*路由权限缺失——update_credentials/refresh_session/session_status只要求登录，现改为settings权限
+- P2: 修复syncImagesFromBackend未清理旧记录——后端图片同步时先删除旧记录再插入
+
+### 修改
+- MainActivity新增ScannerManager生命周期管理（onResume注册，onPause注销）
+- MainActivity新增enqueueSyncWorker()方法，启动时触发离线同步
+- system.py三个快麦会话路由增加settings权限校验
+- admin.py增加escapeHtml()函数和encodeURIComponent()防止XSS
+- ProductImageDao新增deleteBySku()方法
+- ImageRepository.syncImagesFromBackend先清除再同步，防止记录重复
+
 ## 1.15 (2026-06-17)
 
 ### 修复

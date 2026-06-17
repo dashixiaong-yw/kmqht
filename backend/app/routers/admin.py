@@ -286,6 +286,13 @@ let API_BASE = window.location.origin;
 let apiKey = sessionStorage.getItem('adminApiKey') || '';
 let loggedIn = false;
 
+// HTML转义函数（XSS防护）
+function escapeHtml(str) {{
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}}
+
 // ========== 登录 ==========
 async function doLogin() {{
   const key = document.getElementById('apiKeyInput').value.trim();
@@ -381,13 +388,13 @@ async function loadUsers() {{
     }}
     tbody.innerHTML = users.map(u => `<tr>
       <td>${{u.id}}</td>
-      <td>${{u.username}}</td>
+      <td>${{escapeHtml(u.username)}}</td>
       <td>${{(u.permissions || []).map(p => PERM_LABELS[p] || p).join('、') || '无'}}</td>
       <td><span class="badge ${{u.is_active ? 'badge-green' : 'badge-red'}}">${{u.is_active ? '启用' : '禁用'}}</span></td>
       <td>${{u.created_at || '-'}}</td>
       <td>
-        <button class="btn btn-primary btn-sm" onclick='editUser(${{JSON.stringify(u)}})'>编辑</button>
-        <button class="btn btn-danger btn-sm" onclick="confirmDeleteUser(${{u.id}},'${{u.username}}')">删除</button>
+        <button class="btn btn-primary btn-sm" onclick='editUser("${{encodeURIComponent(JSON.stringify(u))}}")'>编辑</button>
+        <button class="btn btn-danger btn-sm" onclick='confirmDeleteUser(${{u.id}},"${{escapeHtml(u.username)}}")'>删除</button>
       </td>
     </tr>`).join('');
   }} catch(e) {{
@@ -407,7 +414,8 @@ function showAddUser() {{
   document.getElementById('userModal').classList.add('show');
 }}
 
-function editUser(user) {{
+function editUser(encoded) {{
+  const user = JSON.parse(decodeURIComponent(encoded));
   document.getElementById('userModalTitle').textContent = '编辑用户';
   document.getElementById('editUserId').value = user.id;
   document.getElementById('editUsername').value = user.username;

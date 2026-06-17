@@ -118,6 +118,11 @@
 {"type":"entity","name":"BUG-P1_JsonNullSign","entityType":"BugFix","observations":["v1.15修复: KuaimaiInterceptor中JSONObject.get(key)返回JSONObject.NULL，toString()得'null'字符串参与签名","修复: 判断value === JSONObject.NULL时取空字符串"]}
 {"type":"entity","name":"BUG-P1_OrderSync4xxDataLoss","entityType":"BugFix","observations":["v1.15修复: OrderSyncWorker中4xx错误标记冲突后return true，从pending_operations删除记录","修复: 改为return false，保留冲突记录供用户查看"]}
 {"type":"entity","name":"BUG-P1_PdaScannerReceiverDeadCode","entityType":"BugFix","observations":["v1.15修复: PdaScannerReceiver独立类与ScannerManager内联BroadcastReceiver功能完全重复且未被引用","修复: 删除PdaScannerReceiver.kt文件"]}
+{"type":"entity","name":"SEC-AdminXss","entityType":"安全修复","observations":["v1.16修复: 管理后台admin.py中用户数据直接嵌入HTML onclick属性和innerHTML渲染导致XSS","修复: 添加escapeHtml()函数，使用encodeURIComponent(JSON.stringify())防止onclick注入，用户名渲染使用escapeHtml()"]}
+{"type":"entity","name":"BUG-P1_WorkManagerNeverEnqueued","entityType":"BugFix","observations":["v1.16修复: OrderSyncWorker已定义但WorkManager.enqueue()从未被调用，离线队列永不同步","修复: MainActivity启动时调用enqueueSyncWorker()，设置网络连接约束"]}
+{"type":"entity","name":"BUG-P1_ScannerManagerNeverRegistered","entityType":"BugFix","observations":["v1.16修复: ScannerManager被注入但register()从未被调用，PDA硬件扫码广播接收器未注册","修复: MainActivity的onResume调register()，onPause调unregister()"]}
+{"type":"entity","name":"SEC-KuaimaiRoutesPermission","entityType":"安全修复","observations":["v1.16修复: system.py中update_kuaimai_credentials/refresh_session/session_status三个路由只要求登录","修复: 改为check_permission('settings')，与管理后台权限一致"]}
+{"type":"entity","name":"BUG-P2_ImageSyncDuplicates","entityType":"BugFix","observations":["v1.16修复: syncImagesFromBackend每次insert累积同skuOuterId+imageType的旧记录","修复: 同步前先deleteBySku清理旧记录，再insert远程数据"]}
 {"type":"relation","from":"F1_取货单管理","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F2_扫码待办","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F3_取货单自动完成","to":"快麦取货通项目","relationType":"属于"}

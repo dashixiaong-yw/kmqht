@@ -75,6 +75,8 @@ class ImageRepositoryImpl @Inject constructor(
         try {
             val responseBody = uploadService.fetchImages(skuOuterId)
             val jsonArray = JSONArray(responseBody)
+            if (jsonArray.length() == 0) return
+            productImageDao.deleteBySku(skuOuterId)
             val now = TimeUtils.now()
             for (i in 0 until jsonArray.length()) {
                 val json = jsonArray.getJSONObject(i)
@@ -88,7 +90,6 @@ class ImageRepositoryImpl @Inject constructor(
                 productImageDao.insert(entity)
             }
         } catch (e: Exception) {
-            // 同步失败不阻塞主流程
         }
     }
 }

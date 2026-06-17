@@ -83,7 +83,7 @@ def get_app_version() -> AppVersionResponse:
 
 
 @router.get("/api/kuaimai/session-status", response_model=KuaimaiSessionStatusResponse)
-def get_kuaimai_session_status(user: dict = Depends(get_current_user)) -> KuaimaiSessionStatusResponse:
+def get_kuaimai_session_status(user: dict = Depends(check_permission("settings"))) -> KuaimaiSessionStatusResponse:
     """查询快麦session状态（剩余天数、是否有效等）"""
     days_left = kuaimai_creds.get_days_left()
     is_valid = kuaimai_creds.is_valid() and (days_left is None or days_left > 0)
@@ -97,7 +97,7 @@ def get_kuaimai_session_status(user: dict = Depends(get_current_user)) -> Kuaima
 
 
 @router.post("/api/kuaimai/refresh-session", response_model=KuaimaiRefreshResponse)
-async def refresh_kuaimai_session(user: dict = Depends(get_current_user)) -> KuaimaiRefreshResponse:
+async def refresh_kuaimai_session(user: dict = Depends(check_permission("settings"))) -> KuaimaiRefreshResponse:
     """手动刷新快麦session"""
     from app.services.kuaimai_api import refresh_session
 
@@ -125,7 +125,7 @@ async def refresh_kuaimai_session(user: dict = Depends(get_current_user)) -> Kua
 @router.post("/api/kuaimai/update-credentials", response_model=BaseResponse)
 def update_kuaimai_credentials(
     req: KuaimaiCredentialsRequest,
-    user: dict = Depends(get_current_user)
+    user: dict = Depends(check_permission("settings"))
 ) -> BaseResponse:
     """手动更新快麦凭证（Web管理后台使用）"""
     from app.config import save_kuaimai_config

@@ -44,6 +44,9 @@ interface ProductImageDao {
     @Query("DELETE FROM product_image WHERE sku_outer_id = :skuOuterId AND image_type = :imageType")
     suspend fun deleteBySkuAndType(skuOuterId: String, imageType: String)
 
+    @Query("DELETE FROM product_image WHERE sku_outer_id = :skuOuterId")
+    suspend fun deleteBySku(skuOuterId: String)
+
     /**
      * 删除所有图片
      */
