@@ -189,14 +189,14 @@ fun LoginScreen(
  * 将网络异常转为中文友好提示
  */
 private fun friendlyErrorMessage(throwable: Throwable?): String {
-    val message = throwable?.message ?: return "登录失败"
-    return when {
-        message.contains("ConnectException") -> "无法连接服务器，请检查网络"
-        message.contains("SocketTimeoutException") -> "连接超时，请稍后重试"
-        message.contains("UnknownHostException") -> "网络不可用，请检查网络设置"
-        message.contains("401") -> "用户名或密码错误"
-        message.contains("403") -> "用户已被禁用"
-        message.contains("429") -> "登录尝试过于频繁，请稍后再试"
-        else -> message.ifEmpty { "登录失败" }
+    if (throwable == null) return "登录失败"
+    return when (throwable) {
+        is java.net.SocketTimeoutException -> "连接超时，请检查网络"
+        is java.net.ConnectException -> "无法连接服务器，请检查网络"
+        is java.net.UnknownHostException -> "无法解析服务器地址，请检查网络设置"
+        else -> {
+            if (throwable.message?.contains("401") == true) "用户名或密码错误"
+            else "登录失败: ${throwable.message}"
+        }
     }
 }

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -108,6 +109,7 @@ fun PickDetailScreen(
     val context = LocalContext.current
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     var showDeleteConfirm by remember { mutableStateOf<PickItemEntity?>(null) }
+    val listState = rememberLazyListState()
 
     // GAP-05: 屏幕常亮
     val activity = context.findActivity()
@@ -121,19 +123,32 @@ fun PickDetailScreen(
         }
     }
 
-    // GAP-08: 重复扫码反馈（振动+声音）
+    // GAP-08: 重复扫码反馈（振动+声音+滚动到该行）
     LaunchedEffect(duplicateScan) {
         if (duplicateScan) {
             viewModel.provideFeedback(context, ScanFeedbackType.DUPLICATE)
             snackbarHostState.showSnackbar("重复扫码！该SKU已在当前取货单中")
+            // 滚动到重复行
+            val duplicateSku = viewModel.lastScannedSku
+            if (duplicateSku.isNotEmpty()) {
+                val duplicateIndex = items.indexOfFirst { it.skuOuterId == duplicateSku }
+                if (duplicateIndex >= 0) {
+                    listState.animateScrollToItem(duplicateIndex)
+                }
+            }
             viewModel.clearDuplicateScan()
         }
     }
 
-    // 扫码成功反馈
+    // 扫码成功反馈 + 连续扫码清空输入框
     LaunchedEffect(Unit) {
         viewModel.scanSuccessEvent.collect {
             viewModel.provideFeedback(context, ScanFeedbackType.SUCCESS)
+            // 连续扫码模式下清空输入框并重新聚焦
+            if (continuousScanMode) {
+                scanInput = ""
+                focusRequester.requestFocus()
+            }
         }
     }
 
@@ -284,7 +299,8 @@ fun PickDetailScreen(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .weight(1f)
+                    .weight(1f),
+                state = listState
             ) {
                 items(
                     items = filteredItems,

@@ -6,8 +6,9 @@ import sqlite3
 from datetime import timedelta
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
+from app.auth import get_current_user
 from app.config import IMAGE_DIR
 from app.database import get_db
 from app.models import (
@@ -29,7 +30,7 @@ router = APIRouter(prefix="/api/orders", tags=["取货单"])
 
 
 @router.post("", response_model=OrderResponse)
-def create_order(req: CreateOrderRequest) -> OrderResponse:
+def create_order(req: CreateOrderRequest, user: dict = Depends(get_current_user)) -> OrderResponse:
     """创建取货单，自动生成单号: yyyyMMdd-拣货区X"""
     db = get_db()
     cursor = db.cursor()
@@ -85,7 +86,7 @@ def create_order(req: CreateOrderRequest) -> OrderResponse:
 
 
 @router.get("", response_model=OrderListResponse)
-def list_orders(status: Optional[int] = Query(None, description="状态过滤: 0=进行中, 1=已完成")) -> OrderListResponse:
+def list_orders(status: Optional[int] = Query(None, description="状态过滤: 0=进行中, 1=已完成"), user: dict = Depends(get_current_user)) -> OrderListResponse:
     """获取取货单列表，按创建时间倒序"""
     db = get_db()
     cursor = db.cursor()
@@ -104,7 +105,7 @@ def list_orders(status: Optional[int] = Query(None, description="状态过滤: 0
 
 
 @router.get("/{order_id}", response_model=OrderDetailResponse)
-def get_order(order_id: int, supplierName: Optional[str] = Query(None, description="供应商名称过滤")) -> OrderDetailResponse:
+def get_order(order_id: int, supplierName: Optional[str] = Query(None, description="供应商名称过滤"), user: dict = Depends(get_current_user)) -> OrderDetailResponse:
     """获取取货单详情（含明细），支持供应商过滤"""
     db = get_db()
     cursor = db.cursor()
@@ -145,7 +146,7 @@ def get_order(order_id: int, supplierName: Optional[str] = Query(None, descripti
 
 
 @router.post("/{order_id}/items", response_model=ItemResponse)
-async def add_item(order_id: int, req: AddItemRequest) -> ItemResponse:
+async def add_item(order_id: int, req: AddItemRequest, user: dict = Depends(get_current_user)) -> ItemResponse:
     """添加取货明细，后端查询快麦API并缓存"""
     db = get_db()
     cursor = db.cursor()
@@ -213,7 +214,7 @@ async def add_item(order_id: int, req: AddItemRequest) -> ItemResponse:
 
 
 @router.put("/{order_id}/items/{item_id}/complete", response_model=BaseResponse)
-def complete_item(order_id: int, item_id: int) -> BaseResponse:
+def complete_item(order_id: int, item_id: int, user: dict = Depends(get_current_user)) -> BaseResponse:
     """完成取货明细（幂等操作）"""
     db = get_db()
     cursor = db.cursor()
@@ -257,7 +258,7 @@ def complete_item(order_id: int, item_id: int) -> BaseResponse:
 
 
 @router.put("/{order_id}/items/{item_id}/restore", response_model=BaseResponse)
-def restore_item(order_id: int, item_id: int) -> BaseResponse:
+def restore_item(order_id: int, item_id: int, user: dict = Depends(get_current_user)) -> BaseResponse:
     """恢复取货明细（撤销完成）"""
     db = get_db()
     cursor = db.cursor()
@@ -299,7 +300,7 @@ def restore_item(order_id: int, item_id: int) -> BaseResponse:
 
 
 @router.put("/{order_id}/complete-all", response_model=BaseResponse)
-def complete_all_items(order_id: int) -> BaseResponse:
+def complete_all_items(order_id: int, user: dict = Depends(get_current_user)) -> BaseResponse:
     """批量完成取货单所有明细"""
     db = get_db()
     cursor = db.cursor()
@@ -336,7 +337,7 @@ def complete_all_items(order_id: int) -> BaseResponse:
 
 
 @router.delete("/{order_id}", response_model=BaseResponse)
-def delete_order(order_id: int) -> BaseResponse:
+def delete_order(order_id: int, user: dict = Depends(get_current_user)) -> BaseResponse:
     """删除取货单（级联删除明细）"""
     db = get_db()
     cursor = db.cursor()
@@ -375,7 +376,7 @@ def delete_order(order_id: int) -> BaseResponse:
 
 
 @router.delete("/{order_id}/items/{item_id}", response_model=BaseResponse)
-def delete_item(order_id: int, item_id: int) -> BaseResponse:
+def delete_item(order_id: int, item_id: int, user: dict = Depends(get_current_user)) -> BaseResponse:
     """删除取货明细"""
     db = get_db()
     cursor = db.cursor()
@@ -422,7 +423,7 @@ def delete_item(order_id: int, item_id: int) -> BaseResponse:
 
 
 @router.get("/{order_id}/suppliers", response_model=List[str])
-def get_suppliers(order_id: int) -> List[str]:
+def get_suppliers(order_id: int, user: dict = Depends(get_current_user)) -> List[str]:
     """获取取货单中的供应商列表（去重）"""
     db = get_db()
     cursor = db.cursor()

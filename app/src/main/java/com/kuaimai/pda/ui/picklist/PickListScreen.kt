@@ -125,13 +125,21 @@ fun PickListScreen(
                         )
                     }
                 } else {
+                    // F24: 按拣货区分组排序
+                    val sortedActiveOrders = activeOrders.sortedWith(
+                        compareBy<PickOrderEntity> {
+                            // 从orderNo中提取拣货区名称（格式: yyyyMMdd-拣货区X）
+                            it.orderNo.substringAfter("-", "未知")
+                        }.thenByDescending { it.createdAt }
+                    )
+
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
                             .weight(1f)
                     ) {
                         items(
-                            items = activeOrders,
+                            items = sortedActiveOrders,
                             key = { it.id }
                         ) { order ->
                             PickOrderCard(

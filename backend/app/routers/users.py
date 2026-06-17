@@ -107,6 +107,7 @@ def login(req: LoginRequest) -> LoginResponse:
 
     return LoginResponse(
         token=token,
+        userId=user_id,
         username=req.username,
         permissions=permissions
     )
@@ -231,6 +232,9 @@ def update_user(
 
     # 更新启用状态
     if req.isActive is not None:
+        # 禁止禁用自己
+        if user_id == user["user_id"] and not req.isActive:
+            raise HTTPException(status_code=400, detail="不能禁用当前登录用户")
         cursor.execute(
             "UPDATE users SET is_active = ? WHERE id = ?",
             (1 if req.isActive else 0, user_id)
@@ -241,6 +245,10 @@ def update_user(
 
     # 更新权限
     if req.permissions is not None:
+        # 禁止移除自己的settings权限
+        if user_id == user["user_id"]:
+            if "settings" in user["permissions"] and "settings" not in req.permissions:
+                raise HTTPException(status_code=400, detail="不能移除当前登录用户的设置管理权限")
         # 校验权限代码
         for perm in req.permissions:
             if perm not in VALID_PERMISSIONS:
@@ -305,23 +313,15 @@ def logout(user: dict = Depends(get_current_user)) -> BaseResponse:
 
 
 def _hash_password(password: str) -> str:
-    """密码哈希"""
-    try:
-        import bcrypt
-        return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-    except ImportError:
-        import hashlib
-        return hashlib.sha256(password.encode("utf-8")).hexdigest()
+    """密码哈希（bcrypt）"""
+    import bcrypt
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
 def _verify_password(password: str, stored_hash: str) -> bool:
-    """校验密码"""
-    try:
-        import bcrypt
-        return bcrypt.checkpw(password.encode("utf-8"), stored_hash.encode("utf-8"))
-    except ImportError:
-        import hashlib
-        return hashlib.sha256(password.encode("utf-8")).hexdigest() == stored_hash
+    """校验密码（bcrypt）"""
+    import bcrypt
+    return bcrypt.checkpw(password.encode("utf-8"), stored_hash.encode("utf-8"))
 
 
 def _record_login_fail(username: str) -> None:

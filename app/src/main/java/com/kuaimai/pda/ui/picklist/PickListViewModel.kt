@@ -7,6 +7,7 @@ import com.kuaimai.pda.data.api.OrderApiService
 import com.kuaimai.pda.data.api.dto.CreateOrderRequest
 import com.kuaimai.pda.data.db.entity.PickOrderEntity
 import com.kuaimai.pda.data.repository.PickOrderRepository
+import com.kuaimai.pda.data.repository.UserRepository
 import com.kuaimai.pda.util.TimeUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,7 +26,8 @@ import javax.inject.Inject
 class PickListViewModel @Inject constructor(
     private val pickOrderRepository: PickOrderRepository,
     private val orderApiService: OrderApiService,
-    private val areaApiService: AreaApiService
+    private val areaApiService: AreaApiService,
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     /** 进行中的取货单列表 */
@@ -72,7 +74,8 @@ class PickListViewModel @Inject constructor(
     private fun loadAreas() {
         viewModelScope.launch {
             try {
-                val response = areaApiService.getAreas()
+                val token = userRepository.getToken()
+                val response = areaApiService.getAreas(token)
                 _areas.value = response.data.map { it.name }
             } catch (e: Exception) {
                 // 使用默认拣货区
@@ -116,7 +119,8 @@ class PickListViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val response = orderApiService.createOrder(CreateOrderRequest(areaName))
+                val token = userRepository.getToken()
+                val response = orderApiService.createOrder(token, CreateOrderRequest(areaName))
                 // 同步到本地数据库（使用后端返回的真实时间）
                 val order = PickOrderEntity(
                     id = response.id,
@@ -173,7 +177,8 @@ class PickListViewModel @Inject constructor(
         val order = _deleteTarget.value ?: return
         viewModelScope.launch {
             try {
-                orderApiService.deleteOrder(order.id)
+                val token = userRepository.getToken()
+                orderApiService.deleteOrder(token, order.id)
                 pickOrderRepository.deleteOrder(order)
             } catch (e: Exception) {
                 _errorMessage.value = "删除取货单失败: ${e.message}"

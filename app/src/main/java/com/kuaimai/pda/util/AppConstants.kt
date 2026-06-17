@@ -15,4 +15,7 @@ object AppConstants {
 
     /** 快麦开放平台API地址 */
     const val KUAIMAI_API_URL = "https://openapi.kuaimai.com/router"
+
+    /** 会话过期预警天数（距过期天数小于此值时显示警告） */
+    const val SESSION_WARNING_DAYS = 5
 }

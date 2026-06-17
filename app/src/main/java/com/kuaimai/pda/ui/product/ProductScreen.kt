@@ -2,7 +2,11 @@ package com.kuaimai.pda.ui.product
 
 import android.app.Activity
 import android.content.Context
+import android.net.Uri
 import android.view.WindowManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.background
@@ -94,6 +98,23 @@ fun ProductScreen(
     // F22: 图片删除确认弹窗状态
     var showImageDeleteConfirm by remember { mutableStateOf<String?>(null) } // "area" or "box"
 
+    // 图片上传：记录待上传的图片类型
+    var pendingImageType by remember { mutableStateOf<String?>(null) }
+
+    // 图片选择器
+    val pickImageLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? ->
+        uri?.let {
+            val type = pendingImageType ?: return@let
+            val file = uriToFile(it, context)
+            if (file != null) {
+                viewModel.uploadImage(file, type)
+            }
+            pendingImageType = null
+        }
+    }
+
     // 权限检查
     val canUpdateSupplier = userRepository.hasPermission("update_supplier")
     val canUpdateRemark = userRepository.hasPermission("update_remark")
@@ -171,8 +192,14 @@ fun ProductScreen(
                     boxImageUrl = uiState.boxImageUrl,
                     isUploading = uiState.isUploading,
                     uploadProgress = uiState.uploadProgress,
-                    onUploadArea = { /* 由外部图片选择器触发 */ },
-                    onUploadBox = { /* 由外部图片选择器触发 */ },
+                    onUploadArea = {
+                        pendingImageType = "area"
+                        pickImageLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    },
+                    onUploadBox = {
+                        pendingImageType = "box"
+                        pickImageLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    },
                     onDeleteArea = { showImageDeleteConfirm = "area" },
                     onDeleteBox = { showImageDeleteConfirm = "box" },
                     canManageAreaImage = canManageAreaImage,
@@ -607,5 +634,22 @@ private fun KeepScreenOn(context: Context) {
         onDispose {
             activity.window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
+    }
+}
+
+/**
+ * 将Uri转换为File（用于图片上传）
+ */
+private fun uriToFile(uri: Uri, context: Context): java.io.File? {
+    return try {
+        val inputStream = context.contentResolver.openInputStream(uri) ?: return null
+        val tempFile = java.io.File.createTempFile("upload_", ".jpg", context.cacheDir)
+        tempFile.outputStream().use { output ->
+            inputStream.copyTo(output)
+        }
+        inputStream.close()
+        tempFile
+    } catch (e: Exception) {
+        null
     }
 }

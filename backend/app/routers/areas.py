@@ -2,8 +2,9 @@
 
 import logging
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
+from app.auth import check_permission, get_current_user
 from app.database import get_db
 from app.models import AreaListResponse, AreaRequest, AreaResponse, BaseResponse
 from app.utils.time_utils import beijing_now, format_beijing
@@ -14,7 +15,7 @@ router = APIRouter(prefix="/api/areas", tags=["拣货区"])
 
 
 @router.get("", response_model=AreaListResponse)
-def list_areas() -> AreaListResponse:
+def list_areas(user: dict = Depends(get_current_user)) -> AreaListResponse:
     """获取所有拣货区"""
     db = get_db()
     cursor = db.cursor()
@@ -34,7 +35,7 @@ def list_areas() -> AreaListResponse:
 
 
 @router.post("", response_model=AreaResponse)
-def create_area(req: AreaRequest) -> AreaResponse:
+def create_area(req: AreaRequest, user: dict = Depends(check_permission("settings"))) -> AreaResponse:
     """创建拣货区"""
     db = get_db()
     cursor = db.cursor()
@@ -66,7 +67,7 @@ def create_area(req: AreaRequest) -> AreaResponse:
 
 
 @router.delete("/{area_id}", response_model=BaseResponse)
-def delete_area(area_id: int) -> BaseResponse:
+def delete_area(area_id: int, user: dict = Depends(check_permission("settings"))) -> BaseResponse:
     """删除拣货区"""
     db = get_db()
     cursor = db.cursor()

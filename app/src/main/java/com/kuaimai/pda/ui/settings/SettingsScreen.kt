@@ -31,24 +31,28 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.kuaimai.pda.BuildConfig
 import com.kuaimai.pda.data.api.dto.UserResponse
 import com.kuaimai.pda.data.repository.UserRepository
@@ -58,6 +62,7 @@ import com.kuaimai.pda.ui.theme.SuccessText
 import com.kuaimai.pda.ui.theme.PrimaryLightBg
 import com.kuaimai.pda.ui.theme.PrimaryLightText
 import com.kuaimai.pda.ui.theme.SurfaceWhite
+import com.kuaimai.pda.ui.theme.TextSecondary
 import kotlinx.coroutines.launch
 
 /**
@@ -79,11 +84,12 @@ private val PERMISSION_LABELS = mapOf(
 @Composable
 fun SettingsScreen(
     userRepository: UserRepository,
+    viewModel: SettingsViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit,
     onLogout: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
-    val currentUser = userRepository.currentUser.value
+    val currentUser by userRepository.currentUser.collectAsState()
     var showLogoutDialog by remember { mutableStateOf(false) }
     var editingUserId by remember { mutableStateOf<Long?>(null) }
     var deletingUserId by remember { mutableStateOf<Long?>(null) }
@@ -137,10 +143,10 @@ fun SettingsScreen(
             title = "编辑用户",
             initialUser = editingUser,
             onDismiss = { editingUserId = null },
-            onConfirm = { _, password, permissions ->
+            onConfirm = { _, password, permissions, isActive ->
                 scope.launch {
                     val result = userRepository.updateUser(
-                        editingUser.id, password, permissions, null
+                        editingUser.id, password, permissions, isActive
                     )
                     if (result.isSuccess) {
                         val listResult = userRepository.getUsers()
@@ -233,6 +239,137 @@ fun SettingsScreen(
                 }
             }
 
+            // 服务器配置
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = SurfaceWhite)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "服务器配置",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // 服务器地址
+                    var serverUrl by remember { mutableStateOf(viewModel.getServerUrl()) }
+                    OutlinedTextField(
+                        value = serverUrl,
+                        onValueChange = { serverUrl = it },
+                        label = { Text("服务器地址") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = { viewModel.saveServerUrl(serverUrl) },
+                        modifier = Modifier.align(Alignment.End),
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryLightBg, contentColor = PrimaryLightText)
+                    ) {
+                        Text("保存")
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Divider()
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // API Key
+                    var apiKey by remember { mutableStateOf(viewModel.getApiKey()) }
+                    OutlinedTextField(
+                        value = apiKey,
+                        onValueChange = { apiKey = it },
+                        label = { Text("API Key") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = { viewModel.saveApiKey(apiKey) },
+                        modifier = Modifier.align(Alignment.End),
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryLightBg, contentColor = PrimaryLightText)
+                    ) {
+                        Text("保存")
+                    }
+                }
+            }
+
+            // 扫码与反馈配置
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = SurfaceWhite)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "扫码与反馈",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // 扫码方式选择
+                    val scanMethod by viewModel.scanMethod.collectAsState()
+                    Text("扫码方式", style = MaterialTheme.typography.bodyMedium)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = scanMethod == 0,
+                            onClick = { viewModel.setScanMethod(0) }
+                        )
+                        Text("PDA硬件扫码", modifier = Modifier.clickable { viewModel.setScanMethod(0) })
+                        Spacer(modifier = Modifier.width(16.dp))
+                        RadioButton(
+                            selected = scanMethod == 1,
+                            onClick = { viewModel.setScanMethod(1) }
+                        )
+                        Text("相机扫码", modifier = Modifier.clickable { viewModel.setScanMethod(1) })
+                        Spacer(modifier = Modifier.width(16.dp))
+                        RadioButton(
+                            selected = scanMethod == 2,
+                            onClick = { viewModel.setScanMethod(2) }
+                        )
+                        Text("手动输入", modifier = Modifier.clickable { viewModel.setScanMethod(2) })
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Divider()
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // 声音开关
+                    val soundEnabled by viewModel.soundEnabled.collectAsState()
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("扫码声音反馈")
+                        Switch(
+                            checked = soundEnabled,
+                            onCheckedChange = { viewModel.toggleSound(it) }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // 振动开关
+                    val vibrationEnabled by viewModel.vibrationEnabled.collectAsState()
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("扫码振动反馈")
+                        Switch(
+                            checked = vibrationEnabled,
+                            onCheckedChange = { viewModel.toggleVibration(it) }
+                        )
+                    }
+                }
+            }
+
             // 用户管理（仅settings权限可见）
             if (userRepository.hasPermission("settings")) {
                 Card(
@@ -259,7 +396,7 @@ fun SettingsScreen(
                                 UserEditDialog(
                                     title = "添加用户",
                                     onDismiss = { showAddDialog = false },
-                                    onConfirm = { username, password, permissions ->
+                                    onConfirm = { username, password, permissions, _ ->
                                         scope.launch {
                                             val result = userRepository.createUser(username, password ?: "", permissions)
                                             if (result.isSuccess) {
@@ -396,10 +533,11 @@ private fun UserEditDialog(
     title: String,
     initialUser: UserResponse? = null,
     onDismiss: () -> Unit,
-    onConfirm: (username: String, password: String?, permissions: List<String>) -> Unit
+    onConfirm: (username: String, password: String?, permissions: List<String>, isActive: Boolean?) -> Unit
 ) {
     var username by remember { mutableStateOf(initialUser?.username ?: "") }
     var password by remember { mutableStateOf("") }
+    var isActive by remember { mutableStateOf(initialUser?.isActive ?: true) }
     val selectedPermissions = remember { mutableStateListOf<String>() }
 
     // 初始化权限
@@ -435,6 +573,21 @@ private fun UserEditDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
+                // 启用/禁用开关（仅编辑模式显示）
+                if (initialUser != null) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("启用账户", style = MaterialTheme.typography.bodyMedium)
+                        Spacer(modifier = Modifier.weight(1f))
+                        Switch(
+                            checked = isActive,
+                            onCheckedChange = { isActive = it }
+                        )
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(4.dp))
                 Text("权限分配", style = MaterialTheme.typography.labelMedium)
 
@@ -467,7 +620,8 @@ private fun UserEditDialog(
         confirmButton = {
             TextButton(onClick = {
                 if (initialUser == null && (username.isBlank() || password.isBlank())) return@TextButton
-                onConfirm(username, password.ifEmpty { null }, selectedPermissions.toList())
+                val isActiveParam = if (initialUser != null) isActive else null
+                onConfirm(username, password.ifEmpty { null }, selectedPermissions.toList(), isActiveParam)
             }) {
                 Text("确定")
             }

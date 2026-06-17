@@ -4,7 +4,9 @@ import android.content.SharedPreferences
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kuaimai.pda.data.api.AreaApiService
+import com.kuaimai.pda.data.api.AreaCreateRequest
 import com.kuaimai.pda.data.api.dto.AreaResponse
+import com.kuaimai.pda.data.repository.UserRepository
 import com.kuaimai.pda.util.AppConstants
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +23,7 @@ import javax.inject.Named
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val areaApiService: AreaApiService,
+    private val userRepository: UserRepository,
     private val prefs: SharedPreferences,
     @Named("encrypted") private val encryptedPrefs: SharedPreferences
 ) : ViewModel() {
@@ -94,7 +97,8 @@ class SettingsViewModel @Inject constructor(
     fun loadAreas() {
         viewModelScope.launch {
             try {
-                val response = areaApiService.getAreas()
+                val token = userRepository.getToken()
+                val response = areaApiService.getAreas(token)
                 _areas.value = response.data
             } catch (e: Exception) {
                 _errorMessage.value = "加载拣货区失败: ${e.message}"
@@ -110,7 +114,7 @@ class SettingsViewModel @Inject constructor(
     }
 
     /**
-     * 添加拣货区
+     * 添加拣货区（调用后端API）
      */
     fun addArea() {
         val name = _newAreaName.value.trim()
@@ -125,9 +129,9 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                // 后端暂无添加拣货区API，先本地添加
-                val newArea = AreaResponse(id = System.currentTimeMillis(), name = name)
-                _areas.value = _areas.value + newArea
+                val token = userRepository.getToken()
+                val response = areaApiService.createArea(token, AreaCreateRequest(name))
+                _areas.value = _areas.value + AreaResponse(id = response.id, name = response.name, createdAt = response.createdAt)
                 _newAreaName.value = ""
                 _successMessage.value = "已添加拣货区: $name"
             } catch (e: Exception) {
@@ -139,11 +143,13 @@ class SettingsViewModel @Inject constructor(
     }
 
     /**
-     * 删除拣货区
+     * 删除拣货区（调用后端API）
      */
     fun deleteArea(area: AreaResponse) {
         viewModelScope.launch {
             try {
+                val token = userRepository.getToken()
+                areaApiService.deleteArea(token, area.id)
                 _areas.value = _areas.value.filter { it.id != area.id }
                 _successMessage.value = "已删除拣货区: ${area.name}"
             } catch (e: Exception) {
@@ -162,15 +168,21 @@ class SettingsViewModel @Inject constructor(
     /**
      * 保存服务器地址
      */
-    fun saveServerUrl() {
-        val url = _serverUrl.value.trim()
-        if (url.isEmpty() || !url.startsWith("http")) {
+    fun saveServerUrl(url: String) {
+        val trimmed = url.trim()
+        if (trimmed.isEmpty() || !trimmed.startsWith("http")) {
             _errorMessage.value = "请输入有效的服务器地址（以http开头）"
             return
         }
-        prefs.edit().putString(KEY_SERVER_URL, url).apply()
+        _serverUrl.value = trimmed
+        prefs.edit().putString(KEY_SERVER_URL, trimmed).apply()
         _successMessage.value = "服务器地址已保存"
     }
+
+    /**
+     * 获取当前服务器地址
+     */
+    fun getServerUrl(): String = _serverUrl.value
 
     /**
      * 更新API Key
@@ -182,10 +194,17 @@ class SettingsViewModel @Inject constructor(
     /**
      * 保存API Key（使用加密SharedPreferences）
      */
-    fun saveApiKey() {
-        encryptedPrefs.edit().putString(KEY_API_KEY, _apiKey.value.trim()).apply()
+    fun saveApiKey(key: String) {
+        val trimmed = key.trim()
+        _apiKey.value = trimmed
+        encryptedPrefs.edit().putString(KEY_API_KEY, trimmed).apply()
         _successMessage.value = "API Key已保存"
     }
+
+    /**
+     * 获取当前API Key
+     */
+    fun getApiKey(): String = _apiKey.value
 
     /**
      * 设置扫码方式
@@ -198,19 +217,17 @@ class SettingsViewModel @Inject constructor(
     /**
      * 切换声音开关
      */
-    fun toggleSound() {
-        val newValue = !_soundEnabled.value
-        _soundEnabled.value = newValue
-        prefs.edit().putBoolean(KEY_SOUND_ENABLED, newValue).apply()
+    fun toggleSound(enabled: Boolean) {
+        _soundEnabled.value = enabled
+        prefs.edit().putBoolean(KEY_SOUND_ENABLED, enabled).apply()
     }
 
     /**
      * 切换振动开关
      */
-    fun toggleVibration() {
-        val newValue = !_vibrationEnabled.value
-        _vibrationEnabled.value = newValue
-        prefs.edit().putBoolean(KEY_VIBRATION_ENABLED, newValue).apply()
+    fun toggleVibration(enabled: Boolean) {
+        _vibrationEnabled.value = enabled
+        prefs.edit().putBoolean(KEY_VIBRATION_ENABLED, enabled).apply()
     }
 
     /**

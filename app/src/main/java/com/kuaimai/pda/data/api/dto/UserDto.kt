@@ -16,6 +16,7 @@ data class LoginResponse(
     val success: Boolean = true,
     val message: String = "",
     val token: String = "",
+    val userId: Long = 0,
     val username: String = "",
     val permissions: List<String> = emptyList()
 )

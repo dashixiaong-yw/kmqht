@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import javax.inject.Named
 import javax.inject.Singleton
 
 /**
@@ -66,7 +67,7 @@ interface UserRepository {
 @Singleton
 class UserRepositoryImpl @Inject constructor(
     private val apiService: UserApiService,
-    private val prefs: SharedPreferences
+    @Named("encrypted") private val prefs: SharedPreferences
 ) : UserRepository {
 
     /** 应用级协程作用域，用于handleAuthError发送事件 */
@@ -100,12 +101,14 @@ class UserRepositoryImpl @Inject constructor(
             val response = apiService.login(LoginRequest(username, password))
             if (response.success && response.token.isNotEmpty()) {
                 val user = UserResponse(
+                    id = response.userId,
                     username = response.username,
                     permissions = response.permissions
                 )
                 // 保存到本地
                 prefs.edit()
                     .putString(KEY_USER_TOKEN, response.token)
+                    .putLong(KEY_USER_ID, response.userId)
                     .putString(KEY_USER_NAME, response.username)
                     .putStringSet(KEY_USER_PERMISSIONS, response.permissions.toSet())
                     .apply()
@@ -169,16 +172,19 @@ class UserRepositoryImpl @Inject constructor(
             apiService.updateUser(getToken(), userId, UpdateUserRequest(password, permissions, isActive))
             // 如果修改的是当前用户，刷新本地缓存
             val currentId = _currentUser.value?.id ?: 0L
-            if (userId == currentId && permissions != null) {
+            if (userId == currentId) {
                 val updatedUser = UserResponse(
                     id = currentId,
                     username = _currentUser.value?.username ?: "",
-                    permissions = permissions
+                    isActive = isActive ?: _currentUser.value?.isActive ?: true,
+                    permissions = permissions ?: _currentUser.value?.permissions ?: emptyList()
                 )
                 _currentUser.value = updatedUser
-                prefs.edit()
-                    .putStringSet(KEY_USER_PERMISSIONS, permissions.toSet())
-                    .apply()
+                prefs.edit().apply {
+                    if (permissions != null) {
+                        putStringSet(KEY_USER_PERMISSIONS, permissions.toSet())
+                    }
+                }.apply()
             }
             Result.success(Unit)
         } catch (e: Exception) {

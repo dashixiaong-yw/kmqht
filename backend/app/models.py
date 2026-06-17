@@ -165,6 +165,7 @@ class LoginResponse(BaseModel):
     success: bool = True
     message: str = "登录成功"
     token: str = ""
+    userId: int = 0
     username: str = ""
     permissions: List[str] = []
 

@@ -1,5 +1,6 @@
 package com.kuaimai.pda.ui.guide
 
+import android.content.SharedPreferences
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,6 +24,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.kuaimai.pda.ui.settings.SettingsViewModel.Companion.KEY_GUIDE_SHOWN
+import com.kuaimai.pda.ui.settings.SettingsViewModel.Companion.KEY_SCAN_METHOD
+import com.kuaimai.pda.ui.settings.SettingsViewModel.Companion.KEY_SERVER_URL
 import com.kuaimai.pda.ui.theme.BrandBlue
 import com.kuaimai.pda.ui.theme.PrimaryLightBg
 import com.kuaimai.pda.ui.theme.PrimaryLightText
@@ -36,6 +40,7 @@ import com.kuaimai.pda.ui.theme.SurfaceWhite
  */
 @Composable
 fun GuideScreen(
+    prefs: SharedPreferences,
     onFinish: () -> Unit
 ) {
     var currentStep by remember { mutableIntStateOf(0) }
@@ -53,14 +58,28 @@ fun GuideScreen(
             0 -> StepServerConfig(
                 serverUrl = serverUrl,
                 onServerUrlChange = { serverUrl = it },
-                onNext = { currentStep = 1 }
+                onNext = {
+                    // 保存服务器地址到SharedPreferences
+                    prefs.edit().putString(KEY_SERVER_URL, serverUrl.trim()).apply()
+                    currentStep = 1
+                }
             )
             1 -> StepScanMethod(
                 selectedMethod = selectedScanMethod,
                 onMethodSelected = { selectedScanMethod = it },
-                onNext = { currentStep = 2 }
+                onNext = {
+                    // 保存扫码方式到SharedPreferences
+                    prefs.edit().putInt(KEY_SCAN_METHOD, selectedScanMethod).apply()
+                    currentStep = 2
+                }
             )
-            2 -> StepComplete(onFinish = onFinish)
+            2 -> StepComplete(
+                onFinish = {
+                    // 标记引导已完成
+                    prefs.edit().putBoolean(KEY_GUIDE_SHOWN, true).apply()
+                    onFinish()
+                }
+            )
         }
     }
 }

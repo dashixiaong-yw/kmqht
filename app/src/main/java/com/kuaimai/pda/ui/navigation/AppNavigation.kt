@@ -34,14 +34,15 @@ object Routes {
     const val GUIDE = "guide"
     const val PICK_LIST = "pickList"
     const val PICK_DETAIL = "pickDetail/{orderId}"
-    const val PRODUCT = "product/{skuOuterId}"
+    const val PRODUCT = "product/{skuOuterId}?orderId={orderId}"
     const val SETTINGS = "settings"
 
     /** 构建取货单详情路由 */
     fun pickDetailRoute(orderId: Long): String = "pickDetail/$orderId"
 
     /** 构建商品详情路由 */
-    fun productRoute(skuOuterId: String): String = "product/$skuOuterId"
+    fun productRoute(skuOuterId: String, orderId: Long = 0L): String =
+        if (orderId > 0) "product/$skuOuterId?orderId=$orderId" else "product/$skuOuterId"
 }
 
 @Composable
@@ -105,9 +106,9 @@ fun AppNavigation(
 
         composable(Routes.GUIDE) {
             GuideScreen(
+                prefs = prefs,
                 onFinish = {
-                    // 引导完成，保存标记并导航到主页
-                    prefs.edit().putBoolean(KEY_GUIDE_SHOWN, true).apply()
+                    // 引导完成，导航到主页
                     navController.navigate(Routes.HOME) {
                         popUpTo(Routes.GUIDE) { inclusive = true }
                     }
@@ -140,18 +141,22 @@ fun AppNavigation(
         composable(
             route = Routes.PICK_DETAIL,
             arguments = listOf(navArgument("orderId") { type = NavType.LongType })
-        ) {
+        ) { backStackEntry ->
+            val orderId = backStackEntry.arguments?.getLong("orderId") ?: 0L
             PickDetailScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToProduct = { skuOuterId ->
-                    navController.navigate(Routes.productRoute(skuOuterId))
+                    navController.navigate(Routes.productRoute(skuOuterId, orderId = orderId))
                 }
             )
         }
 
         composable(
             route = Routes.PRODUCT,
-            arguments = listOf(navArgument("skuOuterId") { type = NavType.StringType })
+            arguments = listOf(
+                navArgument("skuOuterId") { type = NavType.StringType },
+                navArgument("orderId") { type = NavType.LongType; defaultValue = 0L }
+            )
         ) {
             ProductScreen(
                 onNavigateBack = { navController.popBackStack() },

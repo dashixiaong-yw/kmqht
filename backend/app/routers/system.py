@@ -3,8 +3,9 @@
 import logging
 import os
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
+from app.auth import get_current_user
 from app.database import get_db
 from app.models import (
     AppVersionResponse,
@@ -42,7 +43,7 @@ def health_check() -> HealthResponse:
 
 
 @router.post("/api/crash-report", response_model=BaseResponse)
-def crash_report(req: CrashReportRequest) -> BaseResponse:
+def crash_report(req: CrashReportRequest, user: dict = Depends(get_current_user)) -> BaseResponse:
     """接收客户端崩溃报告"""
     db = get_db()
     cursor = db.cursor()

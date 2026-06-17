@@ -1,5 +1,30 @@
 # 快麦取货通 - 变更日志
 
+## 1.4 (2026-06-17)
+
+### 新增
+- 设置页添加服务器地址/API Key配置UI（F23: OutlinedTextField+保存按钮）
+- 设置页添加扫码方式选择（RadioButton: PDA硬件/相机/手动）
+- 设置页添加声音/振动反馈开关（Switch）
+- 商品详情页图片上传功能（F5: PickVisualMedia图片选择器+uriToFile转换）
+- Product路由支持orderId可选参数，精确关联当前订单SKU
+- AppConstants添加SESSION_WARNING_DAYS常量
+
+### 修复
+- 修复GuideScreen引导页不保存配置到SharedPreferences，引导完成后配置丢失（P0 BUG-01）
+- 修复PickDetailScreen下拉刷新只刷新订单信息不刷新明细数据，多PDA场景看不到其他PDA添加的明细（P0 BUG-02）
+- 修复ProductScreen图片上传按钮onClick为空lambda，无法上传图片（P0 BUG-03）
+- 修复Product路由缺少orderId参数，从取货详情进入商品详情可能查到错误订单的同SKU商品（P0 BUG-04）
+- 修复连续扫码模式下PDA硬件扫码不清空输入框不回位光标（P1 BUG-05）
+- 修复重复扫码只显示Snackbar不滚动到重复行（P1 BUG-06）
+- 修复取货单列表未按拣货区分组排序，不符合F24设计要求（P1 BUG-08）
+- 修复OrderSyncWorker所有API错误统一重试，4xx错误应标记冲突不再重试（P1 BUG-09）
+- 修复completeItem/restoreItem API失败时本地状态不回滚（P1 BUG-10）
+- 修复LoginScreen网络错误提示用字符串匹配，改用类型检查（P2 BUG-12）
+- 修复后端_check_order_timeout第二条SQL可能将手动完成订单的未完成明细误标记（P2 BUG-13）
+- 修复HomeScreen会话过期预警天数硬编码，提取为AppConstants常量（P2 BUG-14）
+- 修复SettingsScreen中StateFlow.value在组合中调用，改用collectAsState()
+
 ## 1.3 (2026-06-17)
 
 ### 修复

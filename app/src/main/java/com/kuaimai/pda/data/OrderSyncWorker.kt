@@ -14,6 +14,7 @@ import com.kuaimai.pda.data.api.dto.SupplierUpdateDto
 import com.kuaimai.pda.data.db.dao.PendingOperationDao
 import com.kuaimai.pda.data.db.entity.PendingOperationEntity
 import com.kuaimai.pda.data.repository.AuthRepository
+import com.kuaimai.pda.data.repository.UserRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -43,7 +44,8 @@ class OrderSyncWorker(
     private val apiService: KuaimaiApiService,
     private val orderApiService: OrderApiService,
     private val authRepository: AuthRepository,
-    private val imageUploadService: ImageUploadService
+    private val imageUploadService: ImageUploadService,
+    private val userRepository: UserRepository
 ) : CoroutineWorker(context, params) {
 
     companion object {
@@ -120,6 +122,16 @@ class OrderSyncWorker(
                     false
                 }
             }
+        } catch (e: retrofit2.HttpException) {
+            if (e.code() in 400..499) {
+                // 客户端错误，标记冲突不再重试
+                Log.w(TAG, "客户端错误${e.code()}，标记冲突: ${op.operationType}")
+                pendingOperationDao.updateRetryCount(op.id, -1)
+                true  // 从队列中移除
+            } else {
+                Log.e(TAG, "服务端错误${e.code()}，将重试: ${op.operationType}")
+                false  // 服务端错误，重试
+            }
         } catch (e: Exception) {
             Log.e(TAG, "同步操作失败: ${op.operationType}, error=${e.message}")
             false
@@ -132,7 +144,8 @@ class OrderSyncWorker(
     private suspend fun syncCompleteItem(op: PendingOperationEntity): Boolean {
         val orderId = op.orderId
         val itemId = op.targetId
-        orderApiService.completeItem(orderId, itemId)
+        val token = userRepository.getToken()
+        orderApiService.completeItem(token, orderId, itemId)
         Log.d(TAG, "完成明细同步完成: orderId=$orderId itemId=$itemId")
         return true
     }
@@ -143,7 +156,8 @@ class OrderSyncWorker(
     private suspend fun syncRestoreItem(op: PendingOperationEntity): Boolean {
         val orderId = op.orderId
         val itemId = op.targetId
-        orderApiService.restoreItem(orderId, itemId)
+        val token = userRepository.getToken()
+        orderApiService.restoreItem(token, orderId, itemId)
         return true
     }
 
@@ -153,7 +167,8 @@ class OrderSyncWorker(
     private suspend fun syncAddItem(op: PendingOperationEntity): Boolean {
         val skuOuterId = extractPayloadValue(op.payload, "sku_outer_id") ?: return false
         val orderId = op.orderId
-        orderApiService.addItem(orderId, AddOrderItemRequest(skuOuterId = skuOuterId))
+        val token = userRepository.getToken()
+        orderApiService.addItem(token, orderId, AddOrderItemRequest(skuOuterId = skuOuterId))
         Log.d(TAG, "添加明细同步完成: orderId=$orderId skuOuterId=$skuOuterId")
         return true
     }
@@ -163,7 +178,8 @@ class OrderSyncWorker(
      */
     private suspend fun syncCompleteAll(op: PendingOperationEntity): Boolean {
         val orderId = op.orderId
-        orderApiService.completeAllItems(orderId)
+        val token = userRepository.getToken()
+        orderApiService.completeAllItems(token, orderId)
         Log.d(TAG, "批量完成同步完成: orderId=$orderId")
         return true
     }
@@ -174,7 +190,8 @@ class OrderSyncWorker(
     private suspend fun syncDeleteItem(op: PendingOperationEntity): Boolean {
         val orderId = op.orderId
         val itemId = op.targetId
-        orderApiService.deleteItem(orderId, itemId)
+        val token = userRepository.getToken()
+        orderApiService.deleteItem(token, orderId, itemId)
         Log.d(TAG, "删除明细同步完成: orderId=$orderId itemId=$itemId")
         return true
     }
@@ -184,7 +201,8 @@ class OrderSyncWorker(
      */
     private suspend fun syncDeleteOrder(op: PendingOperationEntity): Boolean {
         val orderId = op.orderId
-        orderApiService.deleteOrder(orderId)
+        val token = userRepository.getToken()
+        orderApiService.deleteOrder(token, orderId)
         Log.d(TAG, "删除取货单同步完成: orderId=$orderId")
         return true
     }

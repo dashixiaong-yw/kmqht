@@ -51,6 +51,7 @@ import com.kuaimai.pda.ui.theme.SurfaceWhite
 import com.kuaimai.pda.ui.theme.TextSecondary
 import com.kuaimai.pda.ui.theme.WarningBg
 import com.kuaimai.pda.ui.theme.WarningText
+import com.kuaimai.pda.util.AppConstants
 import com.kuaimai.pda.util.NetworkMonitor
 
 /**
@@ -85,7 +86,7 @@ fun HomeScreen(
             if (expireTime > 0L) {
                 val now = System.currentTimeMillis()
                 val daysLeft = (expireTime - now) / (1000 * 60 * 60 * 24)
-                showSessionWarning = daysLeft in 0..4
+                showSessionWarning = daysLeft in 0..(AppConstants.SESSION_WARNING_DAYS - 1)
             }
         }
     }

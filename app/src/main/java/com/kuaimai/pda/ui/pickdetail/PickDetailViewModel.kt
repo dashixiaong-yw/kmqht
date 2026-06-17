@@ -9,6 +9,7 @@ import com.kuaimai.pda.data.db.entity.PickItemEntity
 import com.kuaimai.pda.data.db.entity.PickOrderEntity
 import com.kuaimai.pda.data.repository.ImageRepository
 import com.kuaimai.pda.data.repository.PickOrderRepository
+import com.kuaimai.pda.data.repository.UserRepository
 import com.kuaimai.pda.scanner.ScanFeedbackType
 import com.kuaimai.pda.scanner.ScannerManager
 import com.kuaimai.pda.util.TimeUtils
@@ -33,7 +34,8 @@ class PickDetailViewModel @Inject constructor(
     private val pickOrderRepository: PickOrderRepository,
     private val orderApiService: OrderApiService,
     private val scannerManager: ScannerManager,
-    private val imageRepository: ImageRepository
+    private val imageRepository: ImageRepository,
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     /** 取货单ID */
@@ -76,6 +78,10 @@ class PickDetailViewModel @Inject constructor(
     private val _duplicateScan = MutableStateFlow(false)
     val duplicateScan: StateFlow<Boolean> = _duplicateScan.asStateFlow()
 
+    /** 最近扫码的SKU编码（用于重复扫码时滚动定位） */
+    var lastScannedSku: String = ""
+        private set
+
     /** 扫码成功事件 */
     private val _scanSuccessEvent = MutableSharedFlow<Unit>()
     val scanSuccessEvent = _scanSuccessEvent.asSharedFlow()
@@ -105,7 +111,8 @@ class PickDetailViewModel @Inject constructor(
     private fun loadSuppliers() {
         viewModelScope.launch {
             try {
-                val result = orderApiService.getSuppliers(orderId)
+                val token = userRepository.getToken()
+                val result = orderApiService.getSuppliers(token, orderId)
                 _suppliers.value = listOf("全部") + result
             } catch (e: Exception) {
                 _suppliers.value = listOf("全部")
@@ -120,6 +127,7 @@ class PickDetailViewModel @Inject constructor(
     fun onBarcodeScanned(barcode: String) {
         viewModelScope.launch {
             _isLoading.value = true
+            lastScannedSku = barcode
             try {
                 // 检查重复扫码（精确查询当前订单下的SKU）
                 val existing = pickOrderRepository.getItemByOrderIdAndSkuOuterId(orderId, barcode)
@@ -128,7 +136,9 @@ class PickDetailViewModel @Inject constructor(
                     return@launch
                 }
 
+                val token = userRepository.getToken()
                 val response = orderApiService.addItem(
+                    token,
                     orderId,
                     AddOrderItemRequest(barcode)
                 )
@@ -165,11 +175,16 @@ class PickDetailViewModel @Inject constructor(
      */
     fun completeItem(itemId: Long) {
         viewModelScope.launch {
+            _isLoading.value = true
             try {
-                orderApiService.completeItem(orderId, itemId)
+                // 在线模式：先调API，成功后再更新本地
+                val token = userRepository.getToken()
+                orderApiService.completeItem(token, orderId, itemId)
                 pickOrderRepository.updateItemStatus(itemId, 1, TimeUtils.now())
             } catch (e: Exception) {
                 _errorMessage.value = "完成明细失败: ${e.message}"
+            } finally {
+                _isLoading.value = false
             }
         }
     }
@@ -180,11 +195,16 @@ class PickDetailViewModel @Inject constructor(
      */
     fun restoreItem(itemId: Long) {
         viewModelScope.launch {
+            _isLoading.value = true
             try {
-                orderApiService.restoreItem(orderId, itemId)
+                // 在线模式：先调API，成功后再更新本地
+                val token = userRepository.getToken()
+                orderApiService.restoreItem(token, orderId, itemId)
                 pickOrderRepository.updateItemStatus(itemId, 0, null)
             } catch (e: Exception) {
                 _errorMessage.value = "恢复明细失败: ${e.message}"
+            } finally {
+                _isLoading.value = false
             }
         }
     }
@@ -195,7 +215,8 @@ class PickDetailViewModel @Inject constructor(
     fun completeAllItems() {
         viewModelScope.launch {
             try {
-                orderApiService.completeAllItems(orderId)
+                val token = userRepository.getToken()
+                orderApiService.completeAllItems(token, orderId)
                 // 更新本地所有未完成明细状态
                 val currentItems = items.value
                 val now = TimeUtils.now()
@@ -226,13 +247,14 @@ class PickDetailViewModel @Inject constructor(
     }
 
     /**
-     * 下拉刷新
+     * 下拉刷新（同步取货单信息+明细数据）
      */
     fun refresh() {
         viewModelScope.launch {
             _isRefreshing.value = true
             try {
-                val detail = orderApiService.getOrderDetail(orderId)
+                val token = userRepository.getToken()
+                val detail = orderApiService.getOrderDetail(token, orderId)
                 // 更新本地取货单信息（使用后端返回的真实时间）
                 val orderEntity = PickOrderEntity(
                     id = detail.id,
@@ -246,6 +268,37 @@ class PickDetailViewModel @Inject constructor(
                     expireAt = TimeUtils.parseBeijingTime(detail.expireAt).let { if (it > 0) it else TimeUtils.now() + TimeUtils.DEFAULT_EXPIRE_MS }
                 )
                 pickOrderRepository.updateOrder(orderEntity)
+
+                // 同步明细数据：将后端明细upsert到本地数据库
+                detail.items.forEach { itemResponse ->
+                    val existing = pickOrderRepository.getItemByOrderIdAndSkuOuterId(orderId, itemResponse.skuOuterId)
+                    if (existing == null) {
+                        // 新明细（其他PDA添加的），插入本地
+                        val item = PickItemEntity(
+                            id = itemResponse.id,
+                            orderId = orderId,
+                            skuOuterId = itemResponse.skuOuterId,
+                            sysItemId = itemResponse.sysItemId,
+                            sysSkuId = itemResponse.sysSkuId,
+                            propertiesName = itemResponse.propertiesName,
+                            picPath = itemResponse.picPath,
+                            status = itemResponse.status,
+                            supplierName = itemResponse.supplierName,
+                            supplierCode = itemResponse.supplierCode,
+                            remark = itemResponse.remark,
+                            createdAt = TimeUtils.parseBeijingTime(itemResponse.createdAt).let { if (it > 0) it else TimeUtils.now() },
+                            completedAt = TimeUtils.parseBeijingTimeOrNull(itemResponse.completedAt)
+                        )
+                        pickOrderRepository.insertItem(item)
+                    } else {
+                        // 已有明细，更新状态（其他PDA可能已完成/恢复了）
+                        if (existing.status != itemResponse.status) {
+                            val completedAt = TimeUtils.parseBeijingTimeOrNull(itemResponse.completedAt)
+                            pickOrderRepository.updateItemStatus(existing.id, itemResponse.status, completedAt)
+                        }
+                    }
+                }
+
                 loadSuppliers()
             } catch (e: Exception) {
                 _errorMessage.value = "刷新失败: ${e.message}"

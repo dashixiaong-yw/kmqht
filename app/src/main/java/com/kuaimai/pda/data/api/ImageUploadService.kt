@@ -14,6 +14,7 @@ import org.json.JSONObject
 import java.io.File
 import java.io.IOException
 import javax.inject.Inject
+import javax.inject.Named
 import okio.buffer
 
 /**
@@ -23,7 +24,8 @@ import okio.buffer
  */
 class ImageUploadService @Inject constructor(
     private val client: OkHttpClient,
-    private val prefs: SharedPreferences
+    private val prefs: SharedPreferences,
+    @Named("encrypted") private val encryptedPrefs: SharedPreferences
 ) {
 
     companion object {
@@ -31,6 +33,7 @@ class ImageUploadService @Inject constructor(
         private const val KEY_SERVER_URL = "server_url"
         private const val DEFAULT_SERVER_URL = AppConstants.DEFAULT_SERVER_URL
         private const val MAX_RETRY = 3
+        private const val KEY_USER_TOKEN = "user_token"
     }
 
     /**
@@ -102,9 +105,11 @@ class ImageUploadService @Inject constructor(
             requestBody
         }
 
+        val token = encryptedPrefs.getString(KEY_USER_TOKEN, "") ?: ""
         val request = Request.Builder()
             .url(uploadUrl)
             .post(progressBody)
+            .addHeader("X-User-Token", token)
             .build()
 
         val response = client.newCall(request).execute()
@@ -128,9 +133,11 @@ class ImageUploadService @Inject constructor(
             ?: DEFAULT_SERVER_URL
         val deleteUrl = "$serverUrl/api/images/$imageId"
 
+        val token = encryptedPrefs.getString(KEY_USER_TOKEN, "") ?: ""
         val request = Request.Builder()
             .url(deleteUrl)
             .delete()
+            .addHeader("X-User-Token", token)
             .build()
 
         val response = client.newCall(request).execute()

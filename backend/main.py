@@ -181,7 +181,7 @@ def _check_order_timeout() -> None:
             """UPDATE pick_items
                SET status = 1, completed_at = ?
                WHERE order_id IN (
-                   SELECT id FROM pick_orders WHERE completion_type = 1
+                   SELECT id FROM pick_orders WHERE status = 1 AND completion_type = 1
                ) AND status = 0""",
             (now,),
         )
