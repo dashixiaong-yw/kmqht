@@ -17,6 +17,9 @@
 - P0: 修复后端 SKU 查询参数——sku_outer_id→outerId，响应字段 skus→itemSkus
 - P1: 修复 Android 端供应商查询——supplier.list.query→item.supplier.list.get，补充 sysItemIds 参数
 - P2: 删除后端 kuaimai_api.py 中从未调用的 get_item_detail() 死代码
+- CRITICAL: 修复后端 _call_api V2 响应无 {method}_response 包装导致返回空字典
+- CRITICAL: 修复 Android SkuUpdateDto 字段名与 V2 文档不匹配（skuId→id, skuRemark→remark）
+- CRITICAL: 修复 Android SupplierUpdateDto 字段名与 V2 文档不匹配（supplierCode→code, supplierName→itemTitle）
 
 ### 修改
 - kuaimai_api.py新增_config_lock线程锁定义

@@ -1,5 +1,7 @@
 package com.kuaimai.pda.data.api.dto
 
+import com.google.gson.annotations.SerializedName
+
 /**
  * 商品更新请求 erp.item.general.addorupdate
  * 用于备注更新和供应商更新
@@ -11,14 +13,14 @@ data class ItemUpdateRequest(
     val suppliers: List<SupplierUpdateDto> = emptyList()
 )
 
-/** SKU备注更新 */
+/** SKU备注更新（V2: id + remark） */
 data class SkuUpdateDto(
-    val skuId: Long = 0,
-    val skuRemark: String = ""
+    @SerializedName("id") val skuId: Long = 0,
+    @SerializedName("remark") val skuRemark: String = ""
 )
 
-/** 供应商更新 */
+/** 供应商更新（V2: code + itemTitle） */
 data class SupplierUpdateDto(
-    val supplierCode: String = "",
-    val supplierName: String = ""
+    @SerializedName("code") val supplierCode: String = "",
+    @SerializedName("itemTitle") val supplierName: String = ""
 )

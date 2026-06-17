@@ -84,9 +84,15 @@ async def _call_api(method: str, extra_params: Optional[Dict[str, Any]] = None) 
             raise ValueError(f"快麦API错误: {error.get('msg', '未知错误')}")
 
         # 提取API响应数据
-        api_response = result.get(f"{method.replace('.', '_')}_response", {})
+        # V1: 响应包装在 {method}_response 中
+        # V2: 响应直接在顶层（无包装）
+        wrapper_key = f"{method.replace('.', '_')}_response"
+        if wrapper_key in result:
+            api_response = result[wrapper_key]
+        else:
+            api_response = result
         if not api_response:
-            logger.warning(f"快麦API响应中缺少{method.replace('.', '_')}_response字段")
+            logger.warning(f"快麦API响应为空")
 
         return api_response
     except httpx.TimeoutException as e:
