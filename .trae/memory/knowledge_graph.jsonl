@@ -113,6 +113,11 @@
 {"type":"entity","name":"BUG-P1_AsyncioEventLoop","entityType":"BugFix","observations":["v1.14修复: _refresh_kuaimai_session在APScheduler后台线程中使用get_event_loop()+ensure_future()","修复: 改用asyncio.run()独立运行异步函数"]}
 {"type":"entity","name":"SEC-AdminAuthSkip","entityType":"安全修复","observations":["v1.14修复: /admin路径跳过API Key认证中间件","修复: 从SKIP_AUTH_PREFIXES中移除/admin"]}
 {"type":"entity","name":"docker-deploy同步策略","entityType":"设计决策","observations":["v1.14确立: backend/目录下所有内容同步到docker-deploy/根目录","app子目录→docker-deploy/app/","部署配置文件(main.py/Dockerfile等)→docker-deploy/根目录","docker-compose context指向docker-deploy/根目录"]}
+{"type":"entity","name":"BUG-P1_SoundPoolLoadError","entityType":"BugFix","observations":["v1.15修复: ScannerManager使用SoundPool.load(String,int)传入content:// URI字符串，该重载期望文件路径而非URI","修复: 改用ContentResolver.openAssetFileDescriptor()获取AssetFileDescriptor后调用load(AssetFileDescriptor,int)","影响: 扫码提示音恢复可用"]}
+{"type":"entity","name":"BUG-P1_Android14BroadcastExport","entityType":"BugFix","observations":["v1.15修复: context.registerReceiver(receiver, filter)在API 34+抛出SecurityException","修复: 添加Context.RECEIVER_EXPORTED标记"]}
+{"type":"entity","name":"BUG-P1_JsonNullSign","entityType":"BugFix","observations":["v1.15修复: KuaimaiInterceptor中JSONObject.get(key)返回JSONObject.NULL，toString()得'null'字符串参与签名","修复: 判断value === JSONObject.NULL时取空字符串"]}
+{"type":"entity","name":"BUG-P1_OrderSync4xxDataLoss","entityType":"BugFix","observations":["v1.15修复: OrderSyncWorker中4xx错误标记冲突后return true，从pending_operations删除记录","修复: 改为return false，保留冲突记录供用户查看"]}
+{"type":"entity","name":"BUG-P1_PdaScannerReceiverDeadCode","entityType":"BugFix","observations":["v1.15修复: PdaScannerReceiver独立类与ScannerManager内联BroadcastReceiver功能完全重复且未被引用","修复: 删除PdaScannerReceiver.kt文件"]}
 {"type":"relation","from":"F1_取货单管理","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F2_扫码待办","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F3_取货单自动完成","to":"快麦取货通项目","relationType":"属于"}

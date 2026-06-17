@@ -1,5 +1,30 @@
 # 快麦取货通 - 变更日志
 
+## 1.15 (2026-06-17)
+
+### 修复
+- P1: 修复ScannerManager SoundPool.load()参数错误——使用String而非Context+Uri重载，导致扫码提示音永不播放
+- P1: 修复Android 14+广播注册SecurityException——registerReceiver缺少RECEIVER_EXPORTED标记
+- P1: 修复CameraPreview空catch块静默吞掉异常——添加Log.e日志
+- P1: 删除PdaScannerReceiver死代码文件——与ScannerManager内联BroadcastReceiver功能完全重复
+- P1: 修复KuaimaiInterceptor JSON null签名错误——JSONObject.NULL.toString()返回"null"字符串
+- P1: 修复OrderSyncWorker 4xx数据永久丢失——冲突记录改为保留而非删除
+- P2: 修复ImageCompressor parentFile可能为null导致行为不确定
+- P2: 修复calculateSampleSize缺少异常尺寸校验
+- P2: 修复session刷新未持久化——TokenAuthenticator刷新后未写回EncryptedSharedPreferences
+- P2: 修复KuaimaiInterceptor强制替换Content-Type
+- P2: 修复AreaCreateRequest包路径不一致——移至api.dto包
+- P2: 删除kuaimai_api.py中未调用的get_item_detail死方法
+- P2: 修复SKU缓存永不过期问题——利用cached_at字段添加过期判断
+- P2: 修复CameraScanScreen isScanned防重复状态不重置问题
+- P2: 修复ScannerManager lastScanTime线程安全性
+
+### 修改
+- ScannerManager新增loadSoundUri()方法，通过ContentResolver打开AssetFileDescriptor加载系统提示音
+- KuaimaiInterceptor添加JSONObject.NULL判断，防止"null"字符串参与签名
+- OrderSyncWorker 4xx错误不再删除pending记录，保留供用户查看
+- 后端cache.py get_sku_info添加缓存过期检查（24小时TTL）
+
 ## 1.14 (2026-06-17)
 
 ### 修复

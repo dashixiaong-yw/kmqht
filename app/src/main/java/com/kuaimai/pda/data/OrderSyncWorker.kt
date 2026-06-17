@@ -124,10 +124,9 @@ class OrderSyncWorker(
             }
         } catch (e: retrofit2.HttpException) {
             if (e.code() in 400..499) {
-                // 客户端错误，标记冲突不再重试
                 Log.w(TAG, "客户端错误${e.code()}，标记冲突: ${op.operationType}")
                 pendingOperationDao.updateRetryCount(op.id, -1)
-                true  // 从队列中移除
+                false  // 客户端错误，标记冲突但保留记录，用户可查看/解决
             } else {
                 Log.e(TAG, "服务端错误${e.code()}，将重试: ${op.operationType}")
                 false  // 服务端错误，重试

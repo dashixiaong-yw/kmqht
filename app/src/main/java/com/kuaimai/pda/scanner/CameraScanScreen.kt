@@ -1,6 +1,7 @@
 package com.kuaimai.pda.scanner
 
 import android.Manifest
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
@@ -158,7 +159,7 @@ private fun CameraPreview(
                         imageAnalysis
                     )
                 } catch (e: Exception) {
-                    // 相机绑定失败
+                    Log.e("CameraPreview", "相机绑定失败: ${e.message}")
                 }
             }, ContextCompat.getMainExecutor(ctx))
 

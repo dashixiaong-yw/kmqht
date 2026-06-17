@@ -1,8 +1,9 @@
 package com.kuaimai.pda.scanner
 
 import android.content.Context
-import android.media.AudioManager
+import android.media.AudioAttributes
 import android.media.SoundPool
+import android.net.Uri
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -10,6 +11,7 @@ import android.os.VibratorManager
 import android.content.BroadcastReceiver
 import android.content.Intent
 import android.content.IntentFilter
+import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
@@ -72,15 +74,8 @@ class ScannerManager @Inject constructor() {
 
         // 初始化声音池
         soundPool = SoundPool.Builder().setMaxStreams(2).build()
-        // 使用系统默认通知音
-        successSoundId = soundPool?.load(
-            android.provider.Settings.System.DEFAULT_NOTIFICATION_URI.toString(),
-            1
-        ) ?: 0
-        errorSoundId = soundPool?.load(
-            android.provider.Settings.System.DEFAULT_ALARM_ALERT_URI.toString(),
-            1
-        ) ?: 0
+        successSoundId = loadSoundUri(context, android.provider.Settings.System.DEFAULT_NOTIFICATION_URI)
+        errorSoundId = loadSoundUri(context, android.provider.Settings.System.DEFAULT_ALARM_ALERT_URI)
 
         val config = PdaDeviceConfig.autoDetect()
         receiver = object : BroadcastReceiver() {
@@ -149,6 +144,20 @@ class ScannerManager @Inject constructor() {
      */
     fun setSoundEnabled(enabled: Boolean) {
         soundEnabled = enabled
+    }
+
+    /**
+     * 通过URI加载系统提示音到SoundPool
+     */
+    private fun loadSoundUri(context: Context, uri: Uri): Int {
+        val sp = soundPool ?: return 0
+        return try {
+            val fd = context.contentResolver.openAssetFileDescriptor(uri, "r") ?: return 0
+            fd.use { afd -> sp.load(afd, 1) }
+        } catch (e: Exception) {
+            Log.w("ScannerManager", "加载提示音失败: ${e.message}")
+            0
+        }
     }
 
     /**

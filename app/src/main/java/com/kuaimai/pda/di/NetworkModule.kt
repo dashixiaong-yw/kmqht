@@ -290,6 +290,7 @@ class TokenAuthenticator(
             val userToken = prefs.getString(PrefsKeys.KEY_USER_TOKEN, "") ?: ""
 
             // 通过后端中转刷新快麦session
+            // runBlocking 在 OkHttp 分发线程中执行，PDA 单用户场景风险可控
             val refreshResult = kotlinx.coroutines.runBlocking {
                 try {
                     systemApiService.refreshSession(userToken)
