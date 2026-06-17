@@ -34,12 +34,6 @@ interface PickOrderDao {
     suspend fun getById(id: Long): PickOrderEntity?
 
     /**
-     * 根据单号获取取货单
-     */
-    @Query("SELECT * FROM pick_order WHERE order_no = :orderNo")
-    suspend fun getByOrderNo(orderNo: String): PickOrderEntity?
-
-    /**
      * 根据状态获取取货单
      */
     @Query("SELECT * FROM pick_order WHERE status = :status ORDER BY created_at DESC")
@@ -80,12 +74,6 @@ interface PickOrderDao {
      */
     @Query("UPDATE pick_order SET completed_count = :count WHERE id = :id")
     suspend fun updateCompletedCount(id: Long, count: Int)
-
-    /**
-     * 根据ID删除取货单
-     */
-    @Query("DELETE FROM pick_order WHERE id = :id")
-    suspend fun deleteById(id: Long)
 
     /**
      * 删除所有取货单

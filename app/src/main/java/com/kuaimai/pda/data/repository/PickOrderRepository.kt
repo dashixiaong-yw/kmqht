@@ -28,8 +28,6 @@ interface PickOrderRepository {
     suspend fun getItemByOrderIdAndSkuOuterId(orderId: Long, skuOuterId: String): PickItemEntity?
     suspend fun insertItem(item: PickItemEntity): Long
     suspend fun updateItemStatus(id: Long, status: Int, completedAt: Long? = null)
-    suspend fun updateItemRemark(id: Long, remark: String)
-    suspend fun updateItemSupplier(id: Long, supplierName: String, supplierCode: String)
     suspend fun deleteOrder(order: PickOrderEntity)
     /** 获取冲突操作列表 */
     suspend fun getConflicts(): List<PendingOperationEntity>
@@ -110,36 +108,6 @@ class PickOrderRepositoryImpl @Inject constructor(
         if (item != null) {
             val operationType = if (status == 1) "COMPLETE_ITEM" else "RESTORE_ITEM"
             enqueueOperation(operationType, item.orderId, id)
-        }
-    }
-
-    override suspend fun updateItemRemark(id: Long, remark: String) {
-        // 乐观更新本地
-        pickItemDao.updateRemark(id, remark)
-        // 写入离线队列
-        val item = pickItemDao.getById(id)
-        if (item != null) {
-            enqueueOperation(
-                operationType = "update_remark",
-                orderId = item.orderId,
-                targetId = id,
-                payload = """{"remark":"${TimeUtils.escapeJson(remark)}"}"""
-            )
-        }
-    }
-
-    override suspend fun updateItemSupplier(id: Long, supplierName: String, supplierCode: String) {
-        // 乐观更新本地
-        pickItemDao.updateSupplier(id, supplierName, supplierCode)
-        // 写入离线队列
-        val item = pickItemDao.getById(id)
-        if (item != null) {
-            enqueueOperation(
-                operationType = "update_supplier",
-                orderId = item.orderId,
-                targetId = id,
-                payload = """{"supplier_name":"${TimeUtils.escapeJson(supplierName)}","supplier_code":"${TimeUtils.escapeJson(supplierCode)}"}"""
-            )
         }
     }
 

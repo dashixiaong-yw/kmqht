@@ -5,12 +5,11 @@ import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import com.kuaimai.pda.util.AppConstants
+import com.kuaimai.pda.util.TimeUtils
 import dagger.hilt.android.HiltAndroidApp
 import java.io.File
 import java.io.FileWriter
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.TimeZone
 import javax.inject.Inject
 
 /**
@@ -27,7 +26,7 @@ class App : Application() {
     companion object {
         private const val TAG = "App"
         private const val KEY_SERVER_URL = "server_url"
-        private const val DEFAULT_SERVER_URL = "http://10.0.2.2:8000"
+        private const val DEFAULT_SERVER_URL = AppConstants.DEFAULT_SERVER_URL
         private const val ANR_THRESHOLD_MS = 5000L
         private const val ANR_CHECK_INTERVAL_MS = 1000L
     }
@@ -75,11 +74,7 @@ class App : Application() {
      */
     private fun logAnr(blockDurationMs: Long) {
         try {
-            val beijingZone = TimeZone.getTimeZone("Asia/Shanghai")
-            val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).apply {
-                timeZone = beijingZone
-            }
-            val timestamp = sdf.format(System.currentTimeMillis())
+            val timestamp = TimeUtils.formatTimestamp(System.currentTimeMillis())
 
             // 获取主线程堆栈
             val stackTrace = Looper.getMainLooper().thread.stackTrace
@@ -96,7 +91,8 @@ class App : Application() {
             // 写入文件
             val logDir = File(getExternalFilesDir(null), "anr_logs")
             if (!logDir.exists()) logDir.mkdirs()
-            val logFile = File(logDir, "anr_${SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(System.currentTimeMillis())}.log")
+            val dateStr = TimeUtils.formatDate(System.currentTimeMillis())
+            val logFile = File(logDir, "anr_$dateStr.log")
             FileWriter(logFile, true).use { it.write(logEntry) }
 
             Log.w(TAG, "ANR detected: blocked ${blockDurationMs}ms")

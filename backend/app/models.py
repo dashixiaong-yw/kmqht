@@ -1,6 +1,5 @@
 """数据模型 - Pydantic请求/响应模型"""
 
-from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 

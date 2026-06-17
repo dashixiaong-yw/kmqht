@@ -17,16 +17,6 @@ import kotlinx.coroutines.flow.Flow
 interface PickItemDao {
 
     /**
-     * 获取取货单下的所有明细，按状态ASC，同状态按时间DESC
-     */
-    @Query("""
-        SELECT * FROM pick_item WHERE order_id = :orderId
-        ORDER BY status ASC,
-        CASE WHEN status = 0 THEN created_at ELSE completed_at END DESC
-    """)
-    fun getItemsByOrder(orderId: Long): Flow<List<PickItemEntity>>
-
-    /**
      * 根据ID获取明细（挂起版本）
      */
     @Query("SELECT * FROM pick_item WHERE id = :id")
@@ -74,12 +64,6 @@ interface PickItemDao {
      */
     @Update
     suspend fun update(item: PickItemEntity)
-
-    /**
-     * 删除明细
-     */
-    @Delete
-    suspend fun delete(item: PickItemEntity)
 
     /**
      * 更新明细状态

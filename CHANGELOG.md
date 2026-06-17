@@ -1,5 +1,20 @@
 # 快麦取货通 - 变更日志
 
+## 0.8 (2026-06-17)
+
+### 修复
+- 修复App.kt硬编码DEFAULT_SERVER_URL，改为引用AppConstants
+- 修复App.kt logAnr手动创建SimpleDateFormat，改为使用TimeUtils统一时间格式化
+- 修复ImageUploadService手动字符串搜索解析JSON，改为使用JSONObject解析
+- 修复kuaimai_api.py _sign函数注释仍写"HMAC-MD5"（与实际MD5签名不一致）
+
+### 修改
+- 删除PickOrderRepository中重复的updateItemRemark/updateItemSupplier方法（与WithQueue版本完全相同）
+- 删除PickOrderDao中未使用的getByOrderNo()和deleteById()
+- 删除PickItemDao中未使用的getItemsByOrder()和delete()方法
+- 删除ProductImageDao中未使用的delete()方法
+- 删除models.py中未使用的datetime导入
+
 ## 0.7 (2026-06-17)
 
 ### 修复

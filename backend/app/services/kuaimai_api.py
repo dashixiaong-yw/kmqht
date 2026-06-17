@@ -17,7 +17,7 @@ _TIMEOUT = 30.0
 
 def _sign(params: Dict[str, Any], app_secret: str) -> str:
     """
-    生成HMAC-MD5签名
+    生成MD5签名
     算法：将所有参数按key字母序排列，拼接为 key1value1key2value2...，
     前后各加app_secret，取MD5
     """

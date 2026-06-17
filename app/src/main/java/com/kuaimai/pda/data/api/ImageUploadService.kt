@@ -10,6 +10,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
 import com.kuaimai.pda.util.AppConstants
+import org.json.JSONObject
 import java.io.File
 import java.io.IOException
 import javax.inject.Inject
@@ -134,22 +135,18 @@ class ImageUploadService @Inject constructor(
     /**
      * 从响应JSON中解析图片URL
      * 响应格式: {"success":true,"data":{"id":1,"imageUrl":"/images/..."}}
+     * 使用JSONObject解析，正确处理转义字符
      */
     private fun parseImageUrlFromResponse(responseBody: String): String {
-        try {
-            // 简单JSON解析，避免引入额外依赖
-            val urlKey = "\"imageUrl\":"
-            val urlIndex = responseBody.indexOf(urlKey)
-            if (urlIndex == -1) {
+        return try {
+            val json = JSONObject(responseBody)
+            val data = json.optJSONObject("data")
+            val imageUrl = data?.optString("imageUrl", "") ?: ""
+            if (imageUrl.isEmpty()) {
                 throw IOException("响应中未找到imageUrl字段")
             }
-            val startQuote = responseBody.indexOf("\"", urlIndex + urlKey.length)
-            val endQuote = responseBody.indexOf("\"", startQuote + 1)
-            if (startQuote == -1 || endQuote == -1) {
-                throw IOException("响应imageUrl格式错误")
-            }
-            return responseBody.substring(startQuote + 1, endQuote)
-        } catch (e: IndexOutOfBoundsException) {
+            imageUrl
+        } catch (e: Exception) {
             throw IOException("解析上传响应失败: ${e.message}")
         }
     }

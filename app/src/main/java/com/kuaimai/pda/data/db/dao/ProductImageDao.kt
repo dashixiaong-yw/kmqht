@@ -39,12 +39,6 @@ interface ProductImageDao {
     suspend fun insertAll(images: List<ProductImageEntity>)
 
     /**
-     * 删除图片
-     */
-    @Delete
-    suspend fun delete(image: ProductImageEntity)
-
-    /**
      * 根据SKU和图片类型删除图片
      */
     @Query("DELETE FROM product_image WHERE sku_outer_id = :skuOuterId AND image_type = :imageType")
