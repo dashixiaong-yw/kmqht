@@ -83,6 +83,10 @@ interface PickItemDao {
     @Query("UPDATE pick_item SET supplier_name = :supplierName, supplier_code = :supplierCode WHERE id = :id")
     suspend fun updateSupplier(id: Long, supplierName: String, supplierCode: String)
 
+    /** 批量完成取货单的所有未完成明细 */
+    @Query("UPDATE pick_item SET status = 1, completed_at = :completedAt WHERE order_id = :orderId AND status = 0")
+    suspend fun completeAllByOrderId(orderId: Long, completedAt: Long)
+
     /**
      * 删除取货单下的所有明细
      */

@@ -3,7 +3,7 @@ import json
 import logging
 import os
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 
 from app.auth import check_permission, get_current_user
@@ -76,7 +76,7 @@ def crash_report(req: CrashReportRequest, user: dict = Depends(get_current_user)
 
 
 @router.get("/api/app-version", response_model=AppVersionResponse)
-def get_app_version() -> AppVersionResponse:
+def get_app_version(request: Request) -> AppVersionResponse:
     """获取当前分发的应用版本（无需认证，供PDA启动时自动检查）"""
     info = _load_version_info()
     if not info or not info.get("currentVersion"):
@@ -84,11 +84,12 @@ def get_app_version() -> AppVersionResponse:
 
     apk_path = os.path.join(APK_DIR, info.get("apkFileName", ""))
     apk_size = os.path.getsize(apk_path) if os.path.exists(apk_path) else 0
-    server_url = SERVER_URL.rstrip("/") if SERVER_URL else ""
+    # 优先用环境变量 SERVER_URL（兼容反向代理），否则从请求 Host 自动获取
+    base_url = SERVER_URL.rstrip("/") if SERVER_URL else str(request.base_url).rstrip("/")
 
     return AppVersionResponse(
         latestVersion=info.get("currentVersion", ""),
-        downloadUrl=f"{server_url}/apk/{info.get('apkFileName', '')}",
+        downloadUrl=f"{base_url}/apk/{info.get('apkFileName', '')}",
         updateNotes=info.get("updateNotes", ""),
         forceUpdate=info.get("forceUpdate", False),
         apkSize=apk_size,

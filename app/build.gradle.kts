@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -12,9 +14,21 @@ android {
     signingConfigs {
         create("release") {
             storeFile = file("kuaimai-release.keystore")
-            storePassword = "kuaimai2024"
-            keyAlias = "kuaimai"
-            keyPassword = "kuaimai2024"
+            val keystorePropsFile = rootProject.file("keystore.properties")
+            if (keystorePropsFile.exists()) {
+                val keystoreProps = Properties()
+                keystoreProps.load(keystorePropsFile.inputStream())
+                val sp = keystoreProps.getProperty("storePassword") ?: "kuaimai2024"
+                val ka = keystoreProps.getProperty("keyAlias") ?: "kuaimai"
+                val kp = keystoreProps.getProperty("keyPassword") ?: "kuaimai2024"
+                storePassword = sp
+                keyAlias = ka
+                keyPassword = kp
+            } else {
+                storePassword = "kuaimai2024"
+                keyAlias = "kuaimai"
+                keyPassword = "kuaimai2024"
+            }
         }
     }
 

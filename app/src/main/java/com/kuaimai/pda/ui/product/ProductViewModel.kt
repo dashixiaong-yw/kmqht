@@ -359,7 +359,7 @@ class ProductViewModel @Inject constructor(
                     val pendingFile = File(pendingDir, "${skuOuterId}_${imageType}_${System.currentTimeMillis()}.jpg")
                     imageFile.copyTo(pendingFile, overwrite = true)
 
-                    val payload = """{"sku_outer_id":"${TimeUtils.escapeJson(skuOuterId)}","image_type":"${imageType}","file_path":"${pendingFile.absolutePath}"}"""
+                    val payload = """{"sku_outer_id":"${TimeUtils.escapeJson(skuOuterId)}","image_type":"${TimeUtils.escapeJson(imageType)}","file_path":"${TimeUtils.escapeJson(pendingFile.absolutePath)}"}"""
                     pickOrderRepository.enqueueUploadImage(skuOuterId, payload)
 
                     _uiState.value = _uiState.value.copy(

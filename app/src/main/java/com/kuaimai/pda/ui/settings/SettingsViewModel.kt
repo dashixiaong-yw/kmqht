@@ -107,7 +107,6 @@ class SettingsViewModel @Inject constructor(
     fun startDownload(info: AppVersionResponse) {
         if (isDownloadingUpdate) return
         isDownloadingUpdate = true
-        appUpdateManager.downloadApk(info)
         viewModelScope.launch {
             appUpdateManager.downloadState.collect { state ->
                 when (state) {
@@ -122,6 +121,7 @@ class SettingsViewModel @Inject constructor(
                 }
             }
         }
+        appUpdateManager.downloadApk(info)
     }
 
     /**

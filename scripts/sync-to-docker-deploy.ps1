@@ -6,7 +6,7 @@ param(
     [switch]$DryRun
 )
 
-$ErrorActionPreference = "Continue"
+$ErrorActionPreference = "Stop"
 
 $ProjectRoot = Split-Path $PSScriptRoot -Parent
 $BackendDir = Join-Path $ProjectRoot "backend"

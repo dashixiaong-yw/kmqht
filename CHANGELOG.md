@@ -3,6 +3,23 @@
 ## 1.23 (2026-06-17)
 
 ### 修复
+- P0: 修复manage后台不保存app_key/app_secret——重启容器凭证丢失（config.py save_kuaimai_config）
+- P0: 修复离线图片上传payload JSON未完全转义——file_path中的`\`导致解析失败（ProductViewModel）
+- P0: 修复APK下载状态丢失竞态——先collect再调用downloadApk（SettingsViewModel）
+- P0: Release签名密码移至keystore.properties（.gitignore），不再硬编码在build.gradle.kts
+- P1: 修复kuaimai_api全局凭证无锁保护——多线程读部分更新的配置（kuaimai_api.py _config_lock）
+- P1: 修复图片文件删除路径遍历漏洞（images.py normpath+startswith校验）
+- P1: 修复已完成取货单可restore/delete_item——添加status=1校验拦截
+- P1: 修复completeAllItems并发竞态——改用原子操作completeAllItemsDirect替代逐个遍历
+- P1: 修复PickItemRow完成按钮44dp→56dp，满足最小触摸热区规范
+- P1: 修复sync-to-docker-deploy.ps1错误静默——ErrorActionPreference设为Stop
+- P1: 修复图片上传临时文件未清理（ProductScreen.kt uriToFile）
+
+### 修改
+- PickOrderRepository接口新增completeAllItemsDirect方法
+- PickItemDao新增completeAllByOrderId批量完成方法
+- build.gradle.kts签名配置支持从keystore.properties文件读取
+- kuaimai_api.py新增_config_lock线程锁保护全局凭证
 - P0: 修复 `/api/app-version` 被 API Key 中间件拦截——SKIP_AUTH_PREFIXES 新增该路径
 - P1: 修复 SettingsViewModel.startDownload 防重复调用——isDownloadingUpdate 标记
 - P1: 修复 AppUpdateManager.checkForUpdate 防并发——AtomicBoolean 校验

@@ -173,8 +173,11 @@ def delete_image(
     if required_perm not in user["permissions"]:
         raise HTTPException(status_code=403, detail=f"无权限执行此操作: {required_perm}")
 
-    # 删除文件
-    file_full_path = os.path.join(IMAGE_DIR, row["file_path"])
+    # 删除文件（路径遍历防护：确保file_path在IMAGE_DIR内）
+    file_full_path = os.path.normpath(os.path.join(IMAGE_DIR, row["file_path"]))
+    if not file_full_path.startswith(os.path.normpath(IMAGE_DIR)):
+        logger.warning(f"路径遍历攻击被阻止: {row['file_path']}")
+        raise HTTPException(status_code=400, detail="文件路径非法")
     try:
         if os.path.exists(file_full_path):
             os.remove(file_full_path)

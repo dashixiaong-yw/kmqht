@@ -647,6 +647,7 @@ private fun uriToFile(uri: Uri, context: Context): java.io.File? {
         tempFile.outputStream().use { output ->
             inputStream.use { it.copyTo(output) }
         }
+        // 标记临时文件：在协程完成后或异常时清理
         tempFile
     } catch (e: Exception) {
         null

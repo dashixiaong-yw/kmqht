@@ -8,7 +8,10 @@
     <path
         android:fillColor="#2563EB"
         android:pathData="M0,0h48v48H0z"/>
-    <!-- "取"字 - 左半 -->
+    <!-- "取"字 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M8,14 L11,14 L11,35 L8,35 Z"/>
     <path
         android:fillColor="#FFFFFF"
         android:pathData="M8,14 L11,14 L11,35 L8,35 Z"/>

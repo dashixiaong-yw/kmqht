@@ -3,6 +3,7 @@
 import hashlib
 import json
 import logging
+import threading
 from typing import Any, Dict, Optional
 
 import httpx
@@ -33,15 +34,16 @@ def _sign(params: Dict[str, Any], app_secret: str) -> str:
 
 def _build_common_params(method: str) -> Dict[str, Any]:
     """构建公共请求参数（参数名与快麦开放平台官方文档一致）"""
-    return {
-        "appKey": kuaimai_creds.app_key,
-        "method": method,
-        "session": kuaimai_creds.session,
-        "timestamp": beijing_now().strftime("%Y-%m-%d %H:%M:%S"),
-        "format": "json",
-        "version": "1.0",
-        "sign_method": "md5",
-    }
+    with _config_lock:
+        return {
+            "appKey": kuaimai_creds.app_key,
+            "method": method,
+            "session": kuaimai_creds.session,
+            "timestamp": beijing_now().strftime("%Y-%m-%d %H:%M:%S"),
+            "format": "json",
+            "version": "1.0",
+            "sign_method": "md5",
+        }
 
 
 async def _call_api(method: str, extra_params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:

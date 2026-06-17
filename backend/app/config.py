@@ -131,6 +131,8 @@ def save_kuaimai_config() -> None:
                 data = json.load(f)
 
         # 更新字段
+        data["app_key"] = kuaimai_creds.app_key
+        data["app_secret"] = kuaimai_creds.app_secret
         data["updated_at"] = kuaimai_creds.updated_at
         if kuaimai_creds.session:
             data["session"] = kuaimai_creds.session

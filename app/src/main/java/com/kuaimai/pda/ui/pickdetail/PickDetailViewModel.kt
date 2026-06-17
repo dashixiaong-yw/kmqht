@@ -228,11 +228,8 @@ class PickDetailViewModel @Inject constructor(
             try {
                 val token = userRepository.getToken()
                 orderApiService.completeAllItems(token, orderId)
-                val currentItems = items.value
-                currentItems.filter { it.status == 0 }.forEach { item ->
-                    pickOrderRepository.updateItemStatusDirect(item.id, 1, now)
-                }
-                pickOrderRepository.updateOrderStatus(orderId, 1, now)
+                // 使用原子操作直接更新DB（避免并发竞态）
+                pickOrderRepository.completeAllItemsDirect(orderId, now)
                 loadOrder()
             } catch (e: Exception) {
                 pickOrderRepository.enqueueCompleteAll(orderId, now)

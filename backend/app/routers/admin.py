@@ -22,9 +22,11 @@ router = APIRouter(tags=["管理后台"])
 
 
 @router.get("/admin", response_class=HTMLResponse)
-def admin_page() -> HTMLResponse:
+def admin_page(request: Request) -> HTMLResponse:
     """管理后台页面"""
-    return HTMLResponse(content=_build_admin_html())
+    # 优先用环境变量 SERVER_URL（兼容反向代理），否则从请求 Host 自动获取
+    base_url = SERVER_URL if SERVER_URL else str(request.base_url).rstrip("/")
+    return HTMLResponse(content=_build_admin_html(base_url))
 
 
 @router.post("/api/app-version/upload")
@@ -102,10 +104,10 @@ def _save_version_info(info: dict) -> None:
         json.dump(info, f, ensure_ascii=False, indent=2)
 
 
-def _build_admin_html() -> str:
+def _build_admin_html(base_url: str) -> str:
     """构建管理后台HTML页面"""
     # 生成扫码配置二维码（公开区域，无需API Key）
-    server_url = SERVER_URL
+    server_url = base_url
     qr_html = ""
     if server_url:
         qr_params: dict[str, str] = {"server": server_url}
@@ -115,7 +117,7 @@ def _build_admin_html() -> str:
         qr_base64 = generate_qr_base64(qr_content)
         qr_html = f'<img src="data:image/png;base64,{qr_base64}" style="width:160px;height:160px" />'
     else:
-        qr_html = '<p style="color:#dc2626">未配置 SERVER_URL 环境变量</p>'
+        qr_html = '<p style="color:#dc2626">无法获取服务器地址</p>'
 
     api_key_status = "已配置" if API_KEY else '<span style="color:#dc2626">未配置</span>'
 
@@ -676,7 +678,7 @@ async function updateKuaimaiCreds() {{
 // ========== 系统配置 ==========
 function loadSystem() {{
   document.getElementById('currentApiKey').textContent = apiKey ? apiKey.substring(0, 4) + '****' : '未配置';
-  document.getElementById('currentServerUrl').textContent = '{server_url or "未配置（请配置SERVER_URL环境变量）"}';
+  document.getElementById('currentServerUrl').textContent = '{server_url or "未获取到服务器地址"}';
 }}
 
 // ========== 图片查看 ==========

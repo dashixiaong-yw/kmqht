@@ -266,7 +266,7 @@ fun PickItemRow(
                     onClick = onComplete
                 ) {
                     Box(
-                        modifier = Modifier.size(width = 56.dp, height = 44.dp),
+                        modifier = Modifier.size(56.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
