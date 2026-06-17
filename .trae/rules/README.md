@@ -11,7 +11,7 @@
 1. **所有代码修改必须在项目 `app/` 目录进行，切勿修改 `prototype/` 等非代码产物（除非明确要求更新原型）**
 2. **Android 项目禁止手动修改 `build/`、`.gradle/` 等构建产物目录**
 3. **修改前必须查阅本项目专用知识图谱（kuaimai-memory MCP），确保不遗漏已确认的设计决策**
-4. **项目文档索引入口：[README.md](../../README.md)（含配置说明、部署指南、凭证替换方法等）**
+4. **项目文档索引见下方「十一、项目文档索引」章节，AI 首次进入项目时优先查阅此索引**
 
 ---
 
@@ -237,3 +237,42 @@ mcp_kuaimai-memory_search_nodes(query="取货单")
 - [ ] 已同步到docker-deploy（运行 `.\scripts\sync-to-docker-deploy.ps1 -Force`）
 - [ ] Git commit 消息符合格式 `v版本号: 变更描述`
 - [ ] CHANGELOG.md 已更新
+
+---
+
+## 十一、项目文档索引
+
+> 以下文档供 AI 和开发者查阅，首次进入项目时按需浏览。
+
+### 配置与部署
+
+| 文档 | 路径 | 内容 |
+|:-----|:-----|:------|
+| 🔑 快麦凭证配置说明 | [docs/快麦凭证配置说明.md](../../docs/快麦凭证配置说明.md) | appKey/appSecret/session 的配置与替换方法，3种修改方式（文件/管理后台/热加载） |
+| 🐳 Docker部署方案 | [.trae/documents/DOCKER_DEPLOYMENT_EXPERIENCE.md](../documents/DOCKER_DEPLOYMENT_EXPERIENCE.md) | Docker部署经验与踩坑记录 |
+| 📦 部署就绪报告 | [.trae/documents/deployment-readiness-report.md](../documents/deployment-readiness-report.md) | 部署前检查清单、完整部署步骤 |
+| 📐 docker-compose说明 | [.trae/documents/DOCKER_COMPOSE_YML_VS_YAML.md](../documents/DOCKER_COMPOSE_YML_VS_YAML.md) | docker-compose.yml 与 .yaml 区别说明 |
+
+### 审计与修复
+
+| 文档 | 路径 | 内容 |
+|:-----|:-----|:------|
+| 📋 变更日志 | [CHANGELOG.md](../../CHANGELOG.md) | 全部版本历史与修复记录（v1.1-v1.18，共65个修复） |
+| 🔍 第七次审计计划 | [.trae/documents/final-audit-round7-plan.md](../documents/final-audit-round7-plan.md) | 最终收尾审计：getImageUrls修复补提交 + 清理旧目录 |
+| 🔍 第六次审计计划 | [.trae/documents/final-audit-round6-plan.md](../documents/final-audit-round6-plan.md) | getImageUrls运行时读取、OkHttp日志降级 |
+| 🔍 第五次审计计划 | [.trae/documents/final-audit-round5-plan.md](../documents/final-audit-round5-plan.md) | 图片URL拼接、触摸热区、Alignment常量 |
+| 🔍 第四次审计计划 | [.trae/documents/fourth-audit-plan.md](../documents/fourth-audit-plan.md) | XSS修复、WorkManager、PDA扫码注册 |
+| 🔍 第三次审计计划 | [.trae/documents/third-audit-round3-plan.md](../documents/third-audit-round3-plan.md) | 扫码音效、广播崩溃、离线4xx |
+| 🔍 部署审计计划 | [.trae/documents/first-deploy-audit-plan.md](../documents/first-deploy-audit-plan.md) | 首次部署前安全审计 |
+| 🔍 首次完整审计 | [.trae/documents/full-code-audit-plan-v2.md](../documents/full-code-audit-plan-v2.md) | 首次全面代码审计 |
+
+### 功能设计
+
+| 文档 | 路径 | 内容 |
+|:-----|:-----|:------|
+| 📐 主计划文档 | [.trae/documents/kuaimai-pda-app-plan.md](../documents/kuaimai-pda-app-plan.md) | 项目整体设计、UI规范、路由、功能规格 |
+| 🔄 凭证同步修复 | [.trae/documents/kuaimai-credentials-sync-plan.md](../documents/kuaimai-credentials-sync-plan.md) | PDA登录后自动同步快麦凭证的实现方案 |
+| 🔄 Token刷新修复 | [.trae/documents/kuaimai-token-refresh-plan.md](../documents/kuaimai-token-refresh-plan.md) | 401自动刷新快麦session的完整方案 |
+| 🔄 快麦API修复v2 | [.trae/documents/kuaimai-api-comprehensive-fix-plan.md](../documents/kuaimai-api-comprehensive-fix-plan.md) | 快麦API签名、超时重试、日志 |
+| 🔄 快麦API修复v3 | [.trae/documents/kuaimai-api-final-defect-plan.md](../documents/kuaimai-api-final-defect-plan.md) | 快麦API最终缺陷修复 |
+| 🔒 权限审计 | [.trae/documents/user-permission-review-v4.md](../documents/user-permission-review-v4.md) | 用户权限审计与锁定 |
