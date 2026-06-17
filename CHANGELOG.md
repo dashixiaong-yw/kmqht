@@ -1,5 +1,16 @@
 # 快麦取货通 - 变更日志
 
+## 1.23 (2026-06-17)
+
+### 修复
+- P0: 修复 `/api/app-version` 被 API Key 中间件拦截——SKIP_AUTH_PREFIXES 新增该路径
+- P1: 修复 SettingsViewModel.startDownload 防重复调用——isDownloadingUpdate 标记
+- P1: 修复 AppUpdateManager.checkForUpdate 防并发——AtomicBoolean 校验
+- P1: 修复下载缓存文件名对齐为"快麦取货通-版本号.apk"
+- P2: 修复 APK 上传添加文件类型校验（.apk 后缀 + MIME 检查）
+- P2: 修复版本号路径穿越风险——正则校验 `^\d+\.\d+$`
+- P2: 修复 SettingsScreen.Divider 替换为 HorizontalDivider
+
 ## 1.22 (2026-06-17)
 
 ### 修复
