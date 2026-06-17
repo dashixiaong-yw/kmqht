@@ -75,14 +75,19 @@ class OrderSyncWorker(
                         pendingOperationDao.deleteById(op.id)
                         Log.d(TAG, "操作同步成功: ${op.operationType} orderId=$orderId")
                     } else {
-                        // 递增重试计数
-                        val newRetryCount = op.retryCount + 1
-                        if (newRetryCount >= MAX_RETRY) {
-                            // 超过最大重试次数，标记为冲突（保留记录）
-                            Log.e(TAG, "操作同步失败超过${MAX_RETRY}次，标记冲突: ${op.operationType}")
-                            pendingOperationDao.updateRetryCount(op.id, -1)
+                        // 重新查询当前retryCount，防止syncOperation已设置-1被覆盖
+                        val current = pendingOperationDao.getById(op.id)
+                        if (current?.retryCount == -1) {
+                            // 已标记为冲突，不覆盖
+                            Log.w(TAG, "操作已标记冲突: ${op.operationType} orderId=$orderId")
                         } else {
-                            pendingOperationDao.updateRetryCount(op.id, newRetryCount)
+                            val newRetryCount = op.retryCount + 1
+                            if (newRetryCount >= MAX_RETRY) {
+                                Log.e(TAG, "操作同步失败超过${MAX_RETRY}次，标记冲突: ${op.operationType}")
+                                pendingOperationDao.updateRetryCount(op.id, -1)
+                            } else {
+                                pendingOperationDao.updateRetryCount(op.id, newRetryCount)
+                            }
                         }
                         hasFailure = true
                     }

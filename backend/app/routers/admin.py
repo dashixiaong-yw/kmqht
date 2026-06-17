@@ -499,8 +499,8 @@ async function loadAreas() {{
       return;
     }}
     tbody.innerHTML = areas.map(a => `<tr>
-      <td>${{a.id}}</td><td>${{a.name}}</td><td>${{a.created_at || '-'}}</td>
-      <td><button class="btn btn-danger btn-sm" onclick="confirmDeleteArea(${{a.id}},'${{a.name}}')">删除</button></td>
+      <td>${{a.id}}</td><td>${{escapeHtml(a.name)}}</td><td>${{a.created_at || '-'}}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="confirmDeleteArea(${{a.id}},'${{escapeHtml(a.name)}}')">删除</button></td>
     </tr>`).join('');
   }} catch(e) {{
     document.getElementById('areaTableBody').innerHTML = '<tr><td colspan="4" class="empty">加载失败</td></tr>';

@@ -1,6 +1,7 @@
 package com.kuaimai.pda.ui.pickdetail
 
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -377,6 +378,7 @@ class PickDetailViewModel @Inject constructor(
             val serverUrl = prefs.getString(PrefsKeys.KEY_SERVER_URL, "") ?: ""
             Pair(areaImage?.let { "$serverUrl${it.imageUrl}" }, boxImage?.let { "$serverUrl${it.imageUrl}" })
         } catch (e: Exception) {
+            Log.w("PickDetailViewModel", "获取图片URL失败: ${e.message}")
             Pair(null, null)
         }
     }

@@ -159,7 +159,7 @@ fun PickItemRow(
             // 库区图小方块
             Box(
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(56.dp)
                     .clip(RoundedCornerShape(6.dp))
                     .background(SurfaceGray)
                     .clickable { onAreaImageClick() },

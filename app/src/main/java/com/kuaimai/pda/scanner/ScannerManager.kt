@@ -92,7 +92,17 @@ class ScannerManager @Inject constructor() {
         }
 
         val filter = IntentFilter(config.actionName)
-        context.registerReceiver(receiver, filter)
+        if (Build.VERSION.SDK_INT >= 26) {
+            val flag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                Context.RECEIVER_EXPORTED
+            } else {
+                0
+            }
+            context.registerReceiver(receiver, filter, flag)
+        } else {
+            @Suppress("DEPRECATION")
+            context.registerReceiver(receiver, filter)
+        }
         isRegistered = true
     }
 

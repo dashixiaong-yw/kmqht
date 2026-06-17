@@ -1,5 +1,19 @@
 # 快麦取货通 - 变更日志
 
+## 1.20 (2026-06-17)
+
+### 修复
+- P0: 修复admin.py拣货区名称XSS漏洞——a.name在td和onclick中未转义，新增escapeHtml()
+- P0: 修复ScannerManager Android 14+广播注册崩溃——registerReceiver新增RECEIVER_EXPORTED标志
+- P1: 修复PickItemRow规格图/库区图触摸热区不足56dp（52dp/40dp→56dp）
+- P1: 修复HomeScreen引导条prefs=null时永远无法关闭（!=true→==false）
+- P1: 修复PickDetailViewModel.getImageUrls() catch块缺少日志
+- P1: 修复OrderSyncWorker 4xx retryCount被doWork覆盖（新增getById查询当前值）
+- P2: 修复HomeScreen会话警告条未使用AppAlignment常量
+
+### 修改
+- PendingOperationDao新增getById()方法
+
 ## 1.19 (2026-06-17)
 
 ### 新增

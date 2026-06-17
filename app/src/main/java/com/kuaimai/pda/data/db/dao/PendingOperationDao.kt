@@ -42,4 +42,8 @@ interface PendingOperationDao {
     /** 获取冲突操作（retryCount = -1） */
     @Query("SELECT * FROM pending_operation WHERE retry_count = -1 ORDER BY created_at ASC")
     suspend fun getConflicts(): List<PendingOperationEntity>
+
+    /** 按ID查询操作记录 */
+    @Query("SELECT * FROM pending_operation WHERE id = :id")
+    suspend fun getById(id: Long): PendingOperationEntity?
 }

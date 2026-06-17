@@ -28,7 +28,7 @@
 | 1 | 开发 | **查阅知识图谱** | 首次修改前必须查阅；批量任务中后续任务按需查阅 |
 | 2 | 开发 | 修改代码 | 在 `app/` 目录修改，**支持批量完成多个任务后再进入收尾** |
 | 3 | 开发 | 验证代码 | `./gradlew lint` 必须通过；**失败则回到Step 2修复** |
-| 4 | 开发 | 构建APK | `./gradlew assembleDebug` 构建成功；**失败则回到Step 2修复** |
+| 4 | 开发 | 构建APK | `./gradlew assembleDebug`（开发验证）或 `./gradlew assembleRelease`（分发签名APK）构建成功；**失败则回到Step 2修复** |
 | 5 | 收尾 | 更新版本号 | **⚠️ 进入收尾后禁止再修改代码**；**先读取3处当前版本号取最大值，再+1递增**，更新3处并验证一致 |
 | 6 | 收尾 | **更新知识图谱** | 将本次所有变更的设计决策同步到知识图谱 |
 | 7 | 收尾 | 同步到docker-deploy | 运行 `.\scripts\sync-to-docker-deploy.ps1 -Force` 同步后端部署文件 |
@@ -43,7 +43,7 @@
 
 - ✅ 所有任务代码修改已完成（逐项确认，无遗漏）
 - ✅ `./gradlew lint` 通过
-- ✅ `./gradlew assembleDebug` 构建成功
+- ✅ `./gradlew assembleDebug`（开发验证）或 `./gradlew assembleRelease`（分发签名APK）构建成功
 
 **收尾阶段禁止回退**：进入Step 5后禁止再修改任何代码文件。若发现遗漏，必须完成当前收尾（Step 5-8），再以新版本号重新走完整流程。
 
@@ -182,7 +182,9 @@
 │   │   ├── scanner/         ← PDA扫码模块
 │   │   ├── ui/              ← Compose UI
 │   │   └── util/            ← 工具函数
-│   └── build.gradle.kts     ← 项目构建配置
+│   ├── build.gradle.kts     ← 项目构建配置
+│   ├── proguard-rules.pro   ← R8 混淆规则
+│   └── kuaimai-release.keystore ← APK 签名证书（禁止提交，仅本地构建用）
 ├── backend/                 ← FastAPI 图片上传服务
 ├── scripts/                 ← 运维脚本
 │   └── sync-to-docker-deploy.ps1  ← 同步部署文件脚本
@@ -201,7 +203,8 @@
 
 | 命令 | 说明 |
 |------|------|
-| `./gradlew assembleDebug` | 构建 Debug APK |
+| `./gradlew assembleDebug` | 构建 Debug APK（开发验证，无签名） |
+| `./gradlew assembleRelease` | 构建 Release APK（签名+混淆，PDA安装用） |
 | `./gradlew lint` | 代码检查 |
 | `./gradlew test` | 运行单元测试 |
 | `cd backend && docker-compose up -d --build` | 部署后端服务 |
@@ -228,7 +231,7 @@ mcp_kuaimai-memory_search_nodes(query="取货单")
 - [ ] 所有任务代码修改已完成（批量任务时逐项确认无遗漏）
 - [ ] 代码修改在 `app/` 目录完成
 - [ ] 代码验证通过（lint）
-- [ ] APK构建成功（app-debug.apk 产出）
+- [ ] APK构建成功（debug 构建产出 `debug/快麦取货通-版本号.apk`，release 构建产出 `release/快麦取货通-版本号.apk`）
 
 **收尾阶段**：
 

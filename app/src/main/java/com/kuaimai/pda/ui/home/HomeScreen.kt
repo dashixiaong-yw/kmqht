@@ -195,7 +195,7 @@ fun HomeScreen(
                         .background(WarningBg, RoundedCornerShape(8.dp))
                         .clickable { onNavigateToSettings() }
                         .padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = AppAlignment.RowCenter
                 ) {
                     Text(
                         text = sessionWarningText,
