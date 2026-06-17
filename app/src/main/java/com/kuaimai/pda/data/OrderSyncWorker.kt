@@ -257,8 +257,8 @@ class OrderSyncWorker(
             return false
         }
 
-        val imageUrl = imageUploadService.uploadImage(imageFile, imageType, skuOuterId)
-        Log.d(TAG, "图片上传同步完成: skuOuterId=$skuOuterId imageUrl=$imageUrl")
+        val (remoteId, imageUrl) = imageUploadService.uploadImage(imageFile, imageType, skuOuterId)
+        Log.d(TAG, "图片上传同步完成: skuOuterId=$skuOuterId remoteId=$remoteId imageUrl=$imageUrl")
         return true
     }
 

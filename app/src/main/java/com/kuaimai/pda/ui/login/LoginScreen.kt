@@ -293,7 +293,7 @@ private fun friendlyErrorMessage(throwable: Throwable?): String {
         is java.net.ConnectException -> "无法连接服务器，请检查网络"
         is java.net.UnknownHostException -> "无法解析服务器地址，请检查网络设置"
         else -> {
-            if (throwable.message?.contains("401") == true) "用户名或密码错误"
+            if ((throwable as? retrofit2.HttpException)?.code() == 401) "用户名或密码错误"
             else "登录失败: ${throwable.message}"
         }
     }

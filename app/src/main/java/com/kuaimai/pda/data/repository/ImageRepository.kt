@@ -4,8 +4,9 @@ import com.kuaimai.pda.data.api.ImageUploadService
 import com.kuaimai.pda.data.db.dao.ProductImageDao
 import com.kuaimai.pda.data.db.entity.ProductImageEntity
 import com.kuaimai.pda.util.ImageCompressor
-import android.util.Log
+import com.kuaimai.pda.util.TimeUtils
 import kotlinx.coroutines.flow.Flow
+import org.json.JSONArray
 import java.io.File
 import javax.inject.Inject
 
@@ -13,11 +14,13 @@ import javax.inject.Inject
  * 图片仓库接口
  */
 interface ImageRepository {
-    suspend fun uploadImage(imageFile: File, imageType: String, skuOuterId: String): String
+    suspend fun uploadImage(imageFile: File, imageType: String, skuOuterId: String): Pair<Long, String>
     fun getImagesBySkuOuterId(skuOuterId: String): Flow<List<ProductImageEntity>>
     suspend fun getImageBySkuAndType(skuOuterId: String, imageType: String): ProductImageEntity?
     suspend fun saveImage(image: ProductImageEntity): Long
     suspend fun deleteImage(skuOuterId: String, imageType: String)
+    /** 从后端同步图片到本地（多PDA数据共享） */
+    suspend fun syncImagesFromBackend(skuOuterId: String)
 }
 
 /**
@@ -32,14 +35,12 @@ class ImageRepositoryImpl @Inject constructor(
         imageFile: File,
         imageType: String,
         skuOuterId: String
-    ): String {
-        // 上传前压缩图片（F10: 压缩到1024px宽/质量80%约200KB）
+    ): Pair<Long, String> {
         val compressedFile = ImageCompressor.compress(imageFile)
         val fileToUpload = if (compressedFile !== imageFile) compressedFile else imageFile
         return try {
             uploadService.uploadImage(fileToUpload, imageType, skuOuterId)
         } finally {
-            // 清理临时压缩文件
             if (compressedFile !== imageFile && compressedFile.exists()) {
                 compressedFile.delete()
             }
@@ -64,12 +65,30 @@ class ImageRepositoryImpl @Inject constructor(
     override suspend fun deleteImage(skuOuterId: String, imageType: String) {
         val image = productImageDao.getBySkuOuterIdAndType(skuOuterId, imageType)
         if (image != null) {
+            val deleteId = if (image.remoteId > 0) image.remoteId else image.id
+            uploadService.deleteImage(deleteId)
             productImageDao.deleteBySkuAndType(skuOuterId, imageType)
-            try {
-                uploadService.deleteImage(image.id)
-            } catch (e: Exception) {
-                Log.w("ImageRepository", "远程删除图片失败: ${e.message}")
+        }
+    }
+
+    override suspend fun syncImagesFromBackend(skuOuterId: String) {
+        try {
+            val responseBody = uploadService.fetchImages(skuOuterId)
+            val jsonArray = JSONArray(responseBody)
+            val now = TimeUtils.now()
+            for (i in 0 until jsonArray.length()) {
+                val json = jsonArray.getJSONObject(i)
+                val entity = ProductImageEntity(
+                    skuOuterId = skuOuterId,
+                    imageType = json.getString("imageType"),
+                    imageUrl = json.getString("imageUrl"),
+                    remoteId = json.getLong("id"),
+                    createdAt = now
+                )
+                productImageDao.insert(entity)
             }
+        } catch (e: Exception) {
+            // 同步失败不阻塞主流程
         }
     }
 }

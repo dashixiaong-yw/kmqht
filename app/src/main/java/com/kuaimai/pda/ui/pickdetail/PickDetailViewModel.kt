@@ -309,7 +309,7 @@ class PickDetailViewModel @Inject constructor(
                         // 已有明细，更新状态（其他PDA可能已完成/恢复了）
                         if (existing.status != itemResponse.status) {
                             val completedAt = TimeUtils.parseBeijingTimeOrNull(itemResponse.completedAt)
-                            pickOrderRepository.updateItemStatus(existing.id, itemResponse.status, completedAt)
+                            pickOrderRepository.updateItemStatusDirect(existing.id, itemResponse.status, completedAt)
                         }
                     }
                 }

@@ -29,6 +29,9 @@ data class ProductImageEntity(
     @ColumnInfo(name = "image_url")
     val imageUrl: String,
 
+    @ColumnInfo(name = "remote_id")
+    val remoteId: Long = 0,
+
     @ColumnInfo(name = "created_at")
     val createdAt: Long
 )

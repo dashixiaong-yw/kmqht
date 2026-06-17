@@ -148,9 +148,14 @@ class ProductViewModel @Inject constructor(
      * 加载SKU图片（启动新协程收集，取消旧的避免泄漏）
      */
     private fun loadImages(skuOuterId: String) {
-        // 取消之前的收集协程
         imagesJob?.cancel()
         imagesJob = viewModelScope.launch {
+            try {
+                // 从后端同步图片（多PDA数据共享）
+                imageRepository.syncImagesFromBackend(skuOuterId)
+            } catch (e: Exception) {
+                Log.w("ProductViewModel", "同步后端图片失败: ${e.message}")
+            }
             try {
                 val serverUrl = prefs.getString(PrefsKeys.KEY_SERVER_URL, DEFAULT_SERVER_URL) ?: DEFAULT_SERVER_URL
                 productImageDao.getBySkuOuterId(skuOuterId).collectLatest { images ->
@@ -162,7 +167,6 @@ class ProductViewModel @Inject constructor(
                     )
                 }
             } catch (e: Exception) {
-                // 图片加载失败不阻塞主流程，但记录日志
                 Log.w("ProductViewModel", "加载SKU图片失败: ${e.message}")
             }
         }
@@ -258,7 +262,7 @@ class ProductViewModel @Inject constructor(
     private fun loadSuppliers() {
         viewModelScope.launch {
             try {
-                val result = apiService.querySupplierList(emptyMap())
+                val result = apiService.querySupplierList(mapOf("method" to "supplier.list.query"))
                 _suppliers.value = result.suppliers
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
@@ -326,12 +330,12 @@ class ProductViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(isUploading = true, uploadProgress = 0)
         viewModelScope.launch {
             try {
-                val imageUrl = imageRepository.uploadImage(imageFile, imageType, skuOuterId)
-                // 保存到本地数据库
+                val (remoteId, imageUrl) = imageRepository.uploadImage(imageFile, imageType, skuOuterId)
                 val entity = ProductImageEntity(
                     skuOuterId = skuOuterId,
                     imageType = imageType,
                     imageUrl = imageUrl,
+                    remoteId = remoteId,
                     createdAt = TimeUtils.now()
                 )
                 imageRepository.saveImage(entity)

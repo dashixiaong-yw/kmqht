@@ -224,6 +224,11 @@ def complete_item(order_id: int, item_id: int, user: dict = Depends(get_current_
     if not item_row:
         raise HTTPException(status_code=404, detail="取货明细不存在")
 
+    cursor.execute("SELECT status FROM pick_orders WHERE id = ?", (order_id,))
+    order_row = cursor.fetchone()
+    if order_row and order_row["status"] == 1:
+        raise HTTPException(status_code=400, detail="已完成的取货单不能删除明细")
+
     # 幂等：已完成的不再处理
     if item_row["status"] == 1:
         return BaseResponse(message="该明细已完成")

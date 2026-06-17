@@ -4,8 +4,6 @@ import com.kuaimai.pda.data.repository.AuthRepository
 import com.kuaimai.pda.data.repository.AuthRepositoryImpl
 import com.kuaimai.pda.data.repository.ImageRepository
 import com.kuaimai.pda.data.repository.ImageRepositoryImpl
-import com.kuaimai.pda.data.repository.ItemRepository
-import com.kuaimai.pda.data.repository.ItemRepositoryImpl
 import com.kuaimai.pda.data.repository.PickOrderRepository
 import com.kuaimai.pda.data.repository.PickOrderRepositoryImpl
 import com.kuaimai.pda.data.repository.UserRepository
@@ -22,10 +20,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
-
-    @Binds
-    @Singleton
-    abstract fun bindItemRepository(impl: ItemRepositoryImpl): ItemRepository
 
     @Binds
     @Singleton

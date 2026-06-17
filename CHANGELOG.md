@@ -1,5 +1,25 @@
 # 快麦取货通 - 变更日志
 
+## 1.13 (2026-06-17)
+
+### 修复
+- P0: 修复图片上传响应格式不匹配——前端期望`{data:{imageUrl}}`但后端返回扁平`ImageResponse`，导致图片上传功能完全不可用
+- P0: 修复`querySupplierList`调用时传入空Map缺少`method`参数，导致供应商列表加载永远失败
+- P1: 修复图片删除ID不同步——前端使用Room本地自增ID调后端删除，需改用后端返回的remoteId
+- P1: 修复`PickDetailViewModel.refresh()`使用`updateItemStatus()`（带离线入队）而非`updateItemStatusDirect()`，导致下拉刷新产生无效离线队列
+- P1: 修复`ImageRepositoryImpl.deleteImage()`先删本地再调远程，与全局"先API后本地"策略不一致
+- P1: 修复后端`delete_item`未校验取货单已完成状态，已完成订单明细被删除后计数不一致
+- P2: 前端新增`syncImagesFromBackend()`从后端查询图片，实现多PDA图片共享可见
+- P2: 清理`ItemRepository`死代码和`KuaimaiApiService`中3个未使用方法
+- P2: 合并CHANGELOG中v1.7和v1.8的重复版本号条目
+- P3: `LoginScreen`和`UserRepository`的401检测改为`HttpException.code()`类型检查，替代不可靠的字符串匹配
+
+### 修改
+- `ProductImageEntity`新增`remoteId`字段，上传成功后保存后端返回的图片ID
+- `ImageUploadService.uploadImage()`返回类型从`String`改为`Pair<Long, String>`（remoteId + imageUrl）
+- Room数据库升级至v2，新增`MIGRATION_1_2`：`product_image`表添加`remote_id`列
+- `ImageUploadService`新增`fetchImages()`方法查询后端图片列表
+
 ## 1.12 (2026-06-17)
 
 ### 修复
@@ -63,29 +83,6 @@
 
 ## 1.8 (2026-06-17)
 
-### 修复
-- 修复completeAllItems API失败后未入队离线队列导致操作丢失的P0 bug
-- 优化HomeScreen会话过期预警措辞，区分天/小时/已过期三种状态
-
-### 优化
-- PickDetailScreen扫码成功事件改用collectLatest，避免快速连续扫码丢失事件
-
-## 1.7 (2026-06-17)
-
-### 修复
-- P0: API地址修正为官方文档地址 https://gw.superboss.cc/router（前后端一致）
-- P0: 公共参数名修正 app_key→appKey、v→version（与快麦开放平台官方文档一致）
-- P0: API版本号修正 2.0→1.0（与快麦开放平台官方文档一致）
-- P0: KuaimaiInterceptor读取session的key从硬编码access_token改为PrefsKeys.KEY_SESSION
-- P1: TokenAuthenticator改为通过后端SystemApiService中转刷新session（不再直接调快麦API）
-- P1: KuaimaiApiService移除refreshSession接口（session刷新统一通过后端中转）
-- P1: AuthRepositoryImpl.refreshSession改为通过后端SystemApiService中转
-- P1: refresh_session函数改为直接调API不通过_call_api通用逻辑，修复响应解析问题
-- P2: save_kuaimai_config增加session字段保存
-- P2: KuaimaiInterceptor host匹配增加superboss.cc
-
-## 1.8 (2026-06-17)
-
 ### 新增
 - 后端KuaimaiCredentials增加refresh_token字段存储
 - 后端新增save_kuaimai_config()方法，刷新后持久化updated_at到kuaimai.json
@@ -100,6 +97,13 @@
 - kuaimai.example.json增加refresh_token字段
 - KuaimaiCredentials新增has_refresh_token()和get_days_left()方法
 
+### 修复
+- 修复completeAllItems API失败后未入队离线队列导致操作丢失的P0 bug
+- 优化HomeScreen会话过期预警措辞，区分天/小时/已过期三种状态
+
+### 优化
+- PickDetailScreen扫码成功事件改用collectLatest，避免快速连续扫码丢失事件
+
 ## 1.7 (2026-06-17)
 
 ### 安全
@@ -111,6 +115,16 @@
 - 图片上传添加速率限制（每用户每分钟10次）
 
 ### 修复
+- P0: API地址修正为官方文档地址 https://gw.superboss.cc/router（前后端一致）
+- P0: 公共参数名修正 app_key→appKey、v→version（与快麦开放平台官方文档一致）
+- P0: API版本号修正 2.0→1.0（与快麦开放平台官方文档一致）
+- P0: KuaimaiInterceptor读取session的key从硬编码access_token改为PrefsKeys.KEY_SESSION
+- P1: TokenAuthenticator改为通过后端SystemApiService中转刷新session（不再直接调快麦API）
+- P1: KuaimaiApiService移除refreshSession接口（session刷新统一通过后端中转）
+- P1: AuthRepositoryImpl.refreshSession改为通过后端SystemApiService中转
+- P1: refresh_session函数改为直接调API不通过_call_api通用逻辑，修复响应解析问题
+- P2: save_kuaimai_config增加session字段保存
+- P2: KuaimaiInterceptor host匹配增加superboss.cc
 - 修复session_expire_time从未写入导致会话过期预警失效的bug
 - 删除sendCrashReport空壳方法
 - 会话预警天数改用SESSION_WARNING_DAYS常量，前后端统一

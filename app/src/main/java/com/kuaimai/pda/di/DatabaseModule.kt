@@ -2,6 +2,8 @@ package com.kuaimai.pda.di
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.kuaimai.pda.data.db.AppDatabase
 import com.kuaimai.pda.data.db.dao.PickItemDao
 import com.kuaimai.pda.data.db.dao.PickOrderDao
@@ -13,6 +15,12 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
+
+private val MIGRATION_1_2 = object : Migration(1, 2) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE product_image ADD COLUMN remote_id INTEGER NOT NULL DEFAULT 0")
+    }
+}
 
 /**
  * 数据库层依赖注入：Room Database + DAO
@@ -32,7 +40,7 @@ object DatabaseModule {
             AppDatabase::class.java,
             "kuaimai_pda.db"
         )
-            // 后续版本升级时在此添加 .addMigrations(MIGRATION_X_Y)
+            .addMigrations(MIGRATION_1_2)
             .build()
     }
 

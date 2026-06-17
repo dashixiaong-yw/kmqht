@@ -41,7 +41,7 @@ class ImageUploadService @Inject constructor(
      * @param imageType 图片类型：area（区域图）或 box（货位图）
      * @param skuOuterId 商品外部ID
      * @param onProgress 进度回调 (0-100)
-     * @return 上传后的图片相对URL路径
+     * @return Pair(remoteId, imageUrl) 上传后的远程ID和图片相对URL路径
      * @throws IOException 网络或上传失败
      */
     @Throws(IOException::class)
@@ -50,7 +50,7 @@ class ImageUploadService @Inject constructor(
         imageType: String,
         skuOuterId: String,
         onProgress: ((Int) -> Unit)? = null
-    ): String = withContext(Dispatchers.IO) {
+    ): Pair<Long, String> = withContext(Dispatchers.IO) {
         var lastException: IOException? = null
 
         repeat(MAX_RETRY) { attempt ->
@@ -78,7 +78,7 @@ class ImageUploadService @Inject constructor(
         imageType: String,
         skuOuterId: String,
         onProgress: ((Int) -> Unit)?
-    ): String {
+    ): Pair<Long, String> {
         val serverUrl = prefs.getString(PrefsKeys.KEY_SERVER_URL, DEFAULT_SERVER_URL)
             ?: DEFAULT_SERVER_URL
         val uploadUrl = "$serverUrl/api/upload"
@@ -146,6 +146,31 @@ class ImageUploadService @Inject constructor(
     }
 
     /**
+     * 从后端查询SKU的图片列表（多PDA同步用）
+     * @param skuOuterId SKU外部编码
+     * @return 图片列表JSON字符串
+     */
+    suspend fun fetchImages(skuOuterId: String): String = withContext(Dispatchers.IO) {
+        val serverUrl = prefs.getString(PrefsKeys.KEY_SERVER_URL, DEFAULT_SERVER_URL)
+            ?: DEFAULT_SERVER_URL
+        val queryUrl = "$serverUrl/api/images/$skuOuterId"
+
+        val token = encryptedPrefs.getString(PrefsKeys.KEY_USER_TOKEN, "") ?: ""
+        val request = Request.Builder()
+            .url(queryUrl)
+            .get()
+            .addHeader("X-User-Token", token)
+            .build()
+
+        val response = client.newCall(request).execute()
+        if (!response.isSuccessful) {
+            throw IOException("查询图片失败: HTTP ${response.code}")
+        }
+
+        response.body?.string() ?: throw IOException("查询图片响应为空")
+    }
+
+    /**
      * 根据文件扩展名推断MediaType
      */
     private fun guessMediaType(fileName: String): String {
@@ -159,19 +184,22 @@ class ImageUploadService @Inject constructor(
     }
 
     /**
-     * 从响应JSON中解析图片URL
-     * 响应格式: {"success":true,"data":{"id":1,"imageUrl":"/images/..."}}
+     * 从响应JSON中解析图片URL和远程ID
+     * 响应格式: {"id":1,"skuOuterId":"...","imageType":"area","imageUrl":"/images/...","filePath":"...","createdAt":"..."}
      * 使用JSONObject解析，正确处理转义字符
+     * @return Pair(remoteId, imageUrl)
      */
-    private fun parseImageUrlFromResponse(responseBody: String): String {
+    fun parseImageUrlFromResponse(responseBody: String): Pair<Long, String> {
         return try {
             val json = JSONObject(responseBody)
-            val data = json.optJSONObject("data")
-            val imageUrl = data?.optString("imageUrl", "") ?: ""
-            if (imageUrl.isEmpty()) {
-                throw IOException("响应中未找到imageUrl字段")
+            val remoteId = json.optLong("id", 0L)
+            val imageUrl = json.optString("imageUrl", "")
+            if (remoteId == 0L || imageUrl.isEmpty()) {
+                throw IOException("响应中未找到id或imageUrl字段")
             }
-            imageUrl
+            Pair(remoteId, imageUrl)
+        } catch (e: IOException) {
+            throw e
         } catch (e: Exception) {
             throw IOException("解析上传响应失败: ${e.message}")
         }

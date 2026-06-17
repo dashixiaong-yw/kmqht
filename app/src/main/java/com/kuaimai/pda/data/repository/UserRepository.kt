@@ -244,9 +244,7 @@ class UserRepositoryImpl @Inject constructor(
      * 处理认证错误：检测401响应并触发登录失效事件
      */
     private fun handleAuthError(e: Exception) {
-        val message = e.message ?: ""
-        // Retrofit的HTTP 401异常消息包含"401"
-        if (message.contains("401") || message.contains("Unauthorized")) {
+        if ((e as? retrofit2.HttpException)?.code() == 401) {
             clearLocalUser()
             appScope.launch {
                 _loginRequired.emit(Unit)
