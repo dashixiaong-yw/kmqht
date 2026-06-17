@@ -1,5 +1,14 @@
 # 快麦取货通 - 变更日志
 
+## 1.1 (2026-06-17)
+
+### 修复
+- 修复后端login接口参数类型错误（CreateUserRequest→LoginRequest）
+- 修复SettingsScreen缺少userRepository和onLogout参数导致编译失败
+- 修复SettingsScreen使用不存在的CompleteBg/CompleteText颜色常量（改为SuccessBg/SuccessText）
+- 修复SettingsScreen中@Composable在非Composable上下文调用的问题（改为状态驱动弹窗）
+- 修复SettingsScreen中createUser参数类型String?→String不匹配
+
 ## 1.0 (2026-06-17)
 
 ### 新增

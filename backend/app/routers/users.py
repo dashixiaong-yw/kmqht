@@ -11,6 +11,7 @@ from app.database import get_db
 from app.models import (
     BaseResponse,
     CreateUserRequest,
+    LoginRequest,
     LoginResponse,
     UpdateUserRequest,
     UserListResponse,
@@ -27,7 +28,7 @@ TOKEN_EXPIRE_DAYS = 7
 
 
 @router.post("/login", response_model=LoginResponse)
-def login(req: CreateUserRequest) -> LoginResponse:
+def login(req: LoginRequest) -> LoginResponse:
     """用户登录"""
     db = get_db()
     cursor = db.cursor()
