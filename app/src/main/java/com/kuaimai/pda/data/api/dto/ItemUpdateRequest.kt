@@ -18,7 +18,7 @@ data class ItemUpdateRequest(
 /** SKU备注更新（V2: id + skuOuterId + remark） */
 data class SkuUpdateDto(
     @SerializedName("id") val skuId: Long = 0,
-    @SerializedName("skuOuterId") val skuOuterId: String = "",
+    @SerializedName("outerId") val skuOuterId: String = "",
     @SerializedName("remark") val skuRemark: String = ""
 )
 

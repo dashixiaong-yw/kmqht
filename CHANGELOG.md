@@ -12,6 +12,11 @@
 - MEDIUM: .env.docker.example 添加API Key修改警告提示
 - MEDIUM: Dockerfile CMD支持SERVER_PORT环境变量（默认8000）
 - LOW: 删残留hilt-work依赖引用
+- P0: 修复 `erp.item.general.addorupdate` 缺少必填参数——补充 outerId/title/skus[].outerId/parentPropertiesName
+- P0: 修复后端 `get_sku_by_outer_id` 返回缺少 `item_outer_id` 字段
+- P0: sku_cache 表新增 `item_outer_id` 列及缓存处理
+- P1: 补充 Android ItemUpdateRequest outerId/title 字段
+- P1: 补充 Android SkuUpdateDto skuOuterId(outerId) 字段
 
 ### 修改
 - App.kt 新增 OrderSyncWorkerDeps 静态依赖容器（@Inject 6个依赖到Application级别）
