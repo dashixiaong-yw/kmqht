@@ -46,6 +46,7 @@ import com.kuaimai.pda.ui.theme.SurfaceWhite
 @Composable
 fun GuideScreen(
     prefs: SharedPreferences,
+    encryptedPrefs: SharedPreferences,
     onFinish: () -> Unit
 ) {
     var currentStep by remember { mutableIntStateOf(0) }
@@ -87,11 +88,11 @@ fun GuideScreen(
                 onApiKeyChange = { apiKey = it },
                 onScanConfig = { showCameraScan = true },
                 onNext = {
-                    // 保存服务器地址和API Key
+                    // 服务器地址保存到普通SharedPreferences
                     prefs.edit().putString(PrefsKeys.KEY_SERVER_URL, serverUrl.trim()).apply()
                     if (apiKey.isNotBlank()) {
-                        // API Key保存到加密SharedPreferences（由SettingsViewModel处理）
-                        prefs.edit().putString(PrefsKeys.KEY_API_KEY, apiKey.trim()).apply()
+                        // API Key保存到加密SharedPreferences
+                        encryptedPrefs.edit().putString(PrefsKeys.KEY_API_KEY, apiKey.trim()).apply()
                     }
                     currentStep = 1
                 }

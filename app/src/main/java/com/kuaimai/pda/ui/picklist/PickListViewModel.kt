@@ -179,9 +179,12 @@ class PickListViewModel @Inject constructor(
             try {
                 val token = userRepository.getToken()
                 orderApiService.deleteOrder(token, order.id)
+                // API成功：直接删除本地
                 pickOrderRepository.deleteOrder(order)
             } catch (e: Exception) {
-                _errorMessage.value = "删除取货单失败: ${e.message}"
+                // API失败：乐观删除+入队
+                pickOrderRepository.deleteOrderWithQueue(order)
+                _errorMessage.value = "删除取货单失败，将在网络恢复后重试: ${e.message}"
             } finally {
                 _deleteTarget.value = null
             }

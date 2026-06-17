@@ -11,6 +11,7 @@ import com.kuaimai.pda.ui.navigation.AppNavigation
 import com.kuaimai.pda.ui.theme.KuaimaiTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import javax.inject.Named
 
 /**
  * 单Activity架构，承载Compose导航
@@ -25,6 +26,10 @@ class MainActivity : ComponentActivity() {
     lateinit var prefs: SharedPreferences
 
     @Inject
+    @field:Named("encrypted")
+    lateinit var encryptedPrefs: SharedPreferences
+
+    @Inject
     lateinit var authRepository: AuthRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,6 +40,7 @@ class MainActivity : ComponentActivity() {
                 AppNavigation(
                     userRepository = userRepository,
                     prefs = prefs,
+                    encryptedPrefs = encryptedPrefs,
                     authRepository = authRepository
                 )
             }

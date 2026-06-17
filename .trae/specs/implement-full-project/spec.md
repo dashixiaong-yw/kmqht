@@ -576,10 +576,10 @@
 
 ### Requirement: 后端环境变量配置
 
-- .env文件仅包含：API_KEY（后端认证密钥）和SERVER_PORT
+- .env文件包含：API_KEY（后端认证密钥）、SERVER_PORT、SERVER_URL（服务器地址，用于生成扫码配置二维码，格式如`http://NAS_IP:8900`）
 - 快麦凭证已分离到kuaimai.json（参见"快麦API凭证独立存储"Requirement）
 - .env文件禁止提交到Git，.dockerignore已忽略所有.env*文件
-- .env.docker.example模板文件供部署时复制并填入真实值
+- .env.docker.example模板文件供部署时复制并填入真实值（含SERVER_URL示例）
 
 ### Requirement: Room Migration策略
 
@@ -692,3 +692,43 @@ openapi-generator generate -i api.yaml -g kotlin -o android-client/ --additional
 - 数据库预填充：首次安装时预填充空数据库，避免首次启动时建表耗时
 - 布局优化：首页使用LazyColumn，避免一次性加载所有取货单卡片
 - 图片加载：Coil内存缓存+磁盘缓存，避免每次启动重新下载图片
+
+### Requirement: F37 Web管理后台
+
+#### Scenario: 管理后台访问与认证
+- **WHEN** 管理员通过浏览器访问 `http://NAS_IP:8900/admin`
+- **THEN** 显示管理后台页面，页面加载时弹出输入框要求输入API Key；验证通过后显示管理内容，API Key存储在sessionStorage中；所有API请求通过X-API-Key头认证；未认证时仅显示认证输入框，不显示管理内容
+
+#### Scenario: 仪表盘概览
+- **WHEN** 管理员进入管理后台仪表盘标签页
+- **THEN** 显示系统概览统计卡片（进行中取货单数、用户数、拣货区数）；显示扫码配置二维码（内容为`kuaimai://setup?server=<URL>&apikey=<KEY>`），PDA扫码可自动填入服务器地址和API Key；未配置SERVER_URL时显示红色提示
+
+#### Scenario: 用户管理
+- **WHEN** 管理员进入用户管理标签页
+- **THEN** 显示用户列表（用户名/权限代码/启用状态/操作按钮）；支持新增用户（输入用户名+密码+选择权限）；支持编辑用户权限（5种权限代码：settings/update_supplier/update_remark/manage_area_image/manage_box_image）；支持启用/禁用用户（禁用后该用户Token失效无法登录）；删除用户需二次确认
+
+#### Scenario: 拣货区管理
+- **WHEN** 管理员进入拣货区管理标签页
+- **THEN** 显示拣货区列表；支持新增拣货区（输入名称）；支持删除拣货区（二次确认弹窗）；操作通过API同步到后端数据库，所有PDA共享同一份拣货区配置
+
+#### Scenario: 快麦配置
+- **WHEN** 管理员进入快麦配置标签页
+- **THEN** 显示当前快麦凭证状态（app_key/session有效期/剩余天数/refresh_token状态）；提供"刷新Session"按钮（调用/api/kuaimai/refresh-session）；提供手动更新凭证表单（app_key/app_secret/session/refresh_token，调用/api/kuaimai/update-credentials）
+
+#### Scenario: 系统配置
+- **WHEN** 管理员进入系统配置标签页
+- **THEN** 显示当前API Key（脱敏显示）和服务器地址（SERVER_URL，只读展示）；系统配置通过.env文件修改，Web页面仅展示当前值
+
+#### Scenario: 图片查看
+- **WHEN** 管理员进入图片查看标签页
+- **THEN** 提供SKU编码搜索框；输入SKU后显示该SKU关联的库区图和装箱图；图片只读查看，不可编辑或删除（图片上传/删除操作在App端进行）
+
+### Requirement: F38 扫码配置
+
+#### Scenario: 扫码配置页面
+- **WHEN** 管理员通过浏览器访问 `http://NAS_IP:8900/setup`
+- **THEN** 显示包含服务器地址+API Key的二维码图片；二维码内容格式为`kuaimai://setup?server=<URL>&apikey=<KEY>`；同时显示服务器地址和API Key配置状态文字；未配置SERVER_URL时从请求Host推断地址，仍无法确定时显示错误提示和配置说明
+
+#### Scenario: PDA扫码配置解析
+- **WHEN** PDA在GuideScreen或SettingsScreen点击扫码配置按钮并扫描/setup页面的二维码
+- **THEN** SetupQrParser工具类解析二维码内容；支持`kuaimai://setup?server=xxx&apikey=xxx`协议格式；兼容纯URL格式（`http://...`），解析时自动识别；解析成功后自动填入服务器地址和API Key到对应输入框

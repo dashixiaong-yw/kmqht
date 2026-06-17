@@ -1,11 +1,17 @@
 package com.kuaimai.pda.ui.navigation
 
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import kotlinx.coroutines.flow.collectLatest
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -22,6 +28,8 @@ import com.kuaimai.pda.ui.picklist.PickListScreen
 import com.kuaimai.pda.ui.product.ProductScreen
 import com.kuaimai.pda.ui.settings.SettingsScreen
 import com.kuaimai.pda.ui.settings.SettingsViewModel.Companion.KEY_GUIDE_SHOWN
+import com.kuaimai.pda.util.SessionExpiredEvent
+import javax.inject.Named
 
 /**
  * 应用导航
@@ -49,11 +57,22 @@ object Routes {
 fun AppNavigation(
     userRepository: UserRepository,
     prefs: SharedPreferences,
+    @Named("encrypted") encryptedPrefs: SharedPreferences,
     authRepository: AuthRepository
 ) {
     val navController = rememberNavController()
     var isCheckingAuth by remember { mutableStateOf(true) }
     var startDestination by remember { mutableStateOf(Routes.LOGIN) }
+
+    // 监听快麦Session过期事件
+    var showSessionExpiredDialog by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        SessionExpiredEvent.isExpired.collectLatest { isExpired ->
+            if (isExpired) {
+                showSessionExpiredDialog = true
+            }
+        }
+    }
 
     // 启动时验证token有效性，并判断是否首次使用
     LaunchedEffect(Unit) {
@@ -107,6 +126,7 @@ fun AppNavigation(
         composable(Routes.GUIDE) {
             GuideScreen(
                 prefs = prefs,
+                encryptedPrefs = encryptedPrefs,
                 onFinish = {
                     // 引导完成，导航到主页
                     navController.navigate(Routes.HOME) {
@@ -175,5 +195,19 @@ fun AppNavigation(
                 }
             )
         }
+    }
+
+    // 快麦Session过期弹窗
+    if (showSessionExpiredDialog) {
+        AlertDialog(
+            onDismissRequest = { showSessionExpiredDialog = false; SessionExpiredEvent.reset() },
+            title = { Text("快麦会话已过期") },
+            text = { Text("快麦API会话已过期，请在Web管理后台重新授权\n（浏览器访问 http://服务器地址:8900/admin）") },
+            confirmButton = {
+                TextButton(onClick = { showSessionExpiredDialog = false; SessionExpiredEvent.reset() }) {
+                    Text("知道了")
+                }
+            }
+        )
     }
 }

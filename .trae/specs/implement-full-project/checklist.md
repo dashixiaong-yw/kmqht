@@ -108,6 +108,28 @@
 - [ ] Tailscale组网：PDA通过Tailscale IP访问后端（WireGuard加密，HTTP无需额外HTTPS）
 - [ ] 3处版本号一致（build.gradle.kts + CHANGELOG.md + gradle.properties）
 
+## F37 Web管理后台验证
+- [ ] /admin页面可正常访问，API Key认证机制生效（未认证时仅显示认证输入框）
+- [ ] 仪表盘标签页：显示取货单数/用户数/拣货区数统计卡片 + 扫码配置二维码
+- [ ] 用户管理标签页：用户列表展示+新增用户+编辑权限（5种权限代码）+启用/禁用+删除（二次确认）
+- [ ] 拣货区管理标签页：拣货区列表+新增+删除（二次确认）
+- [ ] 快麦配置标签页：凭证状态展示+刷新Session按钮+手动更新凭证表单
+- [ ] 系统配置标签页：API Key（脱敏）+服务器地址（只读）展示
+- [ ] 图片查看标签页：按SKU搜索查看库区图/装箱图（只读）
+
+## F38 扫码配置验证
+- [ ] /setup页面可正常访问，显示配置二维码（内容为kuaimai://setup?server=xxx&apikey=xxx）
+- [ ] 二维码协议格式正确：kuaimai://setup?server=<URL>&apikey=<KEY>，兼容纯URL格式
+- [ ] PDA端SetupQrParser正确解析二维码内容，GuideScreen和SettingsScreen扫码配置按钮可用
+
+## App与Web权限分离验证
+- [ ] SettingsScreen.kt仅保留个人设置（扫码方式/反馈开关/退出登录），无系统管理功能
+- [ ] 权限边界清晰：Web后台负责系统管理（用户/拣货区/快麦凭证/服务器配置），App端负责日常业务（取货单/图片上传删除/供应商备注修改/扫码方式反馈开关）
+
+## 扫码配置环境变量验证
+- [ ] .env文件包含SERVER_URL配置（用于生成扫码配置二维码）
+- [ ] .env.docker.example模板包含SERVER_URL示例（http://YOUR_NAS_IP:8900）
+
 ## 全局验证
 - [ ] CSS变量→Compose Color映射完整（16个变量全部映射到Color.kt，禁止直接写色值）
 - [ ] 9类组件规格映射正确（模块卡片/取货单卡片/扫码输入框/供应商Chip/待办行/商品详情/弹窗/Toast/网络状态条）

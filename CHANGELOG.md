@@ -1,5 +1,20 @@
 # 快麦取货通 - 变更日志
 
+## 1.12 (2026-06-17)
+
+### 修复
+- 修复GuideScreen将API Key写入普通SharedPreferences而非EncryptedSharedPreferences的P0安全回归bug（v1.10引入）
+- 修复PickListViewModel.confirmDelete() API失败后未入队离线队列的P1逻辑缺陷
+- 修复SessionExpiredEvent无UI监听者的P1逻辑缺陷，TokenAuthenticator刷新失败时弹出提示对话框
+- 修复deleteOrderWithQueue方法缺失导致PickOrderRepository接口不完整
+
+### 修改
+- GuideScreen新增encryptedPrefs参数用于加密存储API Key
+- AppNavigation新增@Named("encrypted") encryptedPrefs参数并传递给GuideScreen
+- AppNavigation新增SessionExpiredEvent监听和快麦Session过期弹窗
+- PickOrderRepository新增deleteOrderWithQueue接口方法和实现
+- PickListViewModel.confirmDelete()按在线/离线统一策略重构
+
 ## 1.11 (2026-06-17)
 
 ### 修复
