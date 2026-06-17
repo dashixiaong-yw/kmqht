@@ -1,5 +1,16 @@
 # 快麦取货通 - 变更日志
 
+## 1.11 (2026-06-17)
+
+### 修复
+- 修复KuaimaiInterceptor嵌套JSON数组/对象解析崩溃（P0）——商品备注更新和供应商更新恢复正常
+- 删除后端kuaimai_api.py未使用的List import
+- 后端_call_api增加参数值类型安全处理，确保非字符串值自动序列化为JSON字符串
+- 后端refresh_session改用multipart/form-data格式，与快麦官方文档一致
+
+### 修改
+- 对照快麦开放平台官方文档（open.kuaimai.com）全面验证API地址、公共参数、签名算法、请求/响应格式，所有参数与官方一致
+
 ## 1.10 (2026-06-17)
 
 ### 新增

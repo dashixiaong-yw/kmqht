@@ -1,8 +1,9 @@
 """快麦API客户端 - MD5签名与API调用"""
 
 import hashlib
+import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import httpx
 
@@ -56,6 +57,11 @@ async def _call_api(method: str, extra_params: Optional[Dict[str, Any]] = None) 
     params = _build_common_params(method)
     if extra_params:
         params.update(extra_params)
+
+    # 确保参数值为字符串（快麦API要求复杂参数如JSON数组/对象以JSON字符串格式传递）
+    for key in list(params.keys()):
+        if not isinstance(params[key], str):
+            params[key] = json.dumps(params[key], ensure_ascii=False)
 
     # 生成签名
     params["sign"] = _sign(params, kuaimai_creds.app_secret)
@@ -140,7 +146,9 @@ async def refresh_session() -> bool:
         params["sign"] = _sign(params, kuaimai_creds.app_secret)
 
         async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
-            response = await client.post(KUAIMAI_API_BASE, data=params)
+            # 使用multipart/form-data格式（与快麦官方open.token.refresh文档一致）
+            files = {key: (None, str(value)) for key, value in params.items()}
+            response = await client.post(KUAIMAI_API_BASE, files=files)
             response.raise_for_status()
             result: Dict[str, Any] = response.json()
 

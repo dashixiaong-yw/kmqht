@@ -53,7 +53,8 @@ class KuaimaiInterceptor @Inject constructor(
                 val keys = json.keys()
                 while (keys.hasNext()) {
                     val key = keys.next()
-                    params[key] = json.getString(key)
+                    val value = json.get(key)
+                    params[key] = value?.toString() ?: ""
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "解析请求体失败: ${e.message}")

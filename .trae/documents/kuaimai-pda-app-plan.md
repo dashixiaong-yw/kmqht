@@ -41,6 +41,8 @@
 | F32 | App冷启动优化 | 避免Application.onCreate中做耗时操作，首页数据用Room缓存秒加载，目标冷启动<2秒 |
 | F35 | Token刷新失败处理 | 快麦API Token刷新失败→弹窗提示"会话已过期，请重新授权"→提供"一键跳转快麦后台重新授权"入口→刷新期间暂停写操作 |
 | F36 | 用户权限控制 | 用户登录认证（UUID Token，7天有效期），5种权限代码控制功能访问（settings/update_supplier/update_remark/manage_area_image/manage_box_image），管理员可增删改查用户及分配权限，登录限流（5次失败锁定5分钟），Token过期自动跳转登录页 |
+| F37 | Web管理后台 | 后端/admin页面提供统一的浏览器端系统管理，包含6个标签页：仪表盘（系统概览+扫码配置二维码）、用户管理（增删改查+权限分配+启用禁用）、拣货区管理（增删）、快麦配置（凭证状态+刷新+手动更新）、系统配置（API Key+服务器地址）、图片查看（按SKU只读查看）。API Key认证，sessionStorage存储。App与Web权限分离：Web后台负责系统管理，App端负责日常业务（取货单、图片上传/删除、供应商/备注修改、扫码方式/反馈开关） |
+| F38 | 扫码配置 | 后端/setup页面显示配置二维码（kuaimai://setup?server=xxx&apikey=xxx协议），PDA扫码自动填入服务器地址和API Key。App端GuideScreen和SettingsScreen支持扫码配置按钮，SetupQrParser工具类统一解析。兼容纯URL格式 |
 
 ### 快麦ERP API映射
 
@@ -87,13 +89,19 @@
 - 12小时超时自动完成逻辑（后端定时任务）
 - 图片上传 + 访问（库区图/装箱图严格区分）
 - 多PDA数据同步（所有PDA访问同一后端）
+- Web管理后台（/admin页面，用户管理+拣货区管理+快麦配置+系统配置+图片查看）
+- 扫码配置页面（/setup页面，生成配置二维码供PDA扫码）
+- 快麦凭证手动更新API（/api/kuaimai/update-credentials）
 
 **数据流向**：
 ```
-快麦ERP API ←→ 后端服务（代理+缓存） ←→ App
+快麦ERP API ←→ 后端服务（代理+缓存） ←→ App（日常业务操作）
                                       ↑         ↑
                                商品信息查询   取货单/图片数据
                                （后端缓存24h）  多PDA共享
+
+管理员浏览器 → /admin（系统管理：用户/拣货区/快麦凭证/服务器配置）
+PDA首次配置 → /setup（扫码配置二维码）
 ```
 
 ### PDA扫码方案
@@ -202,7 +210,7 @@ com.kuaimai.pda/
 │   ├── product/                    # 商品详情页
 │   │   ├── ProductScreen.kt
 │   │   └── ProductViewModel.kt
-│   ├── settings/                   # 设置页面
+│   ├── settings/                   # 个人设置页面（扫码方式、反馈开关、退出登录）
 │   │   ├── SettingsScreen.kt
 │   │   └── SettingsViewModel.kt
 │   └── components/                 # 通用组件
