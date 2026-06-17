@@ -1,5 +1,24 @@
 # 快麦取货通 - 变更日志
 
+## 1.19 (2026-06-17)
+
+### 新增
+- 新增 DEFAULT_DOMAIN 环境变量（与 SERVER_URL 共存）
+- 提取公共二维码生成函数到 app/utils/qr_utils.py
+
+### 修改
+- 将扫码配置页面(/setup)合并到管理后台(/admin)，一个地址搞定所有：页面顶部公开显示PDA扫码配置二维码（无需API Key），底部管理功能需登录后可见
+- /setup 路径改为 302 跳转到 /admin（向后兼容）
+- 管理后台页面结构重构为三层：公开扫码配置区 + API Key登录区 + 管理功能区（登录后可见）
+- auth.py SKIP_AUTH_PREFIXES 新增 /admin、/setup
+- .env.docker.example 更新注释说明扫码配置已合入管理后台
+- .gitignore 新增 *.keystore 忽略规则
+
+### 文档
+- 项目设计文档(kuaimai-pda-app-plan.md)新增Web管理后台页面描述和扫码配置页面描述
+- spec.md 新增F37 Web管理后台（7个Scenario）和F38 扫码配置（2个Scenario）的Requirement
+- checklist.md 新增13个验证项（Web管理后台7项/扫码配置3项/权限分离2项/环境变量2项）
+
 ## 1.18 (2026-06-17)
 
 ### 修复

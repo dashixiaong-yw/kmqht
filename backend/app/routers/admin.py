@@ -1,15 +1,14 @@
 """管理后台路由 - Web管理页面"""
 
-import base64
-import io
 import logging
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
 
 from app.config import API_KEY, SERVER_URL, kuaimai_creds
 from app.database import get_db
+from app.utils.qr_utils import generate_qr_base64
 
 logger = logging.getLogger(__name__)
 
@@ -17,23 +16,14 @@ router = APIRouter(tags=["管理后台"])
 
 
 @router.get("/admin", response_class=HTMLResponse)
-def admin_page(request: Request) -> HTMLResponse:
+def admin_page() -> HTMLResponse:
     """管理后台页面"""
     return HTMLResponse(content=_build_admin_html())
 
 
-def _generate_qr_base64(data: str) -> str:
-    """生成二维码图片的base64编码"""
-    import qrcode
-    img = qrcode.make(data, version=1, box_size=8, border=2)
-    buffer = io.BytesIO()
-    img.save(buffer, format="PNG")
-    return base64.b64encode(buffer.getvalue()).decode("utf-8")
-
-
 def _build_admin_html() -> str:
     """构建管理后台HTML页面"""
-    # 生成扫码配置二维码
+    # 生成扫码配置二维码（公开区域，无需API Key）
     server_url = SERVER_URL
     qr_html = ""
     if server_url:
@@ -41,10 +31,12 @@ def _build_admin_html() -> str:
         if API_KEY:
             qr_params["apikey"] = API_KEY
         qr_content = f"kuaimai://setup?{urlencode(qr_params)}"
-        qr_base64 = _generate_qr_base64(qr_content)
+        qr_base64 = generate_qr_base64(qr_content)
         qr_html = f'<img src="data:image/png;base64,{qr_base64}" style="width:160px;height:160px" />'
     else:
-        qr_html = '<p style="color:#dc2626">未配置SERVER_URL环境变量</p>'
+        qr_html = '<p style="color:#dc2626">未配置 SERVER_URL 环境变量</p>'
+
+    api_key_status = "已配置" if API_KEY else '<span style="color:#dc2626">未配置</span>'
 
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
@@ -126,117 +118,140 @@ input:focus,select:focus {{ border-color:#2563eb; }}
   <div class="status" id="connStatus">未连接</div>
 </div>
 <div class="container">
-  <div class="tabs" id="tabs">
-    <button class="tab active" data-tab="dashboard">仪表盘</button>
-    <button class="tab" data-tab="users">用户管理</button>
-    <button class="tab" data-tab="areas">拣货区管理</button>
-    <button class="tab" data-tab="kuaimai">快麦配置</button>
-    <button class="tab" data-tab="system">系统配置</button>
-    <button class="tab" data-tab="images">图片查看</button>
-  </div>
-  <div class="content">
-    <!-- 登录面板 -->
-    <div id="loginPanel" class="panel active">
-      <div style="max-width:360px;margin:60px auto;text-align:center">
-        <h2 style="margin-bottom:20px;color:#2563eb">请输入API Key</h2>
-        <input type="password" id="apiKeyInput" placeholder="输入API Key"
-               style="width:100%;margin-bottom:12px" />
-        <button class="btn btn-primary" style="width:100%;padding:10px" onclick="doLogin()">
-          验证并登录
-        </button>
-        <p id="loginError" style="color:#dc2626;margin-top:8px;font-size:13px"></p>
+  <!-- ====== 公开区域：扫码配置（无需API Key） ====== -->
+  <div class="card" style="margin-bottom:24px;border-color:#bfdbfe">
+    <h3>PDA 扫码配置</h3>
+    <p style="font-size:13px;color:#666;margin-bottom:12px">
+      新 PDA 首次使用时，扫描下方二维码自动配置服务器地址和 API Key
+    </p>
+    <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+      <div class="qr-box">{qr_html}</div>
+      <div>
+        <p style="font-size:13px;color:#666;margin-bottom:4px">服务器地址</p>
+        <p style="font-size:15px;font-weight:600;color:#1d4ed8;word-break:break-all">
+          {server_url or "未配置（请在 .env 中设置 SERVER_URL）"}
+        </p>
+        <p style="font-size:13px;color:#666;margin-top:4px">API Key: {api_key_status}</p>
       </div>
     </div>
+  </div>
 
-    <!-- 仪表盘 -->
-    <div id="panel-dashboard" class="panel">
-      <div class="stat-grid" id="statsGrid"></div>
-      <div class="card" style="margin-top:20px">
-        <h3>PDA扫码配置</h3>
-        <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
-          <div class="qr-box">{qr_html}</div>
-          <div>
-            <p style="font-size:13px;color:#666;margin-bottom:4px">服务器地址</p>
-            <p style="font-size:15px;font-weight:600;color:#1d4ed8;word-break:break-all">
-              {server_url or "未配置"}
-            </p>
-            <p style="font-size:12px;color:#999;margin-top:8px">
-              PDA首次启动App → 引导页 → 扫码配置 → 扫描上方二维码
-            </p>
+  <hr style="border:none;border-top:2px solid #e5e7eb;margin-bottom:24px">
+
+  <!-- ====== API Key 登录区域 ====== -->
+  <div id="loginSection" style="display:block">
+    <div style="max-width:360px;margin:0 auto 24px;text-align:center">
+      <h2 style="margin-bottom:20px;color:#2563eb">管理后台登录</h2>
+      <input type="password" id="apiKeyInput" placeholder="请输入API Key"
+             style="width:100%;margin-bottom:12px;padding:10px 12px;font-size:15px" />
+      <button class="btn btn-primary" style="width:100%;padding:10px;font-size:15px" onclick="doLogin()">
+        验证并登录
+      </button>
+      <p id="loginError" style="color:#dc2626;margin-top:8px;font-size:13px"></p>
+    </div>
+  </div>
+
+  <!-- ====== 管理功能区域（登录后可见） ====== -->
+  <div id="adminSection" style="display:none">
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-tab="dashboard">仪表盘</button>
+      <button class="tab" data-tab="users">用户管理</button>
+      <button class="tab" data-tab="areas">拣货区管理</button>
+      <button class="tab" data-tab="kuaimai">快麦配置</button>
+      <button class="tab" data-tab="system">系统配置</button>
+      <button class="tab" data-tab="images">图片查看</button>
+    </div>
+    <div class="content">
+      <!-- 仪表盘 -->
+      <div id="panel-dashboard" class="panel active">
+        <div class="stat-grid" id="statsGrid"></div>
+        <div class="card" style="margin-top:20px">
+          <h3>PDA扫码配置</h3>
+          <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+            <div class="qr-box">{qr_html}</div>
+            <div>
+              <p style="font-size:13px;color:#666;margin-bottom:4px">服务器地址</p>
+              <p style="font-size:15px;font-weight:600;color:#1d4ed8;word-break:break-all">
+                {server_url or "未配置"}
+              </p>
+              <p style="font-size:12px;color:#999;margin-top:8px">
+                PDA首次启动App → 引导页 → 扫码配置 → 扫描上方二维码
+              </p>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- 用户管理 -->
-    <div id="panel-users" class="panel">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-        <h3>用户列表</h3>
-        <button class="btn btn-primary" onclick="showAddUser()">添加用户</button>
+      <!-- 用户管理 -->
+      <div id="panel-users" class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h3>用户列表</h3>
+          <button class="btn btn-primary" onclick="showAddUser()">添加用户</button>
+        </div>
+        <table>
+          <thead><tr><th>ID</th><th>用户名</th><th>权限</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
+          <tbody id="userTableBody"></tbody>
+        </table>
       </div>
-      <table>
-        <thead><tr><th>ID</th><th>用户名</th><th>权限</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
-        <tbody id="userTableBody"></tbody>
-      </table>
-    </div>
 
-    <!-- 拣货区管理 -->
-    <div id="panel-areas" class="panel">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-        <h3>拣货区列表</h3>
-        <div style="display:flex;gap:8px">
-          <input id="newAreaName" placeholder="新拣货区名称" style="width:160px" />
-          <button class="btn btn-primary" onclick="addArea()">添加</button>
+      <!-- 拣货区管理 -->
+      <div id="panel-areas" class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h3>拣货区列表</h3>
+          <div style="display:flex;gap:8px">
+            <input id="newAreaName" placeholder="新拣货区名称" style="width:160px" />
+            <button class="btn btn-primary" onclick="addArea()">添加</button>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>ID</th><th>名称</th><th>创建时间</th><th>操作</th></tr></thead>
+          <tbody id="areaTableBody"></tbody>
+        </table>
+      </div>
+
+      <!-- 快麦配置 -->
+      <div id="panel-kuaimai" class="panel">
+        <div class="card">
+          <h3>凭证状态</h3>
+          <div id="kuaimaiStatus"></div>
+        </div>
+        <div class="card">
+          <h3>操作</h3>
+          <button class="btn btn-success" onclick="refreshKuaimaiSession()" id="btnRefreshSession">
+            刷新Session
+          </button>
+        </div>
+        <div class="card">
+          <h3>手动更新凭证</h3>
+          <div class="form-group"><label>App Key</label><input id="kmAppKey" style="width:100%" /></div>
+          <div class="form-group"><label>App Secret</label><input id="kmAppSecret" style="width:100%" /></div>
+          <div class="form-group"><label>Session</label><input id="kmSession" style="width:100%" /></div>
+          <div class="form-group"><label>Refresh Token</label><input id="kmRefreshToken" style="width:100%" /></div>
+          <button class="btn btn-primary" onclick="updateKuaimaiCreds()">保存凭证</button>
         </div>
       </div>
-      <table>
-        <thead><tr><th>ID</th><th>名称</th><th>创建时间</th><th>操作</th></tr></thead>
-        <tbody id="areaTableBody"></tbody>
-      </table>
-    </div>
 
-    <!-- 快麦配置 -->
-    <div id="panel-kuaimai" class="panel">
-      <div class="card">
-        <h3>凭证状态</h3>
-        <div id="kuaimaiStatus"></div>
+      <!-- 系统配置 -->
+      <div id="panel-system" class="panel">
+        <div class="card">
+          <h3>API Key</h3>
+          <p style="font-size:14px;color:#666">当前API Key: <code id="currentApiKey" style="background:#f0f0f0;padding:2px 6px;border-radius:4px">****</code></p>
+        </div>
+        <div class="card">
+          <h3>服务器地址</h3>
+          <p style="font-size:14px;color:#666">当前地址: <code id="currentServerUrl" style="background:#f0f0f0;padding:2px 6px;border-radius:4px">{server_url or "未配置"}</code></p>
+          <p style="font-size:12px;color:#999;margin-top:4px">修改服务器地址请编辑 .env 文件中的 SERVER_URL 并重启服务</p>
+        </div>
       </div>
-      <div class="card">
-        <h3>操作</h3>
-        <button class="btn btn-success" onclick="refreshKuaimaiSession()" id="btnRefreshSession">
-          刷新Session
-        </button>
-      </div>
-      <div class="card">
-        <h3>手动更新凭证</h3>
-        <div class="form-group"><label>App Key</label><input id="kmAppKey" style="width:100%" /></div>
-        <div class="form-group"><label>App Secret</label><input id="kmAppSecret" style="width:100%" /></div>
-        <div class="form-group"><label>Session</label><input id="kmSession" style="width:100%" /></div>
-        <div class="form-group"><label>Refresh Token</label><input id="kmRefreshToken" style="width:100%" /></div>
-        <button class="btn btn-primary" onclick="updateKuaimaiCreds()">保存凭证</button>
-      </div>
-    </div>
 
-    <!-- 系统配置 -->
-    <div id="panel-system" class="panel">
-      <div class="card">
-        <h3>API Key</h3>
-        <p style="font-size:14px;color:#666">当前API Key: <code id="currentApiKey" style="background:#f0f0f0;padding:2px 6px;border-radius:4px">****</code></p>
+      <!-- 图片查看 -->
+      <div id="panel-images" class="panel">
+        <div style="display:flex;gap:8px;margin-bottom:16px">
+          <input id="imageSkuInput" placeholder="输入SKU编码" style="width:200px" />
+          <button class="btn btn-primary" onclick="searchImages()">搜索</button>
+        </div>
+        <div id="imageResults"></div>
       </div>
-      <div class="card">
-        <h3>服务器地址</h3>
-        <p style="font-size:14px;color:#666">当前地址: <code id="currentServerUrl" style="background:#f0f0f0;padding:2px 6px;border-radius:4px">{server_url or "未配置"}</code></p>
-        <p style="font-size:12px;color:#999;margin-top:4px">修改服务器地址请编辑 .env 文件中的 SERVER_URL 并重启服务</p>
-      </div>
-    </div>
-
-    <!-- 图片查看 -->
-    <div id="panel-images" class="panel">
-      <div style="display:flex;gap:8px;margin-bottom:16px">
-        <input id="imageSkuInput" placeholder="输入SKU编码" style="width:200px" />
-        <button class="btn btn-primary" onclick="searchImages()">搜索</button>
-      </div>
-      <div id="imageResults"></div>
     </div>
   </div>
 </div>
@@ -314,8 +329,8 @@ async function doLogin() {{
 }}
 
 function showMainPanel() {{
-  document.getElementById('loginPanel').classList.remove('active');
-  document.getElementById('panel-dashboard').classList.add('active');
+  document.getElementById('loginSection').style.display = 'none';
+  document.getElementById('adminSection').style.display = 'block';
   document.getElementById('connStatus').textContent = '已连接';
   loadDashboard();
 }}
@@ -551,7 +566,6 @@ async function updateKuaimaiCreds() {{
   const refreshToken = document.getElementById('kmRefreshToken').value.trim();
   if (!appKey || !appSecret || !session) {{ alert('App Key、App Secret和Session为必填'); return; }}
   try {{
-    // 通过后端API更新凭证（需要新增API端点）
     const r = await api('/api/kuaimai/update-credentials', {{
       method: 'POST',
       body: {{ app_key: appKey, app_secret: appSecret, session, refresh_token: refreshToken }}
@@ -597,7 +611,7 @@ function closeConfirm() {{
   document.getElementById('confirmModal').classList.remove('show');
 }}
 
-// 自动登录
+// 自动登录：sessionStorage中有API Key则自动验证
 if (apiKey) {{
   doLogin();
 }}

@@ -9,12 +9,21 @@ android {
     namespace = "com.kuaimai.pda"
     compileSdk = 34
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("kuaimai-release.keystore")
+            storePassword = "kuaimai2024"
+            keyAlias = "kuaimai"
+            keyPassword = "kuaimai2024"
+        }
+    }
+
     defaultConfig {
         applicationId = "com.kuaimai.pda"
         minSdk = 24
         targetSdk = 34
-        versionCode = 117
-        versionName = "1.18"
+        versionCode = 118
+        versionName = "1.19"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -29,11 +38,12 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
@@ -60,6 +70,14 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+
+    applicationVariants.configureEach {
+        outputs.configureEach {
+            if (this is com.android.build.gradle.internal.api.ApkVariantOutputImpl) {
+                this.outputFileName = "快麦取货通-${versionName}.apk"
+            }
         }
     }
 }
