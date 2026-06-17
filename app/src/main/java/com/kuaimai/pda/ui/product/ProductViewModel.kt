@@ -343,6 +343,31 @@ class ProductViewModel @Inject constructor(
     }
 
     /**
+     * 删除图片（F22）
+     * @param imageType 图片类型 area/box
+     */
+    fun deleteImage(imageType: String) {
+        val skuOuterId = _uiState.value.skuOuterId
+        if (skuOuterId.isBlank()) return
+
+        viewModelScope.launch {
+            try {
+                imageRepository.deleteImage(skuOuterId, imageType)
+                // 更新UI状态
+                _uiState.value = if (imageType == "area") {
+                    _uiState.value.copy(areaImageUrl = null)
+                } else {
+                    _uiState.value.copy(boxImageUrl = null)
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    error = "删除图片失败: ${e.message}"
+                )
+            }
+        }
+    }
+
+    /**
      * 清除错误信息
      */
     fun clearError() {

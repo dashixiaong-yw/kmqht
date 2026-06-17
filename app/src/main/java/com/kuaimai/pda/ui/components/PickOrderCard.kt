@@ -128,7 +128,7 @@ fun PickOrderCard(
                     repeat(order.totalCount) { index ->
                         Box(
                             modifier = Modifier
-                                .size(8.dp)
+                                .size(10.dp)
                                 .background(
                                     color = if (index < order.completedCount) SuccessText else BorderGray,
                                     shape = CircleShape

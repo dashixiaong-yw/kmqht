@@ -120,6 +120,26 @@ class ImageUploadService @Inject constructor(
     }
 
     /**
+     * 删除图片（F22）
+     * @param imageId 图片ID
+     */
+    suspend fun deleteImage(imageId: Long) = withContext(Dispatchers.IO) {
+        val serverUrl = prefs.getString(KEY_SERVER_URL, DEFAULT_SERVER_URL)
+            ?: DEFAULT_SERVER_URL
+        val deleteUrl = "$serverUrl/api/images/$imageId"
+
+        val request = Request.Builder()
+            .url(deleteUrl)
+            .delete()
+            .build()
+
+        val response = client.newCall(request).execute()
+        if (!response.isSuccessful) {
+            throw IOException("删除图片失败: HTTP ${response.code}")
+        }
+    }
+
+    /**
      * 根据文件扩展名推断MediaType
      */
     private fun guessMediaType(fileName: String): String {

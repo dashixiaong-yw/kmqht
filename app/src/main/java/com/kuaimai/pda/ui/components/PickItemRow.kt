@@ -58,7 +58,11 @@ fun PickItemRow(
     onComplete: () -> Unit,
     onRestore: () -> Unit,
     onLongPress: () -> Unit,
-    onImageClick: () -> Unit = {}
+    onImageClick: () -> Unit = {},
+    areaImageUrl: String? = null,
+    boxImageUrl: String? = null,
+    onAreaImageClick: () -> Unit = {},
+    onBoxImageClick: () -> Unit = {}
 ) {
     val isCompleted = item.status == 1
     val contentAlpha = if (isCompleted) 0.55f else 1f
@@ -117,7 +121,7 @@ fun PickItemRow(
                 ) {
                     Text(
                         text = "规格图",
-                        fontSize = 8.sp,
+                        fontSize = 10.sp,
                         color = TextSecondary
                     )
                 }
@@ -152,7 +156,92 @@ fun PickItemRow(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // 右侧：完成/恢复按钮
+            // 右侧：库区图 + 装箱图 + 完成/恢复按钮
+            // 库区图小方块
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(SurfaceGray)
+                    .clickable { onAreaImageClick() },
+                contentAlignment = Alignment.Center
+            ) {
+                if (!areaImageUrl.isNullOrEmpty()) {
+                    AsyncImage(
+                        model = areaImageUrl,
+                        contentDescription = "库区图",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Text(
+                        text = "库区",
+                        fontSize = 9.sp,
+                        color = TextMuted
+                    )
+                }
+                // 底部"库区"标注
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(12.dp)
+                        .background(SurfaceGray.copy(alpha = 0.8f))
+                        .align(Alignment.BottomCenter),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "库区",
+                        fontSize = 10.sp,
+                        color = TextSecondary
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // 装箱图小方块
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(SurfaceGray)
+                    .clickable { onBoxImageClick() },
+                contentAlignment = Alignment.Center
+            ) {
+                if (!boxImageUrl.isNullOrEmpty()) {
+                    AsyncImage(
+                        model = boxImageUrl,
+                        contentDescription = "装箱图",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Text(
+                        text = "箱图",
+                        fontSize = 9.sp,
+                        color = TextMuted
+                    )
+                }
+                // 底部"箱图"标注
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(12.dp)
+                        .background(SurfaceGray.copy(alpha = 0.8f))
+                        .align(Alignment.BottomCenter),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "箱图",
+                        fontSize = 10.sp,
+                        color = TextSecondary
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // 完成/恢复按钮（F17: 最小触摸热区56dp×44dp）
             if (isCompleted) {
                 Card(
                     shape = RoundedCornerShape(6.dp),
@@ -160,7 +249,7 @@ fun PickItemRow(
                     onClick = onRestore
                 ) {
                     Box(
-                        modifier = Modifier.size(width = 56.dp, height = 36.dp),
+                        modifier = Modifier.size(width = 56.dp, height = 44.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -178,7 +267,7 @@ fun PickItemRow(
                     onClick = onComplete
                 ) {
                     Box(
-                        modifier = Modifier.size(width = 56.dp, height = 36.dp),
+                        modifier = Modifier.size(width = 56.dp, height = 44.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(

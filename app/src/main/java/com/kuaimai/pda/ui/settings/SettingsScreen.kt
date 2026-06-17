@@ -49,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.kuaimai.pda.BuildConfig
 import com.kuaimai.pda.data.api.dto.UserResponse
 import com.kuaimai.pda.data.repository.UserRepository
 import com.kuaimai.pda.ui.theme.BrandBlue
@@ -314,6 +315,15 @@ fun SettingsScreen(
             ) {
                 Text("退出登录", style = MaterialTheme.typography.titleMedium)
             }
+
+            // 版本信息
+            Text(
+                text = "v${BuildConfig.VERSION_NAME}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
         }

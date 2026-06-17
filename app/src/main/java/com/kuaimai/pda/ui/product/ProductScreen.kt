@@ -3,7 +3,12 @@ package com.kuaimai.pda.ui.product
 import android.app.Activity
 import android.content.Context
 import android.view.WindowManager
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
@@ -42,6 +48,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -58,6 +67,7 @@ import coil.compose.AsyncImage
 import com.kuaimai.pda.data.repository.UserRepository
 import com.kuaimai.pda.ui.theme.BorderGray
 import com.kuaimai.pda.ui.theme.BrandBlue
+import com.kuaimai.pda.ui.theme.DangerText
 import com.kuaimai.pda.ui.theme.PrimaryLightBg
 import com.kuaimai.pda.ui.theme.PrimaryLightText
 import com.kuaimai.pda.ui.theme.SuccessBg
@@ -80,6 +90,9 @@ fun ProductScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+
+    // F22: 图片删除确认弹窗状态
+    var showImageDeleteConfirm by remember { mutableStateOf<String?>(null) } // "area" or "box"
 
     // 权限检查
     val canUpdateSupplier = userRepository.hasPermission("update_supplier")
@@ -160,6 +173,8 @@ fun ProductScreen(
                     uploadProgress = uiState.uploadProgress,
                     onUploadArea = { /* 由外部图片选择器触发 */ },
                     onUploadBox = { /* 由外部图片选择器触发 */ },
+                    onDeleteArea = { showImageDeleteConfirm = "area" },
+                    onDeleteBox = { showImageDeleteConfirm = "box" },
                     canManageAreaImage = canManageAreaImage,
                     canManageBoxImage = canManageBoxImage
                 )
@@ -212,6 +227,32 @@ fun ProductScreen(
                     is ConfirmType.Supplier -> viewModel::confirmChangeSupplier
                 },
                 onDismiss = viewModel::dismissConfirmDialog
+            )
+        }
+
+        // F22: 图片删除确认弹窗
+        showImageDeleteConfirm?.let { imageType ->
+            val label = if (imageType == "area") "库区图" else "装箱图"
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { showImageDeleteConfirm = null },
+                title = { Text("确认删除") },
+                text = { Text("确定要删除${label}吗？此操作不可撤销。") },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            viewModel.deleteImage(imageType)
+                            showImageDeleteConfirm = null
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = DangerText)
+                    ) {
+                        Text("删除", color = SurfaceWhite)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showImageDeleteConfirm = null }) {
+                        Text("取消")
+                    }
+                }
             )
         }
     }
@@ -376,6 +417,7 @@ private fun RemarkSection(
 
 /**
  * 图片上传2列网格
+ * 无权限时仍显示图片（只读），仅隐藏上传/删除操作
  */
 @Composable
 private fun ImageUploadGrid(
@@ -385,6 +427,8 @@ private fun ImageUploadGrid(
     uploadProgress: Int,
     onUploadArea: () -> Unit,
     onUploadBox: () -> Unit,
+    onDeleteArea: () -> Unit = {},
+    onDeleteBox: () -> Unit = {},
     canManageAreaImage: Boolean = true,
     canManageBoxImage: Boolean = true
 ) {
@@ -399,21 +443,23 @@ private fun ImageUploadGrid(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // 库区图
-            if (canManageAreaImage) {
+            // 库区图（有图片时始终显示只读，无图片且无权限时不显示）
+            if (areaImageUrl != null || canManageAreaImage) {
                 ImageUploadSlot(
                     label = "库区图",
                     imageUrl = areaImageUrl,
-                    onClick = onUploadArea,
+                    onClick = if (canManageAreaImage) onUploadArea else {{}},
+                    onLongClick = if (canManageAreaImage && areaImageUrl != null) onDeleteArea else null,
                     modifier = Modifier.weight(1f)
                 )
             }
-            // 装箱图
-            if (canManageBoxImage) {
+            // 装箱图（有图片时始终显示只读，无图片且无权限时不显示）
+            if (boxImageUrl != null || canManageBoxImage) {
                 ImageUploadSlot(
                     label = "装箱图",
                     imageUrl = boxImageUrl,
-                    onClick = onUploadBox,
+                    onClick = if (canManageBoxImage) onUploadBox else {{}},
+                    onLongClick = if (canManageBoxImage && boxImageUrl != null) onDeleteBox else null,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -441,12 +487,15 @@ private fun ImageUploadGrid(
 /**
  * 单个图片上传槽位
  * 宽高比1:1，虚线边框2dp，圆角12dp，最小高度120dp
+ * F22: 已上传图片可点击替换或长按删除
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ImageUploadSlot(
     label: String,
     imageUrl: String?,
     onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val stroke = Stroke(
@@ -455,7 +504,7 @@ private fun ImageUploadSlot(
     )
     val borderColor = BorderGray
 
-    Card(
+    Box(
         modifier = modifier
             .aspectRatio(1f)
             .drawBehind {
@@ -464,10 +513,20 @@ private fun ImageUploadSlot(
                     style = stroke,
                     cornerRadius = CornerRadius(12.dp.toPx())
                 )
-            },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
-        onClick = onClick
+            }
+            .clip(RoundedCornerShape(12.dp))
+            .background(SurfaceWhite)
+            .then(
+                if (onLongClick != null) {
+                    Modifier.combinedClickable(
+                        onClick = onClick,
+                        onLongClick = onLongClick
+                    )
+                } else {
+                    Modifier.clickable(onClick = onClick)
+                }
+            ),
+        contentAlignment = Alignment.Center
     ) {
         Column(
             modifier = Modifier

@@ -8,8 +8,13 @@ import com.kuaimai.pda.data.api.dto.LoginRequest
 import com.kuaimai.pda.data.api.dto.UpdateUserRequest
 import com.kuaimai.pda.data.api.dto.UserListResponse
 import com.kuaimai.pda.data.api.dto.UserResponse
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -19,6 +24,9 @@ import javax.inject.Singleton
 interface UserRepository {
     /** 当前用户信息 */
     val currentUser: StateFlow<UserResponse?>
+
+    /** 登录失效事件（token过期/被禁用等），UI层监听此事件跳转登录页 */
+    val loginRequired: SharedFlow<Unit>
 
     /** 是否已登录 */
     fun isLoggedIn(): Boolean
@@ -61,15 +69,22 @@ class UserRepositoryImpl @Inject constructor(
     private val prefs: SharedPreferences
 ) : UserRepository {
 
+    /** 应用级协程作用域，用于handleAuthError发送事件 */
+    private val appScope = CoroutineScope(Dispatchers.Main)
+
     companion object {
         private const val TAG = "UserRepository"
         private const val KEY_USER_TOKEN = "user_token"
+        private const val KEY_USER_ID = "user_id"
         private const val KEY_USER_NAME = "user_name"
         private const val KEY_USER_PERMISSIONS = "user_permissions"
     }
 
     private val _currentUser = MutableStateFlow<UserResponse?>(null)
     override val currentUser: StateFlow<UserResponse?> = _currentUser
+
+    private val _loginRequired = MutableSharedFlow<Unit>()
+    override val loginRequired: SharedFlow<Unit> = _loginRequired
 
     init {
         // 从本地缓存恢复用户状态
@@ -132,6 +147,7 @@ class UserRepositoryImpl @Inject constructor(
             val response = apiService.getUsers(getToken())
             Result.success(response)
         } catch (e: Exception) {
+            handleAuthError(e)
             Log.e(TAG, "获取用户列表失败: ${e.message}")
             Result.failure(e)
         }
@@ -142,6 +158,7 @@ class UserRepositoryImpl @Inject constructor(
             apiService.createUser(getToken(), CreateUserRequest(username, password, permissions))
             Result.success(Unit)
         } catch (e: Exception) {
+            handleAuthError(e)
             Log.e(TAG, "创建用户失败: ${e.message}")
             Result.failure(e)
         }
@@ -150,8 +167,22 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun updateUser(userId: Long, password: String?, permissions: List<String>?, isActive: Boolean?): Result<Unit> {
         return try {
             apiService.updateUser(getToken(), userId, UpdateUserRequest(password, permissions, isActive))
+            // 如果修改的是当前用户，刷新本地缓存
+            val currentId = _currentUser.value?.id ?: 0L
+            if (userId == currentId && permissions != null) {
+                val updatedUser = UserResponse(
+                    id = currentId,
+                    username = _currentUser.value?.username ?: "",
+                    permissions = permissions
+                )
+                _currentUser.value = updatedUser
+                prefs.edit()
+                    .putStringSet(KEY_USER_PERMISSIONS, permissions.toSet())
+                    .apply()
+            }
             Result.success(Unit)
         } catch (e: Exception) {
+            handleAuthError(e)
             Log.e(TAG, "更新用户失败: ${e.message}")
             Result.failure(e)
         }
@@ -162,6 +193,7 @@ class UserRepositoryImpl @Inject constructor(
             apiService.deleteUser(getToken(), userId)
             Result.success(Unit)
         } catch (e: Exception) {
+            handleAuthError(e)
             Log.e(TAG, "删除用户失败: ${e.message}")
             Result.failure(e)
         }
@@ -174,8 +206,9 @@ class UserRepositoryImpl @Inject constructor(
         return try {
             val user = apiService.getCurrentUser(token)
             _currentUser.value = user
-            // 更新本地缓存
+            // 更新本地缓存（包含id）
             prefs.edit()
+                .putLong(KEY_USER_ID, user.id)
                 .putString(KEY_USER_NAME, user.username)
                 .putStringSet(KEY_USER_PERMISSIONS, user.permissions.toSet())
                 .apply()
@@ -183,18 +216,35 @@ class UserRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Log.w(TAG, "Token验证失败: ${e.message}")
             clearLocalUser()
+            handleAuthError(e)
             false
+        }
+    }
+
+    /**
+     * 处理认证错误：检测401响应并触发登录失效事件
+     */
+    private fun handleAuthError(e: Exception) {
+        val message = e.message ?: ""
+        // Retrofit的HTTP 401异常消息包含"401"
+        if (message.contains("401") || message.contains("Unauthorized")) {
+            clearLocalUser()
+            appScope.launch {
+                _loginRequired.emit(Unit)
+            }
         }
     }
 
     /** 从本地缓存恢复用户状态 */
     private fun restoreFromCache() {
         val token = prefs.getString(KEY_USER_TOKEN, "") ?: ""
+        val userId = prefs.getLong(KEY_USER_ID, 0L)
         val username = prefs.getString(KEY_USER_NAME, "") ?: ""
         val permissions = prefs.getStringSet(KEY_USER_PERMISSIONS, emptySet()) ?: emptySet()
 
         if (token.isNotEmpty() && username.isNotEmpty()) {
             _currentUser.value = UserResponse(
+                id = userId,
                 username = username,
                 permissions = permissions.toList()
             )
@@ -205,6 +255,7 @@ class UserRepositoryImpl @Inject constructor(
     private fun clearLocalUser() {
         prefs.edit()
             .remove(KEY_USER_TOKEN)
+            .remove(KEY_USER_ID)
             .remove(KEY_USER_NAME)
             .remove(KEY_USER_PERMISSIONS)
             .apply()

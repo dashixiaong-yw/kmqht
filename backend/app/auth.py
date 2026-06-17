@@ -15,9 +15,6 @@ logger = logging.getLogger(__name__)
 # 不需要认证的路径前缀
 SKIP_AUTH_PREFIXES = ("/images", "/health", "/docs", "/redoc", "/openapi.json")
 
-# 不需要用户Token的路径
-SKIP_USER_TOKEN_PREFIXES = ("/api/users/login",)
-
 # 全部有效权限代码
 VALID_PERMISSIONS = {"settings", "update_supplier", "update_remark", "manage_area_image", "manage_box_image"}
 

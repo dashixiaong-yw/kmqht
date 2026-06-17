@@ -2,11 +2,13 @@
 
 import logging
 import os
+import sqlite3
 import uuid
 from typing import List
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
+from app.auth import check_permission, get_current_user
 from app.config import IMAGE_DIR
 from app.database import get_db
 from app.models import BaseResponse, ImageListResponse, ImageResponse
@@ -28,11 +30,17 @@ async def upload_image(
     skuOuterId: str = Form(..., max_length=64, description="SKU外部编码"),
     imageType: str = Form(..., description="图片类型: area/box"),
     file: UploadFile = File(..., description="图片文件"),
+    user: dict = Depends(get_current_user),
 ) -> ImageResponse:
-    """上传商品图片（multipart表单）"""
+    """上传商品图片（multipart表单），需对应图片管理权限"""
     # 验证图片类型
     if imageType not in ("area", "box"):
         raise HTTPException(status_code=400, detail="imageType必须为area或box")
+
+    # 权限校验：area→manage_area_image, box→manage_box_image
+    required_perm = "manage_area_image" if imageType == "area" else "manage_box_image"
+    if required_perm not in user["permissions"]:
+        raise HTTPException(status_code=403, detail=f"无权限执行此操作: {required_perm}")
 
     # 验证文件扩展名
     _, ext = os.path.splitext(file.filename or "")
@@ -122,8 +130,11 @@ def get_images(sku_outer_id: str) -> ImageListResponse:
 
 
 @router.delete("/images/{image_id}", response_model=BaseResponse)
-def delete_image(image_id: int) -> BaseResponse:
-    """删除图片"""
+def delete_image(
+    image_id: int,
+    user: dict = Depends(get_current_user),
+) -> BaseResponse:
+    """删除图片，需对应图片管理权限"""
     db = get_db()
     cursor = db.cursor()
 
@@ -131,6 +142,11 @@ def delete_image(image_id: int) -> BaseResponse:
     row = cursor.fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="图片不存在")
+
+    # 权限校验：根据图片类型检查对应权限
+    required_perm = "manage_area_image" if row["image_type"] == "area" else "manage_box_image"
+    if required_perm not in user["permissions"]:
+        raise HTTPException(status_code=403, detail=f"无权限执行此操作: {required_perm}")
 
     # 删除文件
     file_full_path = os.path.join(IMAGE_DIR, row["file_path"])

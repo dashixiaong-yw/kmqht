@@ -20,13 +20,16 @@ import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kuaimai.pda.data.repository.AuthRepository
 import com.kuaimai.pda.data.repository.UserRepository
 import com.kuaimai.pda.ui.components.NetworkStatusIndicator
 import com.kuaimai.pda.ui.settings.SettingsViewModel.Companion.KEY_GUIDE_SHOWN
@@ -53,6 +57,8 @@ import com.kuaimai.pda.util.NetworkMonitor
  * 主页：居中Logo + 模块入口卡片
  * 无底部导航栏，使用卡片式入口
  * 首次使用显示引导提示条
+ * 会话即将过期显示黄色警告条
+ * Token刷新失败弹出对话框
  */
 @Composable
 fun HomeScreen(
@@ -61,13 +67,37 @@ fun HomeScreen(
     onNavigateToProduct: () -> Unit,
     onNavigateToSettings: () -> Unit,
     networkMonitor: NetworkMonitor? = null,
-    prefs: SharedPreferences? = null
+    prefs: SharedPreferences? = null,
+    authRepository: AuthRepository? = null
 ) {
     val hasSettingsPermission = userRepository.hasPermission("settings")
 
     // 首次使用引导提示
     var showGuide by remember {
         mutableStateOf(prefs?.getBoolean(KEY_GUIDE_SHOWN, false) == false)
+    }
+
+    // 会话即将过期预警（距过期<5天）
+    var showSessionWarning by remember { mutableStateOf(false) }
+    LaunchedEffect(authRepository) {
+        if (authRepository != null) {
+            val expireTime = authRepository.getSessionExpireTime()
+            if (expireTime > 0L) {
+                val now = System.currentTimeMillis()
+                val daysLeft = (expireTime - now) / (1000 * 60 * 60 * 24)
+                showSessionWarning = daysLeft in 0..4
+            }
+        }
+    }
+
+    // Token刷新失败弹窗
+    var showTokenExpiredDialog by remember { mutableStateOf(false) }
+    LaunchedEffect(authRepository) {
+        if (authRepository != null) {
+            authRepository.tokenRefreshFailed.collect {
+                showTokenExpiredDialog = true
+            }
+        }
     }
 
     Column(
@@ -105,8 +135,8 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 首次使用引导提示条
-            if (showGuide) {
+            // 首次使用引导提示条（仅settings权限用户显示）
+            if (showGuide && hasSettingsPermission) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -128,6 +158,39 @@ fun HomeScreen(
                             showGuide = false
                             prefs?.edit()?.putBoolean(KEY_GUIDE_SHOWN, true)?.apply()
                         },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "关闭",
+                            tint = WarningText,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            // 会话即将过期警告条
+            if (showSessionWarning) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(WarningBg, RoundedCornerShape(8.dp))
+                        .clickable { onNavigateToSettings() }
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "会话即将过期，请及时刷新",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = WarningText,
+                            fontWeight = FontWeight.Medium
+                        ),
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(
+                        onClick = { showSessionWarning = false },
                         modifier = Modifier.size(24.dp)
                     ) {
                         Icon(
@@ -195,11 +258,33 @@ fun HomeScreen(
             }
         }
     }
+
+    // Token刷新失败弹窗
+    if (showTokenExpiredDialog) {
+        AlertDialog(
+            onDismissRequest = { showTokenExpiredDialog = false },
+            title = { Text("会话已过期") },
+            text = { Text("快麦API会话已过期，请重新授权") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showTokenExpiredDialog = false
+                    onNavigateToSettings()
+                }) {
+                    Text("前往设置")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTokenExpiredDialog = false }) {
+                    Text("稍后处理")
+                }
+            }
+        )
+    }
 }
 
 /**
- * 模块入口卡片 - 水平布局（图标在左，标题+描述在右）
- * 匹配HTML原型设计
+ * 模块入口卡片 - 水平布局（左侧蓝色图标框，右侧标题+描述）
+ * 匹配HTML原型设计：白色卡片背景+左侧52dp蓝色图标框
  */
 @Composable
 private fun ModuleCard(
@@ -213,21 +298,31 @@ private fun ModuleCard(
             .fillMaxWidth()
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
-            containerColor = PrimaryLightBg
+            containerColor = SurfaceWhite
         ),
         shape = RoundedCornerShape(12.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
+                .padding(0.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 左侧图标
-            icon()
-            Spacer(modifier = Modifier.width(16.dp))
+            // 左侧52dp蓝色图标框
+            Column(
+                modifier = Modifier
+                    .background(PrimaryLightBg)
+                    .padding(horizontal = 16.dp, vertical = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                icon()
+            }
             // 右侧标题+描述
-            Column {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 16.dp, vertical = 20.dp)
+            ) {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleLarge.copy(

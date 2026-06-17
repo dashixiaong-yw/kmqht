@@ -8,11 +8,15 @@ import com.kuaimai.pda.data.api.dto.AddOrderItemRequest
 import com.kuaimai.pda.data.db.entity.PickItemEntity
 import com.kuaimai.pda.data.db.entity.PickOrderEntity
 import com.kuaimai.pda.data.repository.PickOrderRepository
+import com.kuaimai.pda.scanner.ScanFeedbackType
+import com.kuaimai.pda.scanner.ScannerManager
 import com.kuaimai.pda.util.TimeUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -26,7 +30,8 @@ import javax.inject.Inject
 class PickDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val pickOrderRepository: PickOrderRepository,
-    private val orderApiService: OrderApiService
+    private val orderApiService: OrderApiService,
+    private val scannerManager: ScannerManager
 ) : ViewModel() {
 
     /** 取货单ID */
@@ -68,6 +73,14 @@ class PickDetailViewModel @Inject constructor(
     /** 重复扫码提示 */
     private val _duplicateScan = MutableStateFlow(false)
     val duplicateScan: StateFlow<Boolean> = _duplicateScan.asStateFlow()
+
+    /** 扫码成功事件 */
+    private val _scanSuccessEvent = MutableSharedFlow<Unit>()
+    val scanSuccessEvent = _scanSuccessEvent.asSharedFlow()
+
+    /** 扫码失败事件 */
+    private val _scanFailureEvent = MutableSharedFlow<String>()
+    val scanFailureEvent = _scanFailureEvent.asSharedFlow()
 
     init {
         loadOrder()
@@ -134,8 +147,10 @@ class PickDetailViewModel @Inject constructor(
                 )
                 pickOrderRepository.insertItem(item)
                 loadSuppliers()
+                _scanSuccessEvent.emit(Unit)
             } catch (e: Exception) {
                 _errorMessage.value = "添加明细失败: ${e.message}"
+                _scanFailureEvent.emit("添加明细失败: ${e.message}")
             } finally {
                 _isLoading.value = false
             }
@@ -264,5 +279,14 @@ class PickDetailViewModel @Inject constructor(
      */
     fun clearError() {
         _errorMessage.value = null
+    }
+
+    /**
+     * 触发扫码反馈（振动+声音）
+     * @param context 上下文
+     * @param type 反馈类型
+     */
+    fun provideFeedback(context: android.content.Context, type: ScanFeedbackType) {
+        scannerManager.provideFeedback(context, type)
     }
 }

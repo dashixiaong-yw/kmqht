@@ -1,9 +1,6 @@
 package com.kuaimai.pda.ui.pickdetail
 
 import android.content.Context
-import android.os.Build
-import android.os.VibrationEffect
-import android.os.Vibrator
 import android.view.WindowManager
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -67,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.kuaimai.pda.data.db.entity.PickItemEntity
+import com.kuaimai.pda.scanner.ScanFeedbackType
 import com.kuaimai.pda.ui.components.PickItemRow
 import com.kuaimai.pda.ui.theme.BrandBlue
 import com.kuaimai.pda.ui.theme.DangerBg
@@ -123,18 +121,26 @@ fun PickDetailScreen(
         }
     }
 
-    // GAP-08: 扫码成功/失败振动+声音反馈
+    // GAP-08: 重复扫码反馈（振动+声音）
     LaunchedEffect(duplicateScan) {
         if (duplicateScan) {
-            val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
-            } else {
-                @Suppress("DEPRECATION")
-                vibrator.vibrate(200)
-            }
+            viewModel.provideFeedback(context, ScanFeedbackType.DUPLICATE)
             snackbarHostState.showSnackbar("重复扫码！该SKU已在当前取货单中")
             viewModel.clearDuplicateScan()
+        }
+    }
+
+    // 扫码成功反馈
+    LaunchedEffect(Unit) {
+        viewModel.scanSuccessEvent.collect {
+            viewModel.provideFeedback(context, ScanFeedbackType.SUCCESS)
+        }
+    }
+
+    // 扫码失败反馈
+    LaunchedEffect(Unit) {
+        viewModel.scanFailureEvent.collect { message ->
+            viewModel.provideFeedback(context, ScanFeedbackType.FAILURE)
         }
     }
 
@@ -170,10 +176,21 @@ fun PickDetailScreen(
             )
         }
     ) { innerPadding ->
-        Column(
+        // F15: 下拉刷新
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = {
+                isRefreshing = true
+                viewModel.refresh()
+                isRefreshing = false
+            },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+        ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
         ) {
             // 扫码输入框
             Row(
@@ -255,7 +272,7 @@ fun PickDetailScreen(
                         FilterChip(
                             selected = currentSupplier == supplier,
                             onClick = { viewModel.setSupplierFilter(supplier) },
-                            label = { Text(supplier, fontSize = 12.sp) },
+                            label = { Text(supplier, fontSize = 13.sp) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = PrimaryLightBg,
                                 selectedLabelColor = PrimaryLightText
@@ -329,6 +346,7 @@ fun PickDetailScreen(
                 }
             }
         }
+        } // PullToRefreshBox end
     }
 
     // 自动聚焦扫码输入框

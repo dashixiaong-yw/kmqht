@@ -11,13 +11,17 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import android.content.SharedPreferences
+import com.kuaimai.pda.data.repository.AuthRepository
 import com.kuaimai.pda.data.repository.UserRepository
+import com.kuaimai.pda.ui.guide.GuideScreen
 import com.kuaimai.pda.ui.home.HomeScreen
 import com.kuaimai.pda.ui.login.LoginScreen
 import com.kuaimai.pda.ui.pickdetail.PickDetailScreen
 import com.kuaimai.pda.ui.picklist.PickListScreen
 import com.kuaimai.pda.ui.product.ProductScreen
 import com.kuaimai.pda.ui.settings.SettingsScreen
+import com.kuaimai.pda.ui.settings.SettingsViewModel.Companion.KEY_GUIDE_SHOWN
 
 /**
  * 应用导航
@@ -27,6 +31,7 @@ import com.kuaimai.pda.ui.settings.SettingsScreen
 object Routes {
     const val LOGIN = "login"
     const val HOME = "home"
+    const val GUIDE = "guide"
     const val PICK_LIST = "pickList"
     const val PICK_DETAIL = "pickDetail/{orderId}"
     const val PRODUCT = "product/{skuOuterId}"
@@ -41,21 +46,38 @@ object Routes {
 
 @Composable
 fun AppNavigation(
-    userRepository: UserRepository
+    userRepository: UserRepository,
+    prefs: SharedPreferences,
+    authRepository: AuthRepository
 ) {
     val navController = rememberNavController()
     var isCheckingAuth by remember { mutableStateOf(true) }
     var startDestination by remember { mutableStateOf(Routes.LOGIN) }
 
-    // 启动时验证token有效性
+    // 启动时验证token有效性，并判断是否首次使用
     LaunchedEffect(Unit) {
         if (userRepository.isLoggedIn()) {
             val valid = userRepository.validateToken()
-            startDestination = if (valid) Routes.HOME else Routes.LOGIN
+            if (valid) {
+                // 已登录且token有效，检查是否首次使用
+                val guideShown = prefs.getBoolean(KEY_GUIDE_SHOWN, false)
+                startDestination = if (guideShown) Routes.HOME else Routes.GUIDE
+            } else {
+                startDestination = Routes.LOGIN
+            }
         } else {
             startDestination = Routes.LOGIN
         }
         isCheckingAuth = false
+    }
+
+    // 监听token过期事件，自动跳转登录页
+    LaunchedEffect(Unit) {
+        userRepository.loginRequired.collect {
+            navController.navigate(Routes.LOGIN) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
     }
 
     if (isCheckingAuth) {
@@ -71,8 +93,23 @@ fun AppNavigation(
             LoginScreen(
                 userRepository = userRepository,
                 onLoginSuccess = {
-                    navController.navigate(Routes.HOME) {
+                    // 登录成功后检查是否需要引导
+                    val guideShown = prefs.getBoolean(KEY_GUIDE_SHOWN, false)
+                    val target = if (guideShown) Routes.HOME else Routes.GUIDE
+                    navController.navigate(target) {
                         popUpTo(Routes.LOGIN) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(Routes.GUIDE) {
+            GuideScreen(
+                onFinish = {
+                    // 引导完成，保存标记并导航到主页
+                    prefs.edit().putBoolean(KEY_GUIDE_SHOWN, true).apply()
+                    navController.navigate(Routes.HOME) {
+                        popUpTo(Routes.GUIDE) { inclusive = true }
                     }
                 }
             )
@@ -85,7 +122,9 @@ fun AppNavigation(
                 onNavigateToProduct = {
                     navController.navigate(Routes.productRoute(""))
                 },
-                onNavigateToSettings = { navController.navigate(Routes.SETTINGS) }
+                onNavigateToSettings = { navController.navigate(Routes.SETTINGS) },
+                prefs = prefs,
+                authRepository = authRepository
             )
         }
 

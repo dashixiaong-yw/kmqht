@@ -180,12 +180,10 @@ def init_db() -> None:
 
 def _init_default_admin(cursor: sqlite3.Cursor) -> None:
     """初始化默认管理员用户 admin/admin123"""
-    try:
-        import bcrypt
-        password_hash = bcrypt.hashpw("admin123".encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-    except ImportError:
-        import hashlib
-        password_hash = hashlib.sha256("admin123".encode("utf-8")).hexdigest()
+    # 延迟导入避免循环依赖
+    from app.routers.users import _hash_password
+
+    password_hash = _hash_password("admin123")
 
     from app.utils.time_utils import beijing_now, format_beijing
     now = format_beijing(beijing_now())

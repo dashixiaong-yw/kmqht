@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import javax.inject.Named
 
 /**
  * 设置ViewModel
@@ -20,7 +21,8 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val areaApiService: AreaApiService,
-    private val prefs: SharedPreferences
+    private val prefs: SharedPreferences,
+    @Named("encrypted") private val encryptedPrefs: SharedPreferences
 ) : ViewModel() {
 
     companion object {
@@ -46,9 +48,9 @@ class SettingsViewModel @Inject constructor(
     )
     val serverUrl: StateFlow<String> = _serverUrl.asStateFlow()
 
-    /** API Key */
+    /** API Key（存储在加密SharedPreferences中） */
     private val _apiKey = MutableStateFlow(
-        prefs.getString(KEY_API_KEY, "") ?: ""
+        encryptedPrefs.getString(KEY_API_KEY, "") ?: ""
     )
     val apiKey: StateFlow<String> = _apiKey.asStateFlow()
 
@@ -178,10 +180,10 @@ class SettingsViewModel @Inject constructor(
     }
 
     /**
-     * 保存API Key
+     * 保存API Key（使用加密SharedPreferences）
      */
     fun saveApiKey() {
-        prefs.edit().putString(KEY_API_KEY, _apiKey.value.trim()).apply()
+        encryptedPrefs.edit().putString(KEY_API_KEY, _apiKey.value.trim()).apply()
         _successMessage.value = "API Key已保存"
     }
 

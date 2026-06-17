@@ -1,7 +1,9 @@
 """用户管理路由 - 登录/用户CRUD/权限管理"""
 
 import logging
+import threading
 import uuid
+from datetime import timedelta
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -26,10 +28,29 @@ router = APIRouter(prefix="/api/users", tags=["用户管理"])
 # Token有效期7天
 TOKEN_EXPIRE_DAYS = 7
 
+# 登录限流：5次失败锁定5分钟
+_LOGIN_FAIL_COUNTS: dict[str, int] = {}
+_LOGIN_LOCK_UNTIL: dict[str, float] = {}
+_login_lock = threading.Lock()
+_MAX_LOGIN_FAILS = 5
+_LOGIN_LOCK_SECONDS = 300
+
 
 @router.post("/login", response_model=LoginResponse)
 def login(req: LoginRequest) -> LoginResponse:
-    """用户登录"""
+    """用户登录（含限流保护：5次失败锁定5分钟）"""
+    import time
+
+    # 限流检查
+    with _login_lock:
+        lock_until = _LOGIN_LOCK_UNTIL.get(req.username, 0)
+        if lock_until > time.time():
+            remaining = int(lock_until - time.time())
+            raise HTTPException(
+                status_code=429,
+                detail=f"登录尝试过于频繁，请{remaining}秒后再试"
+            )
+
     db = get_db()
     cursor = db.cursor()
 
@@ -41,6 +62,7 @@ def login(req: LoginRequest) -> LoginResponse:
     row = cursor.fetchone()
 
     if not row:
+        _record_login_fail(req.username)
         raise HTTPException(status_code=401, detail="用户名或密码错误")
 
     if not row["is_active"]:
@@ -49,14 +71,19 @@ def login(req: LoginRequest) -> LoginResponse:
     # 校验密码
     stored_hash = row["password_hash"]
     if not _verify_password(req.password, stored_hash):
+        _record_login_fail(req.username)
         raise HTTPException(status_code=401, detail="用户名或密码错误")
+
+    # 登录成功，清除失败计数
+    with _login_lock:
+        _LOGIN_FAIL_COUNTS.pop(req.username, None)
+        _LOGIN_LOCK_UNTIL.pop(req.username, None)
 
     user_id = row["id"]
 
     # 生成token
     token = uuid.uuid4().hex
     now = beijing_now()
-    from datetime import timedelta
     expires_at = now + timedelta(days=TOKEN_EXPIRE_DAYS)
 
     # 清理该用户的旧token
@@ -208,6 +235,9 @@ def update_user(
             "UPDATE users SET is_active = ? WHERE id = ?",
             (1 if req.isActive else 0, user_id)
         )
+        # 禁用用户时清理其token，使其立即失效
+        if not req.isActive:
+            cursor.execute("DELETE FROM user_tokens WHERE user_id = ?", (user_id,))
 
     # 更新权限
     if req.permissions is not None:
@@ -292,3 +322,15 @@ def _verify_password(password: str, stored_hash: str) -> bool:
     except ImportError:
         import hashlib
         return hashlib.sha256(password.encode("utf-8")).hexdigest() == stored_hash
+
+
+def _record_login_fail(username: str) -> None:
+    """记录登录失败次数，超过阈值则锁定"""
+    import time
+
+    with _login_lock:
+        count = _LOGIN_FAIL_COUNTS.get(username, 0) + 1
+        _LOGIN_FAIL_COUNTS[username] = count
+        if count >= _MAX_LOGIN_FAILS:
+            _LOGIN_LOCK_UNTIL[username] = time.time() + _LOGIN_LOCK_SECONDS
+            logger.warning(f"用户 {username} 登录失败{count}次，锁定{_LOGIN_LOCK_SECONDS}秒")

@@ -1,9 +1,11 @@
 package com.kuaimai.pda
 
+import android.content.SharedPreferences
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import com.kuaimai.pda.data.repository.AuthRepository
 import com.kuaimai.pda.data.repository.UserRepository
 import com.kuaimai.pda.ui.navigation.AppNavigation
 import com.kuaimai.pda.ui.theme.KuaimaiTheme
@@ -19,12 +21,22 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var userRepository: UserRepository
 
+    @Inject
+    lateinit var prefs: SharedPreferences
+
+    @Inject
+    lateinit var authRepository: AuthRepository
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             KuaimaiTheme {
-                AppNavigation(userRepository = userRepository)
+                AppNavigation(
+                    userRepository = userRepository,
+                    prefs = prefs,
+                    authRepository = authRepository
+                )
             }
         }
     }

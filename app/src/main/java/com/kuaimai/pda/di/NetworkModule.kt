@@ -35,7 +35,7 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    private const val PREFS_NAME = "kuaimai_secure_prefs"
+    private const val PREFS_NAME = "kuaimai_encrypted_prefs"
     private const val KEY_BASE_URL = "base_url"
     private const val DEFAULT_BASE_URL = AppConstants.KUAIMAI_API_URL
     private const val KEY_SERVER_URL = "server_url"
@@ -45,6 +45,7 @@ object NetworkModule {
     /** 加密SharedPreferences，存储API密钥等敏感配置 */
     @Provides
     @Singleton
+    @Named("encrypted")
     fun provideEncryptedSharedPreferences(
         @ApplicationContext context: Context
     ): SharedPreferences {
@@ -60,11 +61,20 @@ object NetworkModule {
         )
     }
 
+    /** 普通SharedPreferences，存储非敏感配置（引导标记等） */
+    @Provides
+    @Singleton
+    fun provideSharedPreferences(
+        @ApplicationContext context: Context
+    ): SharedPreferences {
+        return context.getSharedPreferences("kuaimai_prefs", Context.MODE_PRIVATE)
+    }
+
     /** API Key拦截器：添加X-API-Key请求头 */
     @Provides
     @Singleton
     fun provideApiKeyInterceptor(
-        prefs: SharedPreferences
+        @Named("encrypted") prefs: SharedPreferences
     ): ApiKeyInterceptor {
         return ApiKeyInterceptor(prefs)
     }
@@ -73,7 +83,7 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideKuaimaiInterceptor(
-        prefs: SharedPreferences
+        @Named("encrypted") prefs: SharedPreferences
     ): KuaimaiInterceptor {
         return KuaimaiInterceptor(prefs)
     }
@@ -99,7 +109,7 @@ object NetworkModule {
     @Singleton
     fun provideTokenAuthenticator(
         apiServiceProvider: Provider<KuaimaiApiService>,
-        prefs: SharedPreferences
+        @Named("encrypted") prefs: SharedPreferences
     ): TokenAuthenticator {
         return TokenAuthenticator(apiServiceProvider, prefs)
     }
@@ -133,7 +143,7 @@ object NetworkModule {
     @Named("kuaimai")
     fun provideRetrofit(
         client: OkHttpClient,
-        prefs: SharedPreferences
+        @Named("encrypted") prefs: SharedPreferences
     ): Retrofit {
         val baseUrl = prefs.getString(KEY_BASE_URL, DEFAULT_BASE_URL) ?: DEFAULT_BASE_URL
         return Retrofit.Builder()
@@ -154,7 +164,7 @@ object NetworkModule {
     @Provides
     @Singleton
     @Named("backend")
-    fun provideBackendRetrofit(client: OkHttpClient, prefs: SharedPreferences): Retrofit {
+    fun provideBackendRetrofit(client: OkHttpClient, @Named("encrypted") prefs: SharedPreferences): Retrofit {
         val serverUrl = prefs.getString(KEY_SERVER_URL, DEFAULT_SERVER_URL) ?: DEFAULT_SERVER_URL
         return Retrofit.Builder()
             .baseUrl(serverUrl)

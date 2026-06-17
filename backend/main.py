@@ -161,23 +161,38 @@ def _start_scheduler() -> None:
 
 
 def _check_order_timeout() -> None:
-    """检查取货单超时：expire_at < now 的进行中订单标记为过期"""
+    """检查取货单超时：expire_at < now 的进行中订单标记为已完成（completion_type=1）"""
     try:
         db = get_db()
         cursor = db.cursor()
         now = beijing_now().strftime("%Y-%m-%d %H:%M:%S")
 
+        # 将超时的进行中取货单标记为已完成
         cursor.execute(
-            "SELECT id, order_no FROM pick_orders WHERE status = 0 AND expire_at < ?",
-            (now,)
+            """UPDATE pick_orders
+               SET status = 1, completion_type = 1, completed_at = ?
+               WHERE status = 0 AND expire_at < ?""",
+            (now, now),
         )
-        expired = cursor.fetchall()
+        order_count = cursor.rowcount
 
-        if expired:
-            for row in expired:
-                logger.info(f"取货单超时: {row['order_no']}")
-            # 超时订单不做自动删除，仅记录日志
-            logger.info(f"共检测到{len(expired)}个超时取货单")
+        # 将超时取货单内未完成的待办行标记为已完成
+        cursor.execute(
+            """UPDATE pick_items
+               SET status = 1, completed_at = ?
+               WHERE order_id IN (
+                   SELECT id FROM pick_orders WHERE completion_type = 1
+               ) AND status = 0""",
+            (now,),
+        )
+        item_count = cursor.rowcount
+
+        db.commit()
+
+        if order_count > 0:
+            logger.info(
+                f"超时自动完成: {order_count}个取货单, {item_count}条待办行"
+            )
     except Exception as e:
         logger.error(f"检查取货单超时失败: {e}")
 
