@@ -2,5 +2,6 @@
   "app_key": "",
   "app_secret": "",
   "session": "",
+  "refresh_token": "",
   "updated_at": ""
 }

@@ -1,5 +1,21 @@
 # 快麦取货通 - 变更日志
 
+## 1.8 (2026-06-17)
+
+### 新增
+- 后端KuaimaiCredentials增加refresh_token字段存储
+- 后端新增save_kuaimai_config()方法，刷新后持久化updated_at到kuaimai.json
+- 后端kuaimai_api.py新增refresh_session()函数，调用快麦open.token.refresh接口
+- 后端main.py新增每7天自动刷新快麦session定时任务
+- 后端system.py新增GET /api/kuaimai/session-status接口查询session状态
+- 后端system.py新增POST /api/kuaimai/refresh-session接口手动刷新session
+- 前端SettingsScreen新增"快麦连接状态"Card，显示session状态、剩余天数、刷新按钮
+- 前端新增SystemApiService和KuaimaiSessionDto
+
+### 修改
+- kuaimai.example.json增加refresh_token字段
+- KuaimaiCredentials新增has_refresh_token()和get_days_left()方法
+
 ## 1.7 (2026-06-17)
 
 ### 安全

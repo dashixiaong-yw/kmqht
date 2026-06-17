@@ -9,6 +9,7 @@ import com.kuaimai.pda.data.api.AreaApiService
 import com.kuaimai.pda.data.api.KuaimaiApiService
 import com.kuaimai.pda.data.api.KuaimaiInterceptor
 import com.kuaimai.pda.data.api.OrderApiService
+import com.kuaimai.pda.data.api.SystemApiService
 import com.kuaimai.pda.data.api.UserApiService
 import com.kuaimai.pda.util.AppConstants
 import com.kuaimai.pda.util.PrefsKeys
@@ -191,6 +192,13 @@ object NetworkModule {
     @Singleton
     fun provideUserApiService(@Named("backend") backendRetrofit: Retrofit): UserApiService {
         return backendRetrofit.create(UserApiService::class.java)
+    }
+
+    /** 后端系统API服务（快麦session状态和刷新） */
+    @Provides
+    @Singleton
+    fun provideSystemApiService(@Named("backend") backendRetrofit: Retrofit): SystemApiService {
+        return backendRetrofit.create(SystemApiService::class.java)
     }
 }
 

@@ -57,12 +57,16 @@ import com.kuaimai.pda.BuildConfig
 import com.kuaimai.pda.data.api.dto.UserResponse
 import com.kuaimai.pda.data.repository.UserRepository
 import com.kuaimai.pda.ui.theme.BrandBlue
+import com.kuaimai.pda.ui.theme.DangerBg
+import com.kuaimai.pda.ui.theme.DangerText
 import com.kuaimai.pda.ui.theme.SuccessBg
 import com.kuaimai.pda.ui.theme.SuccessText
 import com.kuaimai.pda.ui.theme.PrimaryLightBg
 import com.kuaimai.pda.ui.theme.PrimaryLightText
 import com.kuaimai.pda.ui.theme.SurfaceWhite
 import com.kuaimai.pda.ui.theme.TextSecondary
+import com.kuaimai.pda.ui.theme.WarningBg
+import com.kuaimai.pda.ui.theme.WarningText
 import kotlinx.coroutines.launch
 
 /**
@@ -293,6 +297,111 @@ fun SettingsScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = PrimaryLightBg, contentColor = PrimaryLightText)
                     ) {
                         Text("保存")
+                    }
+                }
+            }
+
+            // 快麦连接状态
+            val sessionStatus by viewModel.sessionStatus.collectAsState()
+            val isRefreshing by viewModel.isRefreshing.collectAsState()
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = SurfaceWhite)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "快麦连接状态",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    if (sessionStatus != null) {
+                        // 状态指示
+                        val isValid = sessionStatus!!.isValid
+                        val daysLeft = sessionStatus!!.daysLeft
+                        val statusText = when {
+                            !isValid -> "已过期"
+                            daysLeft != null && daysLeft <= 5 -> "即将过期"
+                            else -> "正常"
+                        }
+                        val statusColor = when {
+                            !isValid -> DangerText
+                            daysLeft != null && daysLeft <= 5 -> WarningText
+                            else -> SuccessText
+                        }
+                        val statusBgColor = when {
+                            !isValid -> DangerBg
+                            daysLeft != null && daysLeft <= 5 -> WarningBg
+                            else -> SuccessBg
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("Session状态: ", style = MaterialTheme.typography.bodyMedium)
+                                    Text(
+                                        text = statusText,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = statusColor
+                                    )
+                                }
+                                if (daysLeft != null) {
+                                    Text(
+                                        text = "剩余 ${daysLeft} 天",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = TextSecondary
+                                    )
+                                }
+                                if (sessionStatus!!.updatedAt.isNotEmpty()) {
+                                    Text(
+                                        text = "最后更新: ${sessionStatus!!.updatedAt}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = TextSecondary
+                                    )
+                                }
+                            }
+
+                            // 手动刷新按钮
+                            Button(
+                                onClick = { viewModel.refreshSession() },
+                                enabled = !isRefreshing && sessionStatus!!.hasRefreshToken,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = statusBgColor,
+                                    contentColor = statusColor
+                                )
+                            ) {
+                                if (isRefreshing) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(16.dp),
+                                        strokeWidth = 2.dp,
+                                        color = statusColor
+                                    )
+                                } else {
+                                    Text("刷新")
+                                }
+                            }
+                        }
+
+                        if (!sessionStatus!!.hasRefreshToken) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "未配置refreshToken，无法自动刷新。请在后端kuaimai.json中添加refresh_token字段",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = DangerText
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = "无法获取状态（请检查服务器连接）",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary
+                        )
                     }
                 }
             }

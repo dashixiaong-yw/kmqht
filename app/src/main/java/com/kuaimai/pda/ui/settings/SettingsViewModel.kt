@@ -5,7 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kuaimai.pda.data.api.AreaApiService
 import com.kuaimai.pda.data.api.AreaCreateRequest
+import com.kuaimai.pda.data.api.SystemApiService
 import com.kuaimai.pda.data.api.dto.AreaResponse
+import com.kuaimai.pda.data.api.dto.KuaimaiRefreshResponse
+import com.kuaimai.pda.data.api.dto.KuaimaiSessionStatusResponse
 import com.kuaimai.pda.data.repository.UserRepository
 import com.kuaimai.pda.util.AppConstants
 import com.kuaimai.pda.util.PrefsKeys
@@ -24,6 +27,7 @@ import javax.inject.Named
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val areaApiService: AreaApiService,
+    private val systemApiService: SystemApiService,
     private val userRepository: UserRepository,
     private val prefs: SharedPreferences,
     @Named("encrypted") private val encryptedPrefs: SharedPreferences
@@ -88,6 +92,7 @@ class SettingsViewModel @Inject constructor(
 
     init {
         loadAreas()
+        loadSessionStatus()
     }
 
     /**
@@ -241,5 +246,55 @@ class SettingsViewModel @Inject constructor(
      */
     fun clearSuccess() {
         _successMessage.value = null
+    }
+
+    // ==================== 快麦session状态 ====================
+
+    /** 快麦session状态 */
+    private val _sessionStatus = MutableStateFlow<KuaimaiSessionStatusResponse?>(null)
+    val sessionStatus: StateFlow<KuaimaiSessionStatusResponse?> = _sessionStatus.asStateFlow()
+
+    /** session刷新中 */
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
+    /**
+     * 加载快麦session状态
+     */
+    fun loadSessionStatus() {
+        viewModelScope.launch {
+            try {
+                val token = userRepository.getToken()
+                val status = systemApiService.getSessionStatus(token)
+                _sessionStatus.value = status
+            } catch (e: Exception) {
+                // 网络不可用时静默失败，不影响页面使用
+                _sessionStatus.value = null
+            }
+        }
+    }
+
+    /**
+     * 手动刷新快麦session
+     */
+    fun refreshSession() {
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            try {
+                val token = userRepository.getToken()
+                val result = systemApiService.refreshSession(token)
+                if (result.success) {
+                    _successMessage.value = "session刷新成功，剩余${result.daysLeft ?: "?"}天"
+                    // 刷新成功后重新加载状态
+                    loadSessionStatus()
+                } else {
+                    _errorMessage.value = result.message
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = "刷新失败: ${e.message}"
+            } finally {
+                _isRefreshing.value = false
+            }
+        }
     }
 }
