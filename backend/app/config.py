@@ -111,11 +111,13 @@ def load_kuaimai_config() -> None:
     try:
         with open(config_path, "r", encoding="utf-8") as f:
             data: dict = json.load(f)
-        kuaimai_creds.app_key = data.get("app_key", "")
-        kuaimai_creds.app_secret = data.get("app_secret", "")
-        kuaimai_creds.session = data.get("session", "")
-        kuaimai_creds.refresh_token = data.get("refresh_token", "")
-        kuaimai_creds.updated_at = data.get("updated_at", "")
+        from app.services.kuaimai_api import _config_lock
+        with _config_lock:
+            kuaimai_creds.app_key = data.get("app_key", "")
+            kuaimai_creds.app_secret = data.get("app_secret", "")
+            kuaimai_creds.session = data.get("session", "")
+            kuaimai_creds.refresh_token = data.get("refresh_token", "")
+            kuaimai_creds.updated_at = data.get("updated_at", "")
         logger.info("快麦凭证加载成功")
     except (json.JSONDecodeError, IOError) as e:
         logger.error(f"加载快麦凭证失败: {e}")
@@ -131,9 +133,11 @@ def save_kuaimai_config() -> None:
                 data = json.load(f)
 
         # 更新字段
-        data["app_key"] = kuaimai_creds.app_key
-        data["app_secret"] = kuaimai_creds.app_secret
-        data["updated_at"] = kuaimai_creds.updated_at
+        from app.services.kuaimai_api import _config_lock
+        with _config_lock:
+            data["app_key"] = kuaimai_creds.app_key
+            data["app_secret"] = kuaimai_creds.app_secret
+            data["updated_at"] = kuaimai_creds.updated_at
         if kuaimai_creds.session:
             data["session"] = kuaimai_creds.session
         if kuaimai_creds.refresh_token:

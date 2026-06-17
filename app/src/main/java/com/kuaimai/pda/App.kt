@@ -4,6 +4,12 @@ import android.app.Application
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import com.kuaimai.pda.data.api.ImageUploadService
+import com.kuaimai.pda.data.api.KuaimaiApiService
+import com.kuaimai.pda.data.api.OrderApiService
+import com.kuaimai.pda.data.db.dao.PendingOperationDao
+import com.kuaimai.pda.data.repository.AuthRepository
+import com.kuaimai.pda.data.repository.UserRepository
 import com.kuaimai.pda.util.TimeUtils
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -12,6 +18,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileWriter
+import javax.inject.Inject
 
 /**
  * 快麦取货通 Application
@@ -27,6 +34,25 @@ class App : Application() {
         private const val ANR_CHECK_INTERVAL_MS = 1000L
     }
 
+    /**
+     * OrderSyncWorker 的依赖容器（WorkManager 通过无参构造函数实例化 Worker）
+     */
+    object OrderSyncWorkerDeps {
+        lateinit var pendingOperationDao: PendingOperationDao
+        lateinit var apiService: KuaimaiApiService
+        lateinit var orderApiService: OrderApiService
+        lateinit var authRepository: AuthRepository
+        lateinit var imageUploadService: ImageUploadService
+        lateinit var userRepository: UserRepository
+    }
+
+    @Inject lateinit var pendingOperationDao: PendingOperationDao
+    @Inject lateinit var apiService: KuaimaiApiService
+    @Inject lateinit var orderApiService: OrderApiService
+    @Inject lateinit var authRepository: AuthRepository
+    @Inject lateinit var imageUploadService: ImageUploadService
+    @Inject lateinit var userRepository: UserRepository
+
     // ANR检测
     private val mainHandler = Handler(Looper.getMainLooper())
     private var anrCheckRunnable: Runnable? = null
@@ -35,7 +61,15 @@ class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        // 仅初始化Hilt，不做耗时操作（冷启动优化）
+        // 初始化 OrderSyncWorker 的依赖容器
+        OrderSyncWorkerDeps.apply {
+            pendingOperationDao = this@App.pendingOperationDao
+            apiService = this@App.apiService
+            orderApiService = this@App.orderApiService
+            authRepository = this@App.authRepository
+            imageUploadService = this@App.imageUploadService
+            userRepository = this@App.userRepository
+        }
         startAnrDetection()
     }
 

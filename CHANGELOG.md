@@ -1,5 +1,24 @@
 # 快麦取货通 - 变更日志
 
+## 1.25 (2026-06-18)
+
+### 修复
+- CRASH: admin.py 缺少Request导入——服务器启动抛NameError崩溃（部署阻断）
+- CRASH: docker-compose.yml env_file引用.env但部署只有.env.docker.example（部署阻断）
+- CRASH: OrderSyncWorker依赖注入改为App.OrderSyncWorkerDeps静态容器（替代需hilt-work的@HiltWorker方案）
+- HIGH: images.py skuOuterId路径穿越防护——替换/\\和..为下划线
+- HIGH: Dockerfile bcrypt编译兼容——安装rust cargo工具链
+- MEDIUM: config.py凭证读写锁保护——load/save_kuaimai_config加_config_lock
+- MEDIUM: .env.docker.example 添加API Key修改警告提示
+- MEDIUM: Dockerfile CMD支持SERVER_PORT环境变量（默认8000）
+- LOW: 删残留hilt-work依赖引用
+
+### 修改
+- App.kt 新增 OrderSyncWorkerDeps 静态依赖容器（@Inject 6个依赖到Application级别）
+- OrderSyncWorker 改为无参构造函数 + by lazy委托获取依赖
+- proguard-rules.pro 移除残留Hilt规则注释
+- Dockerfile CMD 从exec格式改为shell格式以支持环境变量替换
+
 ## 1.24 (2026-06-17)
 
 ### 修复

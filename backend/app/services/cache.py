@@ -48,8 +48,8 @@ async def get_sku_info(sku_outer_id: str) -> Optional[Dict[str, Any]]:
         cursor.execute(
             """INSERT OR REPLACE INTO sku_cache
                (sku_outer_id, properties_name, pic_path, supplier_name, supplier_code,
-                remark, sys_item_id, sys_sku_id, cached_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                remark, sys_item_id, sys_sku_id, item_outer_id, cached_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 sku_outer_id,
                 sku_data.get("properties_name", ""),
@@ -59,6 +59,7 @@ async def get_sku_info(sku_outer_id: str) -> Optional[Dict[str, Any]]:
                 sku_data.get("remark", ""),
                 sku_data.get("sys_item_id", 0),
                 sku_data.get("sys_sku_id", 0),
+                sku_data.get("item_outer_id", ""),
                 format_beijing(now),
             )
         )
@@ -107,6 +108,7 @@ def _cache_row_to_dict(row: sqlite3.Row) -> Dict[str, Any]:
         "remark": row["remark"],
         "sys_item_id": row["sys_item_id"],
         "sys_sku_id": row["sys_sku_id"],
+        "item_outer_id": row["item_outer_id"],
     }
 
 
@@ -121,4 +123,5 @@ def _api_data_to_dict(sku_outer_id: str, data: Dict[str, Any]) -> Dict[str, Any]
         "remark": data.get("remark", ""),
         "sys_item_id": data.get("sys_item_id", 0),
         "sys_sku_id": data.get("sys_sku_id", 0),
+        "item_outer_id": data.get("item_outer_id", ""),
     }

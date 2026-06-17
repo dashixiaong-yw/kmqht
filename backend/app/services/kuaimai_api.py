@@ -106,19 +106,48 @@ async def _call_api(method: str, extra_params: Optional[Dict[str, Any]] = None) 
         raise
 
 
-# ==================== 2个API方法 ====================
+# ==================== 1个API方法 ====================
 
 async def get_sku_by_outer_id(sku_outer_id: str) -> Optional[Dict[str, Any]]:
-    """根据外部编码获取SKU信息（V2 erp.item.sku.list.get）"""
+    """
+    根据外部编码获取SKU信息（V2）
+    两步查询：erp.item.single.sku.get → itemSku → 如有供应商再查 item.supplier.list.get
+    """
     try:
+        # Step1: 查SKU基本信息
         result = await _call_api(
-            "erp.item.sku.list.get",
-            {"outerId": sku_outer_id}
+            "erp.item.single.sku.get",
+            {"skuOuterId": sku_outer_id}
         )
-        sku_list = result.get("itemSkus", [])
-        if sku_list:
-            return sku_list[0]
-        return None
+        sku_list = result.get("itemSku", [])
+        if not sku_list:
+            return None
+        sku_data = sku_list[0]
+
+        # 映射 V2 camelCase → 内部 snake_case
+        mapped = {
+            "properties_name": sku_data.get("propertiesName", ""),
+            "pic_path": sku_data.get("skuPicPath", ""),
+            "remark": sku_data.get("skuRemark", ""),
+            "sys_item_id": sku_data.get("sysItemId", 0),
+            "sys_sku_id": sku_data.get("sysSkuId", 0),
+            "item_outer_id": sku_data.get("itemOuterId", ""),
+            "supplier_name": "",
+            "supplier_code": "",
+        }
+
+        # Step2: 如有供应商，查供应商信息
+        if sku_data.get("hasSupplier") == 1:
+            supplier_result = await _call_api(
+                "item.supplier.list.get",
+                {"sysSkuIds": str(mapped["sys_sku_id"])}
+            )
+            suppliers = supplier_result.get("suppliers", [])
+            if suppliers:
+                mapped["supplier_name"] = suppliers[0].get("supplierName", "")
+                mapped["supplier_code"] = suppliers[0].get("supplierCode", "")
+
+        return mapped
     except Exception as e:
         logger.error(f"查询SKU失败 sku_outer_id={sku_outer_id}: {e}")
         return None

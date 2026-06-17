@@ -89,6 +89,8 @@ async def upload_image(
     os.makedirs(save_dir, exist_ok=True)
 
     file_name = f"{skuOuterId}_{imageType}_{uuid.uuid4().hex[:8]}{ext}"
+    # 路径穿越防护：移除路径分隔符和相对路径标记
+    file_name = file_name.replace("/", "_").replace("\\", "_").replace("..", "_")
     file_path = os.path.join(save_dir, file_name)
 
     try:

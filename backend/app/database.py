@@ -125,6 +125,7 @@ def init_db() -> None:
             remark VARCHAR(512) NOT NULL DEFAULT '',
             sys_item_id INTEGER NOT NULL,
             sys_sku_id INTEGER NOT NULL,
+            item_outer_id VARCHAR(64) NOT NULL DEFAULT '',
             cached_at DATETIME NOT NULL
         )
     """)

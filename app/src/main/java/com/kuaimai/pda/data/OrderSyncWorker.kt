@@ -42,17 +42,30 @@ import java.io.File
 class OrderSyncWorker(
     context: Context,
     params: WorkerParameters,
-    private val pendingOperationDao: PendingOperationDao,
-    private val apiService: KuaimaiApiService,
-    private val orderApiService: OrderApiService,
-    private val authRepository: AuthRepository,
-    private val imageUploadService: ImageUploadService,
-    private val userRepository: UserRepository
 ) : CoroutineWorker(context, params) {
 
     companion object {
         private const val TAG = "OrderSyncWorker"
         private const val MAX_RETRY = 3
+    }
+
+    private val pendingOperationDao: PendingOperationDao by lazy {
+        com.kuaimai.pda.App.OrderSyncWorkerDeps.pendingOperationDao
+    }
+    private val apiService: KuaimaiApiService by lazy {
+        com.kuaimai.pda.App.OrderSyncWorkerDeps.apiService
+    }
+    private val orderApiService: OrderApiService by lazy {
+        com.kuaimai.pda.App.OrderSyncWorkerDeps.orderApiService
+    }
+    private val authRepository: AuthRepository by lazy {
+        com.kuaimai.pda.App.OrderSyncWorkerDeps.authRepository
+    }
+    private val imageUploadService: ImageUploadService by lazy {
+        com.kuaimai.pda.App.OrderSyncWorkerDeps.imageUploadService
+    }
+    private val userRepository: UserRepository by lazy {
+        com.kuaimai.pda.App.OrderSyncWorkerDeps.userRepository
     }
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
@@ -63,22 +76,18 @@ class OrderSyncWorker(
                 return@withContext Result.success()
             }
 
-            // 按orderId分组
             val grouped = operations.groupBy { it.orderId }
             var hasFailure = false
 
             for ((orderId, orderOps) in grouped) {
-                // 同订单内串行执行
                 for (op in orderOps) {
                     val success = syncOperation(op)
                     if (success) {
                         pendingOperationDao.deleteById(op.id)
                         Log.d(TAG, "操作同步成功: ${op.operationType} orderId=$orderId")
                     } else {
-                        // 重新查询当前retryCount，防止syncOperation已设置-1被覆盖
                         val current = pendingOperationDao.getById(op.id)
                         if (current?.retryCount == -1) {
-                            // 已标记为冲突，不覆盖
                             Log.w(TAG, "操作已标记冲突: ${op.operationType} orderId=$orderId")
                         } else {
                             val newRetryCount = op.retryCount + 1
@@ -94,38 +103,27 @@ class OrderSyncWorker(
                 }
             }
 
-            if (hasFailure) {
-                Result.retry()
-            } else {
-                Result.success()
-            }
+            if (hasFailure) Result.retry() else Result.success()
         } catch (e: Exception) {
             Log.e(TAG, "同步Worker异常: ${e.message}")
             Result.retry()
         }
     }
 
-    /**
-     * 同步单个操作
-     * @return 是否成功
-     */
     private suspend fun syncOperation(op: PendingOperationEntity): Boolean {
         return try {
             when (op.operationType) {
-                // 后端API同步
                 "complete_item" -> syncCompleteItem(op)
                 "restore_item" -> syncRestoreItem(op)
                 "add_item" -> syncAddItem(op)
                 "complete_all" -> syncCompleteAll(op)
                 "delete_item" -> syncDeleteItem(op)
                 "delete_order" -> syncDeleteOrder(op)
-                // 快麦API同步
                 "update_remark" -> syncRemarkUpdate(op)
                 "update_supplier" -> syncSupplierUpdate(op)
-                // 图片服务同步
                 "upload_image" -> syncImageUpload(op)
                 else -> {
-                    Log.e(TAG, "未知操作类型: ${op.operationType}，标记为冲突而非静默删除")
+                    Log.e(TAG, "未知操作类型: ${op.operationType}，标记为冲突")
                     false
                 }
             }
@@ -133,10 +131,10 @@ class OrderSyncWorker(
             if (e.code() in 400..499) {
                 Log.w(TAG, "客户端错误${e.code()}，标记冲突: ${op.operationType}")
                 pendingOperationDao.updateRetryCount(op.id, -1)
-                false  // 客户端错误，标记冲突但保留记录，用户可查看/解决
+                false
             } else {
                 Log.e(TAG, "服务端错误${e.code()}，将重试: ${op.operationType}")
-                false  // 服务端错误，重试
+                false
             }
         } catch (e: Exception) {
             Log.e(TAG, "同步操作失败: ${op.operationType}, error=${e.message}")
@@ -144,134 +142,82 @@ class OrderSyncWorker(
         }
     }
 
-    /**
-     * 同步完成取货明细 - 调用后端API
-     */
     private suspend fun syncCompleteItem(op: PendingOperationEntity): Boolean {
-        val orderId = op.orderId
-        val itemId = op.targetId
         val token = userRepository.getToken()
-        orderApiService.completeItem(token, orderId, itemId)
-        Log.d(TAG, "完成明细同步完成: orderId=$orderId itemId=$itemId")
+        orderApiService.completeItem(token, op.orderId, op.targetId)
         return true
     }
 
-    /**
-     * 同步恢复取货明细 - 调用后端API
-     */
     private suspend fun syncRestoreItem(op: PendingOperationEntity): Boolean {
-        val orderId = op.orderId
-        val itemId = op.targetId
         val token = userRepository.getToken()
-        orderApiService.restoreItem(token, orderId, itemId)
+        orderApiService.restoreItem(token, op.orderId, op.targetId)
         return true
     }
 
-    /**
-     * 同步添加取货明细 - 调用后端API
-     */
     private suspend fun syncAddItem(op: PendingOperationEntity): Boolean {
         val skuOuterId = extractPayloadValue(op.payload, "sku_outer_id") ?: return false
-        val orderId = op.orderId
         val token = userRepository.getToken()
-        orderApiService.addItem(token, orderId, AddOrderItemRequest(skuOuterId = skuOuterId))
-        Log.d(TAG, "添加明细同步完成: orderId=$orderId skuOuterId=$skuOuterId")
+        orderApiService.addItem(token, op.orderId, AddOrderItemRequest(skuOuterId = skuOuterId))
         return true
     }
 
-    /**
-     * 同步批量完成 - 调用后端API
-     */
     private suspend fun syncCompleteAll(op: PendingOperationEntity): Boolean {
-        val orderId = op.orderId
         val token = userRepository.getToken()
-        orderApiService.completeAllItems(token, orderId)
-        Log.d(TAG, "批量完成同步完成: orderId=$orderId")
+        orderApiService.completeAllItems(token, op.orderId)
         return true
     }
 
-    /**
-     * 同步删除取货明细 - 调用后端API
-     */
     private suspend fun syncDeleteItem(op: PendingOperationEntity): Boolean {
-        val orderId = op.orderId
-        val itemId = op.targetId
         val token = userRepository.getToken()
-        orderApiService.deleteItem(token, orderId, itemId)
-        Log.d(TAG, "删除明细同步完成: orderId=$orderId itemId=$itemId")
+        orderApiService.deleteItem(token, op.orderId, op.targetId)
         return true
     }
 
-    /**
-     * 同步删除取货单 - 调用后端API
-     */
     private suspend fun syncDeleteOrder(op: PendingOperationEntity): Boolean {
-        val orderId = op.orderId
         val token = userRepository.getToken()
-        orderApiService.deleteOrder(token, orderId)
-        Log.d(TAG, "删除取货单同步完成: orderId=$orderId")
+        orderApiService.deleteOrder(token, op.orderId)
         return true
     }
 
-    /**
-     * 同步备注更新 - 调用快麦API更新SKU备注
-     */
     private suspend fun syncRemarkUpdate(op: PendingOperationEntity): Boolean {
         val remark = extractPayloadValue(op.payload, "remark") ?: return false
         val skuId = extractPayloadValue(op.payload, "sys_sku_id")?.toLongOrNull() ?: return false
         val itemId = extractPayloadValue(op.payload, "sys_item_id")?.toLongOrNull() ?: return false
-
         val request = ItemUpdateRequest(
             id = itemId,
             method = "erp.item.general.addorupdate",
             skus = listOf(SkuUpdateDto(skuId = skuId, skuRemark = remark))
         )
-        val result = apiService.updateItemRemark(request)
-        Log.d(TAG, "备注同步完成: skuId=$skuId remark=$remark result=$result")
+        apiService.updateItemRemark(request)
         return true
     }
 
-    /**
-     * 同步供应商更新 - 调用快麦API更新商品供应商
-     */
     private suspend fun syncSupplierUpdate(op: PendingOperationEntity): Boolean {
         val supplierName = extractPayloadValue(op.payload, "supplier_name") ?: return false
         val supplierCode = extractPayloadValue(op.payload, "supplier_code") ?: return false
         val itemId = extractPayloadValue(op.payload, "sys_item_id")?.toLongOrNull() ?: return false
-
         val request = ItemUpdateRequest(
             id = itemId,
             method = "erp.item.general.addorupdate",
             suppliers = listOf(SupplierUpdateDto(supplierCode = supplierCode, supplierName = supplierName))
         )
-        val result = apiService.updateItemSupplier(request)
-        Log.d(TAG, "供应商同步完成: code=$supplierCode name=$supplierName result=$result")
+        apiService.updateItemSupplier(request)
         return true
     }
 
-    /**
-     * 同步图片上传 - 调用ImageUploadService上传图片到后端
-     */
     private suspend fun syncImageUpload(op: PendingOperationEntity): Boolean {
         val skuOuterId = extractPayloadValue(op.payload, "sku_outer_id") ?: return false
         val imageType = extractPayloadValue(op.payload, "image_type") ?: return false
         val filePath = extractPayloadValue(op.payload, "file_path") ?: return false
-
         val imageFile = File(filePath)
         if (!imageFile.exists()) {
             Log.e(TAG, "图片文件不存在: $filePath")
             return false
         }
-
-        val (remoteId, imageUrl) = imageUploadService.uploadImage(imageFile, imageType, skuOuterId)
-        Log.d(TAG, "图片上传同步完成: skuOuterId=$skuOuterId remoteId=$remoteId imageUrl=$imageUrl")
+        imageUploadService.uploadImage(imageFile, imageType, skuOuterId)
         return true
     }
 
-    /**
-     * 从JSON payload中提取值
-     * 使用JSONObject解析，正确处理转义字符
-     */
     private fun extractPayloadValue(payload: String, key: String): String? {
         return try {
             val json = JSONObject(payload)

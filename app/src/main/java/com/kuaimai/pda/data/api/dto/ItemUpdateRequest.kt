@@ -9,13 +9,16 @@ import com.google.gson.annotations.SerializedName
 data class ItemUpdateRequest(
     val id: Long = 0,
     val method: String = "",
+    val outerId: String = "",
+    val title: String = "",
     val skus: List<SkuUpdateDto> = emptyList(),
     val suppliers: List<SupplierUpdateDto> = emptyList()
 )
 
-/** SKU备注更新（V2: id + remark） */
+/** SKU备注更新（V2: id + skuOuterId + remark） */
 data class SkuUpdateDto(
     @SerializedName("id") val skuId: Long = 0,
+    @SerializedName("skuOuterId") val skuOuterId: String = "",
     @SerializedName("remark") val skuRemark: String = ""
 )
 

@@ -36,8 +36,8 @@ android {
         applicationId = "com.kuaimai.pda"
         minSdk = 24
         targetSdk = 34
-        versionCode = 124
-        versionName = "1.24"
+        versionCode = 125
+        versionName = "1.25"
 
         resourceConfigurations.add("zh")
 
@@ -149,6 +149,7 @@ dependencies {
 
     // WorkManager
     implementation("androidx.work:work-runtime-ktx:2.9.1")
+    // hilt-work 已移除（@HiltWorker 改用手动注入方式）
 
     // CameraX
     implementation("androidx.camera:camera-core:1.3.4")
