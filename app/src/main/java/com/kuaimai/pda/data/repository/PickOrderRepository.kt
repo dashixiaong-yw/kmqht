@@ -35,6 +35,7 @@ interface PickOrderRepository {
     suspend fun deleteOrderWithQueue(order: PickOrderEntity)
     /** 获取冲突操作列表 */
     suspend fun getConflicts(): List<PendingOperationEntity>
+    suspend fun enqueueCompleteAll(orderId: Long, now: Long)
     /** 更新备注（乐观更新本地+写入离线队列） */
     suspend fun updateRemarkWithQueue(id: Long, remark: String)
     /** 更新供应商（乐观更新本地+写入离线队列） */
@@ -128,6 +129,15 @@ class PickOrderRepositoryImpl @Inject constructor(
 
     override suspend fun getConflicts(): List<PendingOperationEntity> {
         return pendingOperationDao.getConflicts()
+    }
+
+    override suspend fun enqueueCompleteAll(orderId: Long, now: Long) {
+        pickOrderDao.updateStatus(orderId, 1, now)
+        enqueueOperation(
+            operationType = "complete_all",
+            orderId = orderId,
+            targetId = 0L
+        )
     }
 
     override suspend fun updateRemarkWithQueue(id: Long, remark: String) {

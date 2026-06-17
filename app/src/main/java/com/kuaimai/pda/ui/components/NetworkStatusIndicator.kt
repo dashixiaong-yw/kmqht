@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kuaimai.pda.ui.theme.AppAlignment
 import com.kuaimai.pda.ui.theme.DangerText
 import com.kuaimai.pda.ui.theme.SuccessText
 import com.kuaimai.pda.ui.theme.SurfaceWhite
@@ -47,7 +48,7 @@ fun NetworkStatusIndicator(networkMonitor: NetworkMonitor) {
                     .fillMaxWidth()
                     .background(DangerText.copy(alpha = 0.9f))
                     .padding(horizontal = 16.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = AppAlignment.RowCenter
             ) {
                 Text(
                     text = "已离线",
@@ -63,7 +64,7 @@ fun NetworkStatusIndicator(networkMonitor: NetworkMonitor) {
                     .fillMaxWidth()
                     .background(WarningYellow.copy(alpha = 0.9f))
                     .padding(horizontal = 16.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = AppAlignment.RowCenter
             ) {
                 Text(
                     text = "网络不稳定",

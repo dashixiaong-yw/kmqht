@@ -123,6 +123,11 @@
 {"type":"entity","name":"BUG-P1_ScannerManagerNeverRegistered","entityType":"BugFix","observations":["v1.16修复: ScannerManager被注入但register()从未被调用，PDA硬件扫码广播接收器未注册","修复: MainActivity的onResume调register()，onPause调unregister()"]}
 {"type":"entity","name":"SEC-KuaimaiRoutesPermission","entityType":"安全修复","observations":["v1.16修复: system.py中update_kuaimai_credentials/refresh_session/session_status三个路由只要求登录","修复: 改为check_permission('settings')，与管理后台权限一致"]}
 {"type":"entity","name":"BUG-P2_ImageSyncDuplicates","entityType":"BugFix","observations":["v1.16修复: syncImagesFromBackend每次insert累积同skuOuterId+imageType的旧记录","修复: 同步前先deleteBySku清理旧记录，再insert远程数据"]}
+{"type":"entity","name":"BUG-P1_PickItemImageUrl","entityType":"BugFix","observations":["v1.17修复: PickDetailViewModel.getImageUrls()返回相对路径，PickItemRow的AsyncImage无法加载","修复: 在getImageUrls()中拼接serverUrl后返回完整URL"]}
+{"type":"entity","name":"BUG-P2_CompleteAllCatch","entityType":"BugFix","observations":["v1.17修复: completeAllItems catch分支逐条入队complete_item","修复: 改为单条complete_all入队，PickOrderRepository新增enqueueCompleteAll()"]}
+{"type":"entity","name":"BUG-P2_TouchTargets","entityType":"BugFix","observations":["v1.17修复: 7处触摸热区<56dp","修复: 调整至56dp"]}
+{"type":"entity","name":"BUG-P2_AppAlignmentConstants","entityType":"BugFix","observations":["v1.17修复: 12处使用原始Alignment常量","修复: 统一替换为AppAlignment.*常量"]}
+{"type":"entity","name":"BUG-P2_PrefsNullGuide","entityType":"BugFix","observations":["v1.17修复: HomeScreen引导条prefs=null时永不显示","修复: prefs?.getBoolean(...) != true"]}
 {"type":"relation","from":"F1_取货单管理","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F2_扫码待办","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F3_取货单自动完成","to":"快麦取货通项目","relationType":"属于"}

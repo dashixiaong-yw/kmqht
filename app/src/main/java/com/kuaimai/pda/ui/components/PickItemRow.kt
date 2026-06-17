@@ -202,7 +202,7 @@ fun PickItemRow(
             // 装箱图小方块
             Box(
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(56.dp)
                     .clip(RoundedCornerShape(6.dp))
                     .background(SurfaceGray)
                     .clickable { onBoxImageClick() },
@@ -249,7 +249,7 @@ fun PickItemRow(
                     onClick = onRestore
                 ) {
                     Box(
-                        modifier = Modifier.size(width = 56.dp, height = 44.dp),
+                        modifier = Modifier.size(width = 56.dp, height = 56.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(

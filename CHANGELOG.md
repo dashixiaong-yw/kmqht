@@ -1,5 +1,19 @@
 # 快麦取货通 - 变更日志
 
+## 1.17 (2026-06-17)
+
+### 修复
+- P1: 修复PickDetailScreen图片URL未拼接服务器地址——库区图/装箱图在PickItemRow中不可见
+- P2: 修复completeAllItems catch分支全量入队——改为单条complete_all入队操作
+- P2: 修复7处触摸热区<56dp——引导条/会话警告关闭按钮、规格图/库区图/箱图/完成按钮
+- P2: 修复12处未使用AppAlignment常量——HomeScreen/PickOrderCard/NetworkStatusIndicator/SettingsScreen
+- P2: 修复HomeScreen引导条prefs=null问题——null==false导致引导条永不可见
+
+### 修改
+- PickDetailViewModel.getImageUrls() 拼接$serverUrl后返回完整URL
+- PickOrderRepository新增enqueueCompleteAll()方法
+- MainActivity/PickDetailScreen补全之前计划的遗留修复
+
 ## 1.16 (2026-06-17)
 
 ### 修复

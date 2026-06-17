@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.kuaimai.pda.BuildConfig
 import com.kuaimai.pda.data.repository.UserRepository
+import com.kuaimai.pda.ui.theme.AppAlignment
 import com.kuaimai.pda.ui.theme.BrandBlue
 import com.kuaimai.pda.ui.theme.PrimaryLightBg
 import com.kuaimai.pda.ui.theme.PrimaryLightText
@@ -203,8 +204,8 @@ fun SettingsScreen(
                     val soundEnabled by viewModel.soundEnabled.collectAsState()
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        horizontalArrangement = AppAlignment.RowBetween,
+                        verticalAlignment = AppAlignment.RowCenter
                     ) {
                         Text("扫码声音反馈")
                         Switch(
@@ -219,8 +220,8 @@ fun SettingsScreen(
                     val vibrationEnabled by viewModel.vibrationEnabled.collectAsState()
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        horizontalArrangement = AppAlignment.RowBetween,
+                        verticalAlignment = AppAlignment.RowCenter
                     ) {
                         Text("扫码振动反馈")
                         Switch(

@@ -219,25 +219,18 @@ class PickDetailViewModel @Inject constructor(
     fun completeAllItems() {
         viewModelScope.launch {
             _isLoading.value = true
+            val now = TimeUtils.now()
             try {
                 val token = userRepository.getToken()
                 orderApiService.completeAllItems(token, orderId)
-                // API成功后直接更新本地（不入队）
                 val currentItems = items.value
-                val now = TimeUtils.now()
                 currentItems.filter { it.status == 0 }.forEach { item ->
                     pickOrderRepository.updateItemStatusDirect(item.id, 1, now)
                 }
                 pickOrderRepository.updateOrderStatus(orderId, 1, now)
                 loadOrder()
             } catch (e: Exception) {
-                // API失败，使用乐观更新+入队（离线模式自动走此路径）
-                val currentItems = items.value
-                val now = TimeUtils.now()
-                currentItems.filter { it.status == 0 }.forEach { item ->
-                    pickOrderRepository.updateItemStatus(item.id, 1, now)
-                }
-                pickOrderRepository.updateOrderStatus(orderId, 1, now)
+                pickOrderRepository.enqueueCompleteAll(orderId, now)
                 loadOrder()
                 _errorMessage.value = "批量完成失败: ${e.message}"
             } finally {
@@ -377,7 +370,8 @@ class PickDetailViewModel @Inject constructor(
         return try {
             val areaImage = imageRepository.getImageBySkuAndType(skuOuterId, "area")
             val boxImage = imageRepository.getImageBySkuAndType(skuOuterId, "box")
-            Pair(areaImage?.imageUrl, boxImage?.imageUrl)
+            val serverUrl = com.kuaimai.pda.util.AppConstants.DEFAULT_SERVER_URL
+            Pair(areaImage?.let { "$serverUrl${it.imageUrl}" }, boxImage?.let { "$serverUrl${it.imageUrl}" })
         } catch (e: Exception) {
             Pair(null, null)
         }

@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kuaimai.pda.data.db.entity.PickOrderEntity
+import com.kuaimai.pda.ui.theme.AppAlignment
 import com.kuaimai.pda.ui.theme.BorderGray
 import com.kuaimai.pda.ui.theme.PrimaryLightBg
 import com.kuaimai.pda.ui.theme.PrimaryLightText
@@ -66,7 +67,7 @@ fun PickOrderCard(
             // 第一行：单号 + 状态徽章
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = AppAlignment.RowBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
@@ -102,7 +103,7 @@ fun PickOrderCard(
             // 第二行：进度
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = AppAlignment.RowBetween
             ) {
                 Text(
                     text = "进度: ${order.completedCount}/${order.totalCount}",

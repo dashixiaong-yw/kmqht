@@ -45,6 +45,7 @@ import com.kuaimai.pda.data.repository.AuthRepository
 import com.kuaimai.pda.data.repository.UserRepository
 import com.kuaimai.pda.ui.components.NetworkStatusIndicator
 import com.kuaimai.pda.ui.settings.SettingsViewModel.Companion.KEY_GUIDE_SHOWN
+import com.kuaimai.pda.ui.theme.AppAlignment
 import com.kuaimai.pda.ui.theme.BrandBlue
 import com.kuaimai.pda.ui.theme.PrimaryLightBg
 import com.kuaimai.pda.ui.theme.PrimaryLightText
@@ -74,7 +75,7 @@ fun HomeScreen(
 ) {
     // 首次使用引导提示
     var showGuide by remember {
-        mutableStateOf(prefs?.getBoolean(KEY_GUIDE_SHOWN, false) == false)
+        mutableStateOf(prefs?.getBoolean(KEY_GUIDE_SHOWN, false) != true)
     }
 
     // 会话即将过期预警（距过期<5天）
@@ -158,7 +159,7 @@ fun HomeScreen(
                         .background(WarningBg, RoundedCornerShape(8.dp))
                         .clickable { onNavigateToSettings() }
                         .padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = AppAlignment.RowCenter
                 ) {
                     Text(
                         text = "首次使用？点击设置配置服务器地址和扫码方式",
@@ -173,13 +174,13 @@ fun HomeScreen(
                             showGuide = false
                             prefs?.edit()?.putBoolean(KEY_GUIDE_SHOWN, true)?.apply()
                         },
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(56.dp)
                     ) {
                         Icon(
                             Icons.Default.Close,
                             contentDescription = "关闭",
                             tint = WarningText,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                 }
@@ -206,13 +207,13 @@ fun HomeScreen(
                     )
                     IconButton(
                         onClick = { showSessionWarning = false },
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(56.dp)
                     ) {
                         Icon(
                             Icons.Default.Close,
                             contentDescription = "关闭",
                             tint = WarningText,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                 }
