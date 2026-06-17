@@ -239,6 +239,20 @@ class PickDetailViewModel @Inject constructor(
     }
 
     /**
+     * 删除取货明细（GAP-06）
+     */
+    fun deleteItem(itemId: Long) {
+        viewModelScope.launch {
+            try {
+                pickOrderRepository.deleteItemWithQueue(itemId)
+                loadSuppliers()
+            } catch (e: Exception) {
+                _errorMessage.value = "删除失败: ${e.message}"
+            }
+        }
+    }
+
+    /**
      * 清除重复扫码提示
      */
     fun clearDuplicateScan() {

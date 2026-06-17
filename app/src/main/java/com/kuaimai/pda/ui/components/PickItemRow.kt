@@ -1,12 +1,15 @@
 package com.kuaimai.pda.ui.components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -15,32 +18,38 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.kuaimai.pda.data.db.entity.PickItemEntity
+import com.kuaimai.pda.ui.theme.BorderGray
 import com.kuaimai.pda.ui.theme.PrimaryLightBg
 import com.kuaimai.pda.ui.theme.PrimaryLightText
 import com.kuaimai.pda.ui.theme.SuccessBg
 import com.kuaimai.pda.ui.theme.SuccessText
 import com.kuaimai.pda.ui.theme.SupplierRed
+import com.kuaimai.pda.ui.theme.SurfaceGray
 import com.kuaimai.pda.ui.theme.SurfaceWhite
+import com.kuaimai.pda.ui.theme.TextMuted
 import com.kuaimai.pda.ui.theme.TextPrimary
+import com.kuaimai.pda.ui.theme.TextSecondary
 
 /**
  * 取货明细行组件
- * 最小高度72dp, padding 12dp×10dp, rounded 12dp
- * 规格名16sp Medium, 供应商名20sp Bold #DC2626
- * 完成按钮56dp宽, 语义色
+ * 匹配HTML原型：左侧52dp规格图+底部标注，中间规格名+供应商名，右侧40dp库区图+装箱图+完成按钮
+ * 最小高度72dp, 触摸目标≥56dp×56dp
  * 已完成状态alpha 0.55, 删除线
- * 触摸目标≥56dp×56dp
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -48,7 +57,8 @@ fun PickItemRow(
     item: PickItemEntity,
     onComplete: () -> Unit,
     onRestore: () -> Unit,
-    onLongPress: () -> Unit
+    onLongPress: () -> Unit,
+    onImageClick: () -> Unit = {}
 ) {
     val isCompleted = item.status == 1
     val contentAlpha = if (isCompleted) 0.55f else 1f
@@ -70,10 +80,52 @@ fun PickItemRow(
                 .height(72.dp)
                 .padding(horizontal = 12.dp, vertical = 10.dp)
                 .alpha(contentAlpha),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // 左侧：规格名 + 供应商名
+            // 左侧：52dp规格图（带底部"规格图"标注）
+            Box(
+                modifier = Modifier
+                    .size(width = 52.dp, height = 52.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(SurfaceGray)
+                    .clickable { onImageClick() },
+                contentAlignment = Alignment.Center
+            ) {
+                if (item.picPath.isNotEmpty()) {
+                    AsyncImage(
+                        model = item.picPath,
+                        contentDescription = "规格图",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    // 无图占位
+                    Text(
+                        text = "规格图",
+                        fontSize = 9.sp,
+                        color = TextMuted
+                    )
+                }
+                // 底部"规格图"标注
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(14.dp)
+                        .background(SurfaceGray.copy(alpha = 0.8f))
+                        .align(Alignment.BottomCenter),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "规格图",
+                        fontSize = 8.sp,
+                        color = TextSecondary
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(10.dp))
+
+            // 中间：规格名 + 供应商名
             Column(
                 modifier = Modifier.weight(1f)
             ) {
@@ -102,15 +154,13 @@ fun PickItemRow(
 
             // 右侧：完成/恢复按钮
             if (isCompleted) {
-                // 恢复按钮
                 Card(
                     shape = RoundedCornerShape(6.dp),
                     colors = CardDefaults.cardColors(containerColor = PrimaryLightBg),
                     onClick = onRestore
                 ) {
                     Box(
-                        modifier = Modifier
-                            .size(width = 56.dp, height = 36.dp),
+                        modifier = Modifier.size(width = 56.dp, height = 36.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -122,15 +172,13 @@ fun PickItemRow(
                     }
                 }
             } else {
-                // 完成按钮
                 Card(
                     shape = RoundedCornerShape(6.dp),
                     colors = CardDefaults.cardColors(containerColor = SuccessBg),
                     onClick = onComplete
                 ) {
                     Box(
-                        modifier = Modifier
-                            .size(width = 56.dp, height = 36.dp),
+                        modifier = Modifier.size(width = 56.dp, height = 36.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(

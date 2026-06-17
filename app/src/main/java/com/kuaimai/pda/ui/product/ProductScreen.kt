@@ -55,8 +55,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.kuaimai.pda.data.repository.UserRepository
 import com.kuaimai.pda.ui.theme.BorderGray
 import com.kuaimai.pda.ui.theme.BrandBlue
+import com.kuaimai.pda.ui.theme.PrimaryLightBg
+import com.kuaimai.pda.ui.theme.PrimaryLightText
 import com.kuaimai.pda.ui.theme.SuccessBg
 import com.kuaimai.pda.ui.theme.SuccessText
 import com.kuaimai.pda.ui.theme.SupplierRed
@@ -72,10 +75,17 @@ import com.kuaimai.pda.ui.theme.WarningYellow
 @Composable
 fun ProductScreen(
     onNavigateBack: () -> Unit,
+    userRepository: UserRepository,
     viewModel: ProductViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+
+    // 权限检查
+    val canUpdateSupplier = userRepository.hasPermission("update_supplier")
+    val canUpdateRemark = userRepository.hasPermission("update_remark")
+    val canManageAreaImage = userRepository.hasPermission("manage_area_image")
+    val canManageBoxImage = userRepository.hasPermission("manage_box_image")
 
     // 保持屏幕常亮
     KeepScreenOn(context)
@@ -128,16 +138,19 @@ fun ProductScreen(
                     propertiesName = uiState.propertiesName,
                     skuOuterId = uiState.skuOuterId,
                     supplierName = uiState.supplierName,
-                    onChangeSupplier = viewModel::showSupplierDialog
+                    onChangeSupplier = viewModel::showSupplierDialog,
+                    canChangeSupplier = canUpdateSupplier
                 )
 
-                // 备注编辑区域
-                RemarkSection(
-                    remark = uiState.remark,
-                    onRemarkChange = viewModel::updateRemark,
-                    onSaveRemark = viewModel::requestSaveRemark,
-                    isSaving = uiState.isSavingRemark
-                )
+                // 备注编辑区域（仅update_remark权限可见）
+                if (canUpdateRemark) {
+                    RemarkSection(
+                        remark = uiState.remark,
+                        onRemarkChange = viewModel::updateRemark,
+                        onSaveRemark = viewModel::requestSaveRemark,
+                        isSaving = uiState.isSavingRemark
+                    )
+                }
 
                 // 图片上传区域（2列网格）
                 ImageUploadGrid(
@@ -146,7 +159,9 @@ fun ProductScreen(
                     isUploading = uiState.isUploading,
                     uploadProgress = uiState.uploadProgress,
                     onUploadArea = { /* 由外部图片选择器触发 */ },
-                    onUploadBox = { /* 由外部图片选择器触发 */ }
+                    onUploadBox = { /* 由外部图片选择器触发 */ },
+                    canManageAreaImage = canManageAreaImage,
+                    canManageBoxImage = canManageBoxImage
                 )
             } else {
                 // 空状态提示
@@ -235,7 +250,8 @@ private fun SkuInfoCard(
     propertiesName: String,
     skuOuterId: String,
     supplierName: String,
-    onChangeSupplier: () -> Unit
+    onChangeSupplier: () -> Unit,
+    canChangeSupplier: Boolean = true
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -290,8 +306,10 @@ private fun SkuInfoCard(
                         color = if (supplierName.isNotBlank()) SupplierRed else TextSecondary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    TextButton(onClick = onChangeSupplier) {
-                        Text("切换", fontSize = 14.sp, color = BrandBlue)
+                    if (canChangeSupplier) {
+                        TextButton(onClick = onChangeSupplier) {
+                            Text("切换", fontSize = 14.sp, color = BrandBlue)
+                        }
                     }
                 }
             }
@@ -337,8 +355,8 @@ private fun RemarkSection(
                 onClick = onSaveRemark,
                 enabled = !isSaving,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = SuccessBg,
-                    contentColor = SuccessText
+                    containerColor = PrimaryLightBg,
+                    contentColor = PrimaryLightText
                 ),
                 modifier = Modifier.align(Alignment.End)
             ) {
@@ -346,7 +364,7 @@ private fun RemarkSection(
                     CircularProgressIndicator(
                         modifier = Modifier.size(16.dp),
                         strokeWidth = 2.dp,
-                        color = SuccessText
+                        color = PrimaryLightText
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                 }
@@ -366,7 +384,9 @@ private fun ImageUploadGrid(
     isUploading: Boolean,
     uploadProgress: Int,
     onUploadArea: () -> Unit,
-    onUploadBox: () -> Unit
+    onUploadBox: () -> Unit,
+    canManageAreaImage: Boolean = true,
+    canManageBoxImage: Boolean = true
 ) {
     Column {
         Text(
@@ -380,19 +400,23 @@ private fun ImageUploadGrid(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // 库区图
-            ImageUploadSlot(
-                label = "库区图",
-                imageUrl = areaImageUrl,
-                onClick = onUploadArea,
-                modifier = Modifier.weight(1f)
-            )
+            if (canManageAreaImage) {
+                ImageUploadSlot(
+                    label = "库区图",
+                    imageUrl = areaImageUrl,
+                    onClick = onUploadArea,
+                    modifier = Modifier.weight(1f)
+                )
+            }
             // 装箱图
-            ImageUploadSlot(
-                label = "装箱图",
-                imageUrl = boxImageUrl,
-                onClick = onUploadBox,
-                modifier = Modifier.weight(1f)
-            )
+            if (canManageBoxImage) {
+                ImageUploadSlot(
+                    label = "装箱图",
+                    imageUrl = boxImageUrl,
+                    onClick = onUploadBox,
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
 
         // 上传进度
@@ -403,6 +427,14 @@ private fun ImageUploadGrid(
                 modifier = Modifier.fillMaxWidth()
             )
         }
+
+        // GAP-14: 图片上传提示文字
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = "点击上传/替换 · 长按删除 · 上传前自动压缩",
+            style = MaterialTheme.typography.bodySmall,
+            color = TextSecondary
+        )
     }
 }
 

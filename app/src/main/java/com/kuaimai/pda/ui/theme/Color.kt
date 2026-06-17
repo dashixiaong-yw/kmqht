@@ -28,6 +28,7 @@ val SupplierRed = Color(0xFFDC2626)
 // 警告色
 val WarningYellow = Color(0xFFEAB308)
 val WarningBg = Color(0xFFFEF9C3)
+val WarningText = Color(0xFF92400E)
 
 // 表面色
 val SurfaceWhite = Color(0xFFFFFFFF)

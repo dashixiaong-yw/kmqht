@@ -90,6 +90,12 @@ interface PickItemDao {
     suspend fun deleteByOrderId(orderId: Long)
 
     /**
+     * 删除单条明细
+     */
+    @Query("DELETE FROM pick_item WHERE id = :id")
+    suspend fun deleteById(id: Long)
+
+    /**
      * 删除所有明细
      */
     @Query("DELETE FROM pick_item")

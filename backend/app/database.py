@@ -135,5 +135,72 @@ def init_db() -> None:
         )
     """)
 
+    # 创建用户表
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username VARCHAR(32) UNIQUE NOT NULL,
+            password_hash VARCHAR(128) NOT NULL,
+            is_active INTEGER NOT NULL DEFAULT 1,
+            created_at DATETIME NOT NULL
+        )
+    """)
+
+    # 创建用户权限表（一个用户多个权限）
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_permissions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            permission VARCHAR(32) NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            UNIQUE(user_id, permission)
+        )
+    """)
+
+    # 创建用户Token表
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_tokens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            token VARCHAR(64) UNIQUE NOT NULL,
+            expires_at DATETIME NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    """)
+
+    # 初始化默认管理员用户（仅在表为空时创建）
+    cursor.execute("SELECT COUNT(*) FROM users")
+    user_count = cursor.fetchone()[0]
+    if user_count == 0:
+        _init_default_admin(cursor)
+
     conn.commit()
     logger.info("数据库表初始化完成")
+
+
+def _init_default_admin(cursor: sqlite3.Cursor) -> None:
+    """初始化默认管理员用户 admin/admin123"""
+    try:
+        import bcrypt
+        password_hash = bcrypt.hashpw("admin123".encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    except ImportError:
+        import hashlib
+        password_hash = hashlib.sha256("admin123".encode("utf-8")).hexdigest()
+
+    from app.utils.time_utils import beijing_now, format_beijing
+    now = format_beijing(beijing_now())
+
+    cursor.execute(
+        "INSERT INTO users (username, password_hash, is_active, created_at) VALUES (?, ?, 1, ?)",
+        ("admin", password_hash, now)
+    )
+    admin_id = cursor.lastrowid
+
+    # 分配全部5个权限
+    permissions = ["settings", "update_supplier", "update_remark", "manage_area_image", "manage_box_image"]
+    for perm in permissions:
+        cursor.execute(
+            "INSERT INTO user_permissions (user_id, permission) VALUES (?, ?)",
+            (admin_id, perm)
+        )
+    logger.info("默认管理员用户已创建: admin")

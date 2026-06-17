@@ -8,6 +8,8 @@ import com.kuaimai.pda.data.repository.ItemRepository
 import com.kuaimai.pda.data.repository.ItemRepositoryImpl
 import com.kuaimai.pda.data.repository.PickOrderRepository
 import com.kuaimai.pda.data.repository.PickOrderRepositoryImpl
+import com.kuaimai.pda.data.repository.UserRepository
+import com.kuaimai.pda.data.repository.UserRepositoryImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -36,4 +38,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindAuthRepository(impl: AuthRepositoryImpl): AuthRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindUserRepository(impl: UserRepositoryImpl): UserRepository
 }

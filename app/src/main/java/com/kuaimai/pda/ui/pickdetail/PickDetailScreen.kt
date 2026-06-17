@@ -1,8 +1,10 @@
 package com.kuaimai.pda.ui.pickdetail
 
 import android.content.Context
+import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
+import android.view.WindowManager
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -22,10 +24,13 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -39,9 +44,12 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -58,8 +66,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.kuaimai.pda.data.db.entity.PickItemEntity
 import com.kuaimai.pda.ui.components.PickItemRow
 import com.kuaimai.pda.ui.theme.BrandBlue
+import com.kuaimai.pda.ui.theme.DangerBg
+import com.kuaimai.pda.ui.theme.DangerText
 import com.kuaimai.pda.ui.theme.PrimaryLightBg
 import com.kuaimai.pda.ui.theme.PrimaryLightText
 import com.kuaimai.pda.ui.theme.SuccessBg
@@ -97,12 +108,31 @@ fun PickDetailScreen(
     val focusRequester = remember { FocusRequester() }
     var scanInput by remember { mutableStateOf("") }
     val context = LocalContext.current
+    var isRefreshing by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf<PickItemEntity?>(null) }
 
-    // 重复扫码振动提示
+    // GAP-05: 屏幕常亮
+    val activity = context.findActivity()
+    LaunchedEffect(Unit) {
+        activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+    // 离开页面时取消常亮
+    DisposableEffect(Unit) {
+        onDispose {
+            activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
+
+    // GAP-08: 扫码成功/失败振动+声音反馈
     LaunchedEffect(duplicateScan) {
         if (duplicateScan) {
             val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-            vibrator.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(200)
+            }
             snackbarHostState.showSnackbar("重复扫码！该SKU已在当前取货单中")
             viewModel.clearDuplicateScan()
         }
@@ -116,12 +146,12 @@ fun PickDetailScreen(
         }
     }
 
-    // 根据供应商过滤明细
-    val filteredItems = if (currentSupplier == "全部") {
+    // 根据供应商过滤明细 + GAP-07: 按状态+时间排序（未完成在上，已完成在下，同状态按时间倒序）
+    val filteredItems = (if (currentSupplier == "全部") {
         items
     } else {
         items.filter { it.supplierName == currentSupplier }
-    }
+    }).sortedWith(compareBy<PickItemEntity> { it.status }.thenByDescending { it.createdAt })
 
     val completedCount = items.count { it.status == 1 }
     val totalCount = items.size
@@ -159,7 +189,7 @@ fun PickDetailScreen(
                         .weight(1f)
                         .border(2.dp, BrandBlue, RoundedCornerShape(8.dp))
                         .focusRequester(focusRequester),
-                    placeholder = { Text("扫码或输入条码") },
+                    placeholder = { Text("按PDA扫码键扫描规格编码") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Text,
@@ -214,9 +244,8 @@ fun PickDetailScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // 供应商过滤Chips
-            if (suppliers.size > 2) {
-                FlowRow(
+            // 供应商过滤Chips - 始终显示（GAP-10: 去掉suppliers.size > 2条件）
+            FlowRow(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
@@ -235,7 +264,6 @@ fun PickDetailScreen(
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-            }
 
             // 明细列表
             LazyColumn(
@@ -251,7 +279,8 @@ fun PickDetailScreen(
                         item = item,
                         onComplete = { viewModel.completeItem(item.id) },
                         onRestore = { viewModel.restoreItem(item.id) },
-                        onLongPress = { /* TODO: 操作菜单 */ }
+                        onLongPress = { showDeleteConfirm = item },
+                        onImageClick = { onNavigateToProduct(item.skuOuterId) }
                     )
                 }
             }
@@ -280,7 +309,7 @@ fun PickDetailScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "$completedCount/$totalCount",
+                            text = "进度 $completedCount/$totalCount",
                             style = MaterialTheme.typography.titleMedium,
                             color = if (completedCount == totalCount && totalCount > 0) SuccessText else TextSecondary
                         )
@@ -306,4 +335,41 @@ fun PickDetailScreen(
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
     }
+
+    // GAP-06: 删除确认弹窗
+    showDeleteConfirm?.let { item ->
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = null },
+            title = { Text("确认删除") },
+            text = { Text("确定要删除「${item.propertiesName.ifEmpty { item.skuOuterId }}」吗？") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deleteItem(item.id)
+                        showDeleteConfirm = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = DangerText)
+                ) {
+                    Text("删除", color = SurfaceWhite)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = null }) {
+                    Text("取消")
+                }
+            }
+        )
+    }
+}
+
+/**
+ * 从Context查找Activity
+ */
+private fun Context.findActivity(): android.app.Activity? {
+    var context = this
+    while (context is android.content.ContextWrapper) {
+        if (context is android.app.Activity) return context
+        context = context.baseContext
+    }
+    return null
 }

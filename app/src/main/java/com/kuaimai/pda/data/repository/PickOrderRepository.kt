@@ -35,6 +35,8 @@ interface PickOrderRepository {
     suspend fun updateRemarkWithQueue(id: Long, remark: String)
     /** 更新供应商（乐观更新本地+写入离线队列） */
     suspend fun updateSupplierWithQueue(id: Long, supplierName: String, supplierCode: String)
+    /** 删除取货明细（乐观更新本地+写入离线队列） */
+    suspend fun deleteItemWithQueue(id: Long)
 }
 
 /**
@@ -141,6 +143,20 @@ class PickOrderRepositoryImpl @Inject constructor(
                 orderId = item.orderId,
                 targetId = id,
                 payload = """{"supplier_name":"${TimeUtils.escapeJson(supplierName)}","supplier_code":"${TimeUtils.escapeJson(supplierCode)}","sys_item_id":${item.sysItemId}}"""
+            )
+        }
+    }
+
+    override suspend fun deleteItemWithQueue(id: Long) {
+        val item = pickItemDao.getById(id)
+        if (item != null) {
+            // 乐观更新本地
+            pickItemDao.deleteById(id)
+            // 写入离线队列
+            enqueueOperation(
+                operationType = "delete_item",
+                orderId = item.orderId,
+                targetId = id
             )
         }
     }

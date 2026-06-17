@@ -20,7 +20,7 @@ from app.config import (
     start_config_watcher,
 )
 from app.database import get_db, init_db
-from app.routers import areas, images, orders, system
+from app.routers import areas, images, orders, system, users
 from app.utils.time_utils import beijing_now, format_beijing
 
 # 配置日志
@@ -59,6 +59,7 @@ app.include_router(orders.router)
 app.include_router(areas.router)
 app.include_router(images.router)
 app.include_router(system.router)
+app.include_router(users.router)
 
 
 # ==================== 启动与关闭事件 ====================

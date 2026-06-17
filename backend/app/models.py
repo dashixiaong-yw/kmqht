@@ -150,3 +150,50 @@ class HealthResponse(BaseModel):
     """健康检查响应"""
     status: str = "ok"
     database: str = "ok"
+
+
+# ==================== 用户与权限模型 ====================
+
+class LoginRequest(BaseModel):
+    """登录请求"""
+    username: str = Field(..., min_length=1, max_length=32, description="用户名")
+    password: str = Field(..., min_length=1, max_length=64, description="密码")
+
+
+class LoginResponse(BaseModel):
+    """登录响应"""
+    success: bool = True
+    message: str = "登录成功"
+    token: str = ""
+    username: str = ""
+    permissions: List[str] = []
+
+
+class CreateUserRequest(BaseModel):
+    """创建用户请求"""
+    username: str = Field(..., min_length=1, max_length=32, description="用户名")
+    password: str = Field(..., min_length=4, max_length=64, description="密码")
+    permissions: List[str] = Field(default_factory=list, description="权限代码列表")
+
+
+class UpdateUserRequest(BaseModel):
+    """更新用户请求"""
+    password: Optional[str] = Field(None, min_length=4, max_length=64, description="新密码")
+    permissions: Optional[List[str]] = Field(None, description="权限代码列表")
+    isActive: Optional[bool] = Field(None, description="是否启用")
+
+
+class UserResponse(BaseModel):
+    """用户响应"""
+    id: int
+    username: str
+    isActive: bool = True
+    permissions: List[str] = []
+    createdAt: str = ""
+
+
+class UserListResponse(BaseModel):
+    """用户列表响应"""
+    success: bool = True
+    message: str = "操作成功"
+    data: List[UserResponse] = []

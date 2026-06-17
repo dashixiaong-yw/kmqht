@@ -9,6 +9,7 @@ import com.kuaimai.pda.data.api.AreaApiService
 import com.kuaimai.pda.data.api.KuaimaiApiService
 import com.kuaimai.pda.data.api.KuaimaiInterceptor
 import com.kuaimai.pda.data.api.OrderApiService
+import com.kuaimai.pda.data.api.UserApiService
 import com.kuaimai.pda.util.AppConstants
 import com.kuaimai.pda.util.SessionExpiredEvent
 import dagger.Module
@@ -174,6 +175,13 @@ object NetworkModule {
     @Singleton
     fun provideAreaApiService(@Named("backend") backendRetrofit: Retrofit): AreaApiService {
         return backendRetrofit.create(AreaApiService::class.java)
+    }
+
+    /** 后端用户管理API服务 */
+    @Provides
+    @Singleton
+    fun provideUserApiService(@Named("backend") backendRetrofit: Retrofit): UserApiService {
+        return backendRetrofit.create(UserApiService::class.java)
     }
 }
 

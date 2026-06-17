@@ -1,12 +1,19 @@
 package com.kuaimai.pda.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.kuaimai.pda.data.repository.UserRepository
 import com.kuaimai.pda.ui.home.HomeScreen
+import com.kuaimai.pda.ui.login.LoginScreen
 import com.kuaimai.pda.ui.pickdetail.PickDetailScreen
 import com.kuaimai.pda.ui.picklist.PickListScreen
 import com.kuaimai.pda.ui.product.ProductScreen
@@ -15,8 +22,10 @@ import com.kuaimai.pda.ui.settings.SettingsScreen
 /**
  * 应用导航
  * 单Activity架构，NavHost管理页面路由
+ * 启动时检查登录状态，未登录→登录页
  */
 object Routes {
+    const val LOGIN = "login"
     const val HOME = "home"
     const val PICK_LIST = "pickList"
     const val PICK_DETAIL = "pickDetail/{orderId}"
@@ -31,18 +40,49 @@ object Routes {
 }
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(
+    userRepository: UserRepository
+) {
     val navController = rememberNavController()
+    var isCheckingAuth by remember { mutableStateOf(true) }
+    var startDestination by remember { mutableStateOf(Routes.LOGIN) }
+
+    // 启动时验证token有效性
+    LaunchedEffect(Unit) {
+        if (userRepository.isLoggedIn()) {
+            val valid = userRepository.validateToken()
+            startDestination = if (valid) Routes.HOME else Routes.LOGIN
+        } else {
+            startDestination = Routes.LOGIN
+        }
+        isCheckingAuth = false
+    }
+
+    if (isCheckingAuth) {
+        // 验证中显示空白或splash
+        return
+    }
 
     NavHost(
         navController = navController,
-        startDestination = Routes.HOME
+        startDestination = startDestination
     ) {
+        composable(Routes.LOGIN) {
+            LoginScreen(
+                userRepository = userRepository,
+                onLoginSuccess = {
+                    navController.navigate(Routes.HOME) {
+                        popUpTo(Routes.LOGIN) { inclusive = true }
+                    }
+                }
+            )
+        }
+
         composable(Routes.HOME) {
             HomeScreen(
+                userRepository = userRepository,
                 onNavigateToPickList = { navController.navigate(Routes.PICK_LIST) },
                 onNavigateToProduct = {
-                    // 默认跳转到空商品页，由扫码进入
                     navController.navigate(Routes.productRoute(""))
                 },
                 onNavigateToSettings = { navController.navigate(Routes.SETTINGS) }
@@ -75,7 +115,8 @@ fun AppNavigation() {
             arguments = listOf(navArgument("skuOuterId") { type = NavType.StringType })
         ) {
             ProductScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                userRepository = userRepository
             )
         }
 
