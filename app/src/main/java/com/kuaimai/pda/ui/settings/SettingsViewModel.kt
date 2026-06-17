@@ -33,6 +33,8 @@ class SettingsViewModel @Inject constructor(
         const val KEY_GUIDE_SHOWN = "guide_shown"
     }
 
+    private var isDownloadingUpdate = false
+
     /** 扫码方式 (0=PDA硬件, 1=相机, 2=手动) */
     private val _scanMethod = MutableStateFlow(
         prefs.getInt(KEY_SCAN_METHOD, 0)
@@ -103,12 +105,18 @@ class SettingsViewModel @Inject constructor(
      * 开始下载更新，完成后自动安装
      */
     fun startDownload(info: AppVersionResponse) {
+        if (isDownloadingUpdate) return
+        isDownloadingUpdate = true
         appUpdateManager.downloadApk(info)
         viewModelScope.launch {
             appUpdateManager.downloadState.collect { state ->
                 when (state) {
                     is DownloadState.Completed -> {
                         appUpdateManager.installApk(state.file)
+                        isDownloadingUpdate = false
+                    }
+                    is DownloadState.Failed -> {
+                        isDownloadingUpdate = false
                     }
                     else -> {}
                 }

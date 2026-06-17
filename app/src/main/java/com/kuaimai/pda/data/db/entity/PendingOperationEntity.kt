@@ -13,7 +13,11 @@ import androidx.room.PrimaryKey
  */
 @Entity(
     tableName = "pending_operation",
-    indices = [Index("order_id")]
+    indices = [
+        Index("order_id"),
+        Index("operation_type"),
+        Index("retry_count")
+    ]
 )
 data class PendingOperationEntity(
     @PrimaryKey(autoGenerate = true)

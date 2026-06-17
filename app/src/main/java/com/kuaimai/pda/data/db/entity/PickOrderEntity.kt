@@ -2,12 +2,20 @@ package com.kuaimai.pda.data.db.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
  * 取货单实体
  */
-@Entity(tableName = "pick_order")
+@Entity(
+    tableName = "pick_order",
+    indices = [
+        Index("status"),
+        Index("created_at"),
+        Index(value = ["status", "created_at"])
+    ]
+)
 data class PickOrderEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,

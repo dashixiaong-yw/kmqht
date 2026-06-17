@@ -3,6 +3,7 @@ package com.kuaimai.pda.ui.product
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -32,6 +33,7 @@ import javax.inject.Named
 /**
  * 商品详情UI状态
  */
+@Immutable
 data class ProductUiState(
     val isLoading: Boolean = false,
     val skuOuterId: String = "",

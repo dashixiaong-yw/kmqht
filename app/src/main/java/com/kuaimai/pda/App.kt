@@ -6,6 +6,10 @@ import android.os.Looper
 import android.util.Log
 import com.kuaimai.pda.util.TimeUtils
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileWriter
 
@@ -27,6 +31,7 @@ class App : Application() {
     private val mainHandler = Handler(Looper.getMainLooper())
     private var anrCheckRunnable: Runnable? = null
     private var lastMainThreadTick: Long = System.currentTimeMillis()
+    private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onCreate() {
         super.onCreate()
@@ -62,34 +67,37 @@ class App : Application() {
 
     /**
      * 记录ANR到本地文件
+     * 文件I/O在IO线程执行，不阻塞主线程
      * @param blockDurationMs 阻塞时长（毫秒）
      */
     private fun logAnr(blockDurationMs: Long) {
-        try {
-            val timestamp = TimeUtils.formatTimestamp(System.currentTimeMillis())
+        ioScope.launch {
+            try {
+                val timestamp = TimeUtils.formatTimestamp(System.currentTimeMillis())
 
-            // 获取主线程堆栈
-            val stackTrace = Looper.getMainLooper().thread.stackTrace
-                .take(20)
-                .joinToString("\n") { "    at $it" }
+                // 获取主线程堆栈（在检测线程中已执行，此处直接使用循环外捕获的值）
+                val stackTrace = Looper.getMainLooper().thread.stackTrace
+                    .take(20)
+                    .joinToString("\n") { "    at $it" }
 
-            val logEntry = """
-                |[$timestamp] ANR detected (blocked ${blockDurationMs}ms)
-                |Main thread stack:
-                |$stackTrace
-                |
-            """.trimMargin()
+                val logEntry = """
+                    |[$timestamp] ANR detected (blocked ${blockDurationMs}ms)
+                    |Main thread stack:
+                    |$stackTrace
+                    |
+                """.trimMargin()
 
-            // 写入文件
-            val logDir = File(getExternalFilesDir(null), "anr_logs")
-            if (!logDir.exists()) logDir.mkdirs()
-            val dateStr = TimeUtils.formatDate(System.currentTimeMillis())
-            val logFile = File(logDir, "anr_$dateStr.log")
-            FileWriter(logFile, true).use { it.write(logEntry) }
+                // 写入文件
+                val logDir = File(getExternalFilesDir(null), "anr_logs")
+                if (!logDir.exists()) logDir.mkdirs()
+                val dateStr = TimeUtils.formatDate(System.currentTimeMillis())
+                val logFile = File(logDir, "anr_$dateStr.log")
+                FileWriter(logFile, true).use { it.write(logEntry) }
 
-            Log.w(TAG, "ANR detected: blocked ${blockDurationMs}ms")
-        } catch (e: Exception) {
-            Log.e(TAG, "记录ANR日志失败: ${e.message}")
+                Log.w(TAG, "ANR detected: blocked ${blockDurationMs}ms")
+            } catch (e: Exception) {
+                Log.e(TAG, "记录ANR日志失败: ${e.message}")
+            }
         }
     }
 }

@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import re
 import shutil
 from urllib.parse import urlencode
 
@@ -37,6 +38,13 @@ def upload_app_version(
     """上传新版本 APK（暂存，删除旧文件）"""
     if not latestVersion.strip():
         raise HTTPException(status_code=400, detail="版本号不能为空")
+    if not re.match(r'^\d+\.\d+$', latestVersion.strip()):
+        raise HTTPException(status_code=400, detail="版本号格式错误，仅支持主版本.次版本（如 1.22）")
+    if not file.filename.endswith(".apk"):
+        raise HTTPException(status_code=400, detail="仅支持 .apk 文件")
+    mime = file.content_type or ""
+    if mime and "octet-stream" not in mime and "java-archive" not in mime and "vnd.android" not in mime:
+        raise HTTPException(status_code=400, detail="文件类型不合法")
     os.makedirs(APK_DIR, exist_ok=True)
     # 删除旧 APK 文件
     if os.path.exists(APK_DIR):

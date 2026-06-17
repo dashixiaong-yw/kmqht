@@ -2,22 +2,30 @@
 
 ## 1.22 (2026-06-17)
 
-### 新增
-- OTA APK 自动更新：后台上传/分发 APK，PDA 启动时自动检测+下载+安装
-- 管理后台新增「APK 管理」标签页，支持上传新版本和一键分发
+### 修复
+- P0: 修复proguard通配规则 — 移除`-keep class com.kuaimai.pda.**`，修正Gson路径指向实际包`data.api.dto`
+- P0: PickOrderEntity新增status/created_at数据库索引，消除全表扫描
+- P0: ANR日志写入从主线程移到Dispatchers.IO协程
+- P1: PendingOperationEntity新增operation_type/retry_count数据库索引
+- P1: 开启R8 full mode (gradle.properties)
 - 安全配置：自定义 release 签名证书 + R8 代码混淆 + 网络安全配置文件
+- forceUpdate 弹窗不可关闭修复：管理员标记强制更新时隐藏"稍后再说"按钮
+- downloadApk 并发下载防护：重复调用自动跳过
+- SystemApiService 使用标准 import 替换全限定名
+- 后端 `get_app_version` API 改为从 JSON 文件读取（替代环境变量）
 
 ### 修改
+- 开启资源收缩 `shrinkResources = true` + 语言过滤 `resourceConfigurations("zh")` — 缩减APK体积
+- 开启构建缓存和并行构建: `org.gradle.parallel=true` + `org.gradle.caching=true`
 - APK 输出文件名改为"快麦取货通-版本号.apk"
 - 构建命令统一为 `./gradlew assembleRelease`（签名+混淆）
 - 设置页版本号可点击，手动检查更新
 - 内置版本比对逻辑，支持`compareVersions()`点分版本号比较
 
-### 修复
-- forceUpdate 弹窗不可关闭修复：管理员标记强制更新时隐藏"稍后再说"按钮
-- downloadApk 并发下载防护：重复调用自动跳过
-- SystemApiService 使用标准 import 替换全限定名
-- 后端 `get_app_version` API 改为从 JSON 文件读取（替代环境变量）
+### 新增
+- OTA APK 自动更新：后台上传/分发 APK，PDA 启动时自动检测+下载+安装
+- 管理后台新增「APK 管理」标签页，支持上传新版本和一键分发
+- ProductUiState 添加 `@Immutable` 注解，优化Compose重组
 - 后端新增 `/apk` 静态目录挂载，支持 APK 文件下载
 
 ## 1.21 (2026-06-17)

@@ -25,6 +25,8 @@ android {
         versionCode = 122
         versionName = "1.22"
 
+        resourceConfigurations.add("zh")
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true

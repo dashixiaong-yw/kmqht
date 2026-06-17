@@ -20,6 +20,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton
@@ -78,7 +79,7 @@ class AppUpdateManager @Inject constructor(
             try {
                 val dir = File(context.cacheDir, "update")
                 dir.mkdirs()
-                val apkFile = File(dir, "kuaimai-pickup-${info.latestVersion}.apk")
+                val apkFile = File(dir, "快麦取货通-${info.latestVersion}.apk")
                 if (apkFile.exists() && info.apkSize > 0 && apkFile.length() == info.apkSize) {
                     _downloadState.value = DownloadState.Completed(apkFile)
                     return@Thread

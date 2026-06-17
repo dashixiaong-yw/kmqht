@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 2,
-    "identityHash": "7d694870718474c9373a9b9f68448c40",
+    "identityHash": "8f660cd34cad0e4984ae14634aaa8276",
     "entities": [
       {
         "tableName": "pick_order",
@@ -69,7 +69,36 @@
             "id"
           ]
         },
-        "indices": [],
+        "indices": [
+          {
+            "name": "index_pick_order_status",
+            "unique": false,
+            "columnNames": [
+              "status"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pick_order_status` ON `${TABLE_NAME}` (`status`)"
+          },
+          {
+            "name": "index_pick_order_created_at",
+            "unique": false,
+            "columnNames": [
+              "created_at"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pick_order_created_at` ON `${TABLE_NAME}` (`created_at`)"
+          },
+          {
+            "name": "index_pick_order_status_created_at",
+            "unique": false,
+            "columnNames": [
+              "status",
+              "created_at"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pick_order_status_created_at` ON `${TABLE_NAME}` (`status`, `created_at`)"
+          }
+        ],
         "foreignKeys": []
       },
       {
@@ -338,6 +367,24 @@
             ],
             "orders": [],
             "createSql": "CREATE INDEX IF NOT EXISTS `index_pending_operation_order_id` ON `${TABLE_NAME}` (`order_id`)"
+          },
+          {
+            "name": "index_pending_operation_operation_type",
+            "unique": false,
+            "columnNames": [
+              "operation_type"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pending_operation_operation_type` ON `${TABLE_NAME}` (`operation_type`)"
+          },
+          {
+            "name": "index_pending_operation_retry_count",
+            "unique": false,
+            "columnNames": [
+              "retry_count"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pending_operation_retry_count` ON `${TABLE_NAME}` (`retry_count`)"
           }
         ],
         "foreignKeys": []
@@ -346,7 +393,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '7d694870718474c9373a9b9f68448c40')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '8f660cd34cad0e4984ae14634aaa8276')"
     ]
   }
 }
