@@ -218,3 +218,11 @@ class KuaimaiRefreshResponse(BaseModel):
     success: bool = True
     message: str = "操作成功"
     daysLeft: Optional[int] = None
+
+
+class KuaimaiCredentialsRequest(BaseModel):
+    """快麦凭证更新请求"""
+    app_key: str = Field(..., min_length=1, description="快麦App Key")
+    app_secret: str = Field(..., min_length=1, description="快麦App Secret")
+    session: str = Field(..., min_length=1, description="快麦Session")
+    refresh_token: str = Field(default="", description="快麦Refresh Token")

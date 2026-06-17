@@ -21,7 +21,7 @@ from app.config import (
     start_config_watcher,
 )
 from app.database import get_db, init_db
-from app.routers import areas, images, orders, system, users
+from app.routers import admin, areas, images, orders, system, users
 from app.utils.time_utils import beijing_now, format_beijing
 
 # 配置日志
@@ -57,6 +57,7 @@ else:
     logger.warning("API_KEY未配置，认证中间件未启用")
 
 # 注册路由
+app.include_router(admin.router)
 app.include_router(orders.router)
 app.include_router(areas.router)
 app.include_router(images.router)

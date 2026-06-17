@@ -18,6 +18,7 @@ from app.models import (
     BaseResponse,
     CrashReportRequest,
     HealthResponse,
+    KuaimaiCredentialsRequest,
     KuaimaiRefreshResponse,
     KuaimaiSessionStatusResponse,
 )
@@ -119,6 +120,28 @@ async def refresh_kuaimai_session(user: dict = Depends(get_current_user)) -> Kua
             success=False,
             message="session刷新失败，请检查refreshToken是否有效或联系快麦客服",
         )
+
+
+@router.post("/api/kuaimai/update-credentials", response_model=BaseResponse)
+def update_kuaimai_credentials(
+    req: KuaimaiCredentialsRequest,
+    user: dict = Depends(get_current_user)
+) -> BaseResponse:
+    """手动更新快麦凭证（Web管理后台使用）"""
+    from app.config import save_kuaimai_config
+
+    try:
+        kuaimai_creds.app_key = req.app_key
+        kuaimai_creds.app_secret = req.app_secret
+        kuaimai_creds.session = req.session
+        kuaimai_creds.refresh_token = req.refresh_token
+        kuaimai_creds.updated_at = format_beijing(beijing_now())
+        save_kuaimai_config()
+        logger.info(f"快麦凭证已由用户 {user.get('username', '?')} 手动更新")
+        return BaseResponse(message="凭证更新成功")
+    except Exception as e:
+        logger.error(f"更新快麦凭证失败: {e}")
+        raise HTTPException(status_code=500, detail="凭证更新失败，请稍后重试")
 
 
 @router.get("/setup", response_class=HTMLResponse)

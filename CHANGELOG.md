@@ -1,5 +1,19 @@
 # 快麦取货通 - 变更日志
 
+## 1.10 (2026-06-17)
+
+### 新增
+- 后端新增 /admin Web管理后台页面（6个标签页：仪表盘、用户管理、拣货区管理、快麦配置、系统配置、图片查看）
+- 后端新增 /api/kuaimai/update-credentials API端点，支持Web后台手动更新快麦凭证
+- Web管理后台支持API Key认证，浏览器端统一管理系统配置
+
+### 修改
+- App端SettingsScreen精简为"个人设置"页面，移除服务器配置、快麦连接状态、用户管理
+- App端SettingsViewModel精简，移除拣货区管理、服务器配置、快麦session相关代码
+- App端HomeScreen设置入口改为所有用户可见（不再限制settings权限）
+- 图片上传/删除操作保留在App端，Web后台仅做只读查看
+- /admin路径加入SKIP_AUTH_PREFIXES，页面本身不需要API Key
+
 ## 1.9 (2026-06-17)
 
 ### 新增

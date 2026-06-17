@@ -72,8 +72,6 @@ fun HomeScreen(
     prefs: SharedPreferences? = null,
     authRepository: AuthRepository? = null
 ) {
-    val hasSettingsPermission = userRepository.hasPermission("settings")
-
     // 首次使用引导提示
     var showGuide by remember {
         mutableStateOf(prefs?.getBoolean(KEY_GUIDE_SHOWN, false) == false)
@@ -152,8 +150,8 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 首次使用引导提示条（仅settings权限用户显示）
-            if (showGuide && hasSettingsPermission) {
+            // 首次使用引导提示条（所有用户可见）
+            if (showGuide) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -257,11 +255,10 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 设置入口（仅settings权限用户可见）
-            if (hasSettingsPermission) {
-                ModuleCard(
-                    title = "设置",
-                    description = "配置服务器地址、扫码方式",
+            // 设置入口（所有用户可见）
+            ModuleCard(
+                title = "设置",
+                description = "扫码方式、反馈开关",
                     icon = {
                         Icon(
                             Icons.Default.Settings,
@@ -272,7 +269,6 @@ fun HomeScreen(
                     },
                     onClick = onNavigateToSettings
                 )
-            }
         }
     }
 
