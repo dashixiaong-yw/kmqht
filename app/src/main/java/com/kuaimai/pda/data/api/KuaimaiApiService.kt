@@ -8,8 +8,9 @@ import retrofit2.http.Body
 import retrofit2.http.POST
 
 /**
- * 快麦API服务接口（7个API端点）
+ * 快麦API服务接口（6个API端点）
  * 所有接口均为POST，使用快麦开放平台通用参数格式
+ * 注意：session刷新统一通过后端SystemApiService中转，不在此接口定义
  */
 interface KuaimaiApiService {
 
@@ -47,11 +48,5 @@ interface KuaimaiApiService {
     @POST("router")
     suspend fun updateItemSupplier(
         @Body params: ItemUpdateRequest
-    ): Map<String, Any>
-
-    /** 7. 会话刷新 session.refresh */
-    @POST("router")
-    suspend fun refreshSession(
-        @Body params: Map<String, String>
     ): Map<String, Any>
 }

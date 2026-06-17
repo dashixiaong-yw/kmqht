@@ -28,7 +28,6 @@ class KuaimaiInterceptor @Inject constructor(
 
     companion object {
         private const val TAG = "KuaimaiInterceptor"
-        private const val KEY_ACCESS_TOKEN = "access_token"
     }
 
     override fun intercept(chain: Interceptor.Chain): Response {
@@ -36,13 +35,13 @@ class KuaimaiInterceptor @Inject constructor(
 
         // 仅对快麦API请求添加签名，后端API请求跳过
         val host = originalRequest.url.host
-        if (!host.contains("kuaimai.com")) {
+        if (!host.contains("kuaimai.com") && !host.contains("superboss.cc")) {
             return chain.proceed(originalRequest)
         }
 
         val appKey = prefs.getString(PrefsKeys.KEY_APP_KEY, "") ?: ""
         val appSecret = prefs.getString(PrefsKeys.KEY_APP_SECRET, "") ?: ""
-        val accessToken = prefs.getString(KEY_ACCESS_TOKEN, "") ?: ""
+        val accessToken = prefs.getString(PrefsKeys.KEY_SESSION, "") ?: ""
 
         // 从请求体中提取参数
         val bodyString = extractBodyString(originalRequest)
@@ -62,12 +61,12 @@ class KuaimaiInterceptor @Inject constructor(
             }
         }
 
-        // 添加公共参数（与后端 _build_common_params 保持一致）
-        params["app_key"] = appKey
+        // 添加公共参数（与快麦开放平台官方文档一致，与后端 _build_common_params 保持一致）
+        params["appKey"] = appKey
         params["timestamp"] = TimeUtils.formatTimestamp(TimeUtils.now())
         params["session"] = accessToken
         params["format"] = "json"
-        params["v"] = "2.0"
+        params["version"] = "1.0"
         params["sign_method"] = "md5"
 
         // 计算签名

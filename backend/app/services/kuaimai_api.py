@@ -31,14 +31,14 @@ def _sign(params: Dict[str, Any], app_secret: str) -> str:
 
 
 def _build_common_params(method: str) -> Dict[str, Any]:
-    """构建公共请求参数"""
+    """构建公共请求参数（参数名与快麦开放平台官方文档一致）"""
     return {
-        "app_key": kuaimai_creds.app_key,
+        "appKey": kuaimai_creds.app_key,
         "method": method,
         "session": kuaimai_creds.session,
         "timestamp": beijing_now().strftime("%Y-%m-%d %H:%M:%S"),
         "format": "json",
-        "v": "2.0",
+        "version": "1.0",
         "sign_method": "md5",
     }
 
@@ -122,6 +122,7 @@ async def refresh_session() -> bool:
     """
     调用快麦开放平台刷新会话接口(open.token.refresh)
     刷新成功后accessToken和refreshToken值不变，仅延长30天有效期
+    不通过_call_api通用逻辑，因为响应结构不同
     :return: 刷新是否成功
     """
     if not kuaimai_creds.has_refresh_token():
@@ -129,13 +130,30 @@ async def refresh_session() -> bool:
         return False
 
     try:
-        result = await _call_api(
-            "open.token.refresh",
-            {"refreshToken": kuaimai_creds.refresh_token}
-        )
+        # 构建请求参数（与_call_api一致但不走通用响应解析）
+        params = _build_common_params("open.token.refresh")
+        params["refreshToken"] = kuaimai_creds.refresh_token
+        params["sign"] = _sign(params, kuaimai_creds.app_secret)
 
-        # 解析响应
-        session_data = result.get("session", {})
+        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+            response = await client.post(KUAIMAI_API_BASE, data=params)
+            response.raise_for_status()
+            result: Dict[str, Any] = response.json()
+
+        # 检查错误响应
+        if "error_response" in result:
+            error = result["error_response"]
+            logger.error(f"刷新会话API错误: code={error.get('code')}, msg={error.get('zh_desc', error.get('msg'))}")
+            return False
+
+        # 解析响应：优先查找 open_token_refresh_response，其次直接查找 session
+        session_data = {}
+        response_key = "open_token_refresh_response"
+        if response_key in result:
+            session_data = result[response_key].get("session", {})
+        elif "session" in result:
+            session_data = result["session"]
+
         if not session_data:
             logger.error("刷新会话响应中缺少session数据")
             return False

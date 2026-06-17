@@ -13,8 +13,8 @@ object AppConstants {
     /** 后端服务器默认地址（10.0.2.2为Android模拟器访问宿主机的特殊IP） */
     const val DEFAULT_SERVER_URL = "http://10.0.2.2:8000"
 
-    /** 快麦开放平台API地址 */
-    const val KUAIMAI_API_URL = "https://openapi.kuaimai.com/router"
+    /** 快麦开放平台API地址（2022年4月1日后申请的APP Key统一使用V2正式环境地址） */
+    const val KUAIMAI_API_URL = "https://gw.superboss.cc/router"
 
     /** 会话过期预警天数（距过期天数小于此值时显示警告） */
     const val SESSION_WARNING_DAYS = 5

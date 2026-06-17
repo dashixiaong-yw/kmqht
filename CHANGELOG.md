@@ -2,6 +2,29 @@
 
 ## 1.8 (2026-06-17)
 
+### 修复
+- 修复completeAllItems API失败后未入队离线队列导致操作丢失的P0 bug
+- 优化HomeScreen会话过期预警措辞，区分天/小时/已过期三种状态
+
+### 优化
+- PickDetailScreen扫码成功事件改用collectLatest，避免快速连续扫码丢失事件
+
+## 1.7 (2026-06-17)
+
+### 修复
+- P0: API地址修正为官方文档地址 https://gw.superboss.cc/router（前后端一致）
+- P0: 公共参数名修正 app_key→appKey、v→version（与快麦开放平台官方文档一致）
+- P0: API版本号修正 2.0→1.0（与快麦开放平台官方文档一致）
+- P0: KuaimaiInterceptor读取session的key从硬编码access_token改为PrefsKeys.KEY_SESSION
+- P1: TokenAuthenticator改为通过后端SystemApiService中转刷新session（不再直接调快麦API）
+- P1: KuaimaiApiService移除refreshSession接口（session刷新统一通过后端中转）
+- P1: AuthRepositoryImpl.refreshSession改为通过后端SystemApiService中转
+- P1: refresh_session函数改为直接调API不通过_call_api通用逻辑，修复响应解析问题
+- P2: save_kuaimai_config增加session字段保存
+- P2: KuaimaiInterceptor host匹配增加superboss.cc
+
+## 1.8 (2026-06-17)
+
 ### 新增
 - 后端KuaimaiCredentials增加refresh_token字段存储
 - 后端新增save_kuaimai_config()方法，刷新后持久化updated_at到kuaimai.json

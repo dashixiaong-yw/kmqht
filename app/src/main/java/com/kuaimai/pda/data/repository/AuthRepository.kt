@@ -2,7 +2,7 @@ package com.kuaimai.pda.data.repository
 
 import android.content.SharedPreferences
 import android.util.Log
-import com.kuaimai.pda.data.api.KuaimaiApiService
+import com.kuaimai.pda.data.api.SystemApiService
 import com.kuaimai.pda.util.AppConstants
 import com.kuaimai.pda.util.PrefsKeys
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -34,12 +34,13 @@ interface AuthRepository {
  * 敏感配置存储在EncryptedSharedPreferences中
  */
 class AuthRepositoryImpl @Inject constructor(
-    private val apiService: KuaimaiApiService,
+    private val systemApiService: SystemApiService,
     @Named("encrypted") private val prefs: SharedPreferences
 ) : AuthRepository {
 
     companion object {
         private const val DEFAULT_BASE_URL = AppConstants.KUAIMAI_API_URL
+        private const val KEY_USER_TOKEN = "user_token"
     }
 
     /** Token刷新失败事件流 */
@@ -48,8 +49,9 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun refreshSession(): Boolean {
         return try {
-            val result = apiService.refreshSession(emptyMap())
-            if (result.containsKey("session")) {
+            val userToken = prefs.getString(KEY_USER_TOKEN, "") ?: ""
+            val result = systemApiService.refreshSession(userToken)
+            if (result.success) {
                 true
             } else {
                 _tokenRefreshFailed.emit(Unit)

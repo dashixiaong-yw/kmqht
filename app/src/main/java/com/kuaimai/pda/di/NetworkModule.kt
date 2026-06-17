@@ -108,10 +108,10 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideTokenAuthenticator(
-        apiServiceProvider: Provider<KuaimaiApiService>,
+        systemApiServiceProvider: Provider<SystemApiService>,
         @Named("encrypted") prefs: SharedPreferences
     ): TokenAuthenticator {
-        return TokenAuthenticator(apiServiceProvider, prefs)
+        return TokenAuthenticator(systemApiServiceProvider, prefs)
     }
 
     /** OkHttp客户端 */
@@ -243,17 +243,18 @@ class RateLimitInterceptor(
 
 /**
  * Token刷新认证器
- * 检测401响应 → 自动调用session.refresh → 成功后重试原请求
+ * 检测401响应 → 通过后端API刷新快麦session → 成功后重试原请求
  * 失败则通知UI显示"会话已过期"对话框
- * 使用Provider<KuaimaiApiService>避免循环依赖
+ * 使用Provider<SystemApiService>避免循环依赖，通过后端中转刷新
  */
 class TokenAuthenticator(
-    private val apiServiceProvider: Provider<KuaimaiApiService>,
+    private val systemApiServiceProvider: Provider<SystemApiService>,
     private val prefs: SharedPreferences
 ) : okhttp3.Authenticator {
 
     companion object {
         private const val TAG = "TokenAuthenticator"
+        private const val KEY_USER_TOKEN = "user_token"
     }
 
     /** 防止并发刷新 */
@@ -280,23 +281,21 @@ class TokenAuthenticator(
         }
 
         try {
-            val apiService = apiServiceProvider.get()
-            // 尝试刷新session
+            val systemApiService = systemApiServiceProvider.get()
+            val userToken = prefs.getString(KEY_USER_TOKEN, "") ?: ""
+
+            // 通过后端中转刷新快麦session
             val refreshResult = kotlinx.coroutines.runBlocking {
                 try {
-                    apiService.refreshSession(emptyMap())
+                    systemApiService.refreshSession(userToken)
                 } catch (e: Exception) {
                     Log.e(TAG, "刷新session失败: ${e.message}")
                     null
                 }
             }
 
-            if (refreshResult != null && refreshResult.containsKey("session")) {
-                // 更新本地session
-                val newSession = refreshResult["session"] as? String ?: ""
-                prefs.edit().putString(PrefsKeys.KEY_SESSION, newSession).apply()
+            if (refreshResult != null && refreshResult.success) {
                 Log.i(TAG, "Token刷新成功")
-
                 // 重试原请求
                 return response.request.newBuilder()
                     .header("X-Retry-Count", (retryCount + 1).toString())

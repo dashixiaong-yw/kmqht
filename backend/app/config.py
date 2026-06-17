@@ -29,8 +29,8 @@ IMAGE_DIR: str = os.getenv("IMAGE_DIR", "/data/product_images")
 # 数据库路径
 DB_PATH: str = os.getenv("DB_PATH", "/data/kuaimai.db")
 
-# 快麦API基础URL（可通过环境变量覆盖）
-KUAIMAI_API_BASE: str = os.getenv("KUAIMAI_API_BASE", "https://openapi.kuaimai.com/router")
+# 快麦API基础URL（2022年4月1日后申请的APP Key统一使用V2正式环境地址）
+KUAIMAI_API_BASE: str = os.getenv("KUAIMAI_API_BASE", "https://gw.superboss.cc/router")
 
 # CORS允许的来源（逗号分隔，默认*允许所有，生产环境应限制）
 CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", "*")
@@ -125,6 +125,8 @@ def save_kuaimai_config() -> None:
 
         # 更新字段
         data["updated_at"] = kuaimai_creds.updated_at
+        if kuaimai_creds.session:
+            data["session"] = kuaimai_creds.session
         if kuaimai_creds.refresh_token:
             data["refresh_token"] = kuaimai_creds.refresh_token
 
