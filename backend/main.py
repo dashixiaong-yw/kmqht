@@ -13,6 +13,7 @@ from starlette.responses import JSONResponse
 from app.auth import ApiKeyMiddleware
 from app.config import (
     API_KEY,
+    APK_DIR,
     CORS_ORIGINS,
     IMAGE_DIR,
     SERVER_PORT,
@@ -92,6 +93,12 @@ async def startup_event() -> None:
     if os.path.exists(IMAGE_DIR):
         app.mount("/images", StaticFiles(directory=IMAGE_DIR), name="images")
         logger.info(f"静态文件目录已挂载: {IMAGE_DIR}")
+
+    # 创建 APK 目录并挂载
+    os.makedirs(APK_DIR, exist_ok=True)
+    if os.path.exists(APK_DIR):
+        app.mount("/apk", StaticFiles(directory=APK_DIR), name="apk")
+        logger.info(f"APK 静态文件目录已挂载: {APK_DIR}")
 
     logger.info("快麦取货通后端服务启动完成")
 
