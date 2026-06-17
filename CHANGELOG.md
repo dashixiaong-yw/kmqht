@@ -13,6 +13,10 @@
 - MEDIUM: 修复PickOrderCard进度点`repeat(totalCount)`无上限——最多20个+...提示
 - MEDIUM: 修复LoginScreen userId=0L时修改密码静默卡死——添加null检查+错误提示
 - MEDIUM: 修复GuideScreen"重启App"误导提示——改为"立即生效"
+- P0: 修复后端 `kuaimai.item.sku.get` 非标准前缀——改用 V2 接口 `erp.item.sku.list.get`
+- P0: 修复后端 SKU 查询参数——sku_outer_id→outerId，响应字段 skus→itemSkus
+- P1: 修复 Android 端供应商查询——supplier.list.query→item.supplier.list.get，补充 sysItemIds 参数
+- P2: 删除后端 kuaimai_api.py 中从未调用的 get_item_detail() 死代码
 
 ### 修改
 - kuaimai_api.py新增_config_lock线程锁定义
