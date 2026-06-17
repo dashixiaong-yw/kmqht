@@ -28,7 +28,7 @@
 | 1 | 开发 | **查阅知识图谱** | 首次修改前必须查阅；批量任务中后续任务按需查阅 |
 | 2 | 开发 | 修改代码 | 在 `app/` 目录修改，**支持批量完成多个任务后再进入收尾** |
 | 3 | 开发 | 验证代码 | `./gradlew lint` 必须通过；**失败则回到Step 2修复** |
-| 4 | 开发 | 构建APK | `./gradlew assembleDebug`（开发验证）或 `./gradlew assembleRelease`（分发签名APK）构建成功；**失败则回到Step 2修复** |
+| 4 | 开发 | 构建APK | `./gradlew assembleRelease`（签名+混淆）构建成功；**失败则回到Step 2修复** |
 | 5 | 收尾 | 更新版本号 | **⚠️ 进入收尾后禁止再修改代码**；**先读取3处当前版本号取最大值，再+1递增**，更新3处并验证一致 |
 | 6 | 收尾 | **更新知识图谱** | 将本次所有变更的设计决策同步到知识图谱 |
 | 7 | 收尾 | 同步到docker-deploy | 运行 `.\scripts\sync-to-docker-deploy.ps1 -Force` 同步后端部署文件 |
@@ -203,7 +203,6 @@
 
 | 命令 | 说明 |
 |------|------|
-| `./gradlew assembleDebug` | 构建 Debug APK（开发验证，无签名） |
 | `./gradlew assembleRelease` | 构建 Release APK（签名+混淆，PDA安装用） |
 | `./gradlew lint` | 代码检查 |
 | `./gradlew test` | 运行单元测试 |

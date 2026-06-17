@@ -78,19 +78,19 @@ class ImageRepositoryImpl @Inject constructor(
             val responseBody = uploadService.fetchImages(skuOuterId)
             val jsonArray = JSONArray(responseBody)
             if (jsonArray.length() == 0) return
-            productImageDao.deleteBySku(skuOuterId)
             val now = TimeUtils.now()
+            val entities = mutableListOf<ProductImageEntity>()
             for (i in 0 until jsonArray.length()) {
                 val json = jsonArray.getJSONObject(i)
-                val entity = ProductImageEntity(
+                entities.add(ProductImageEntity(
                     skuOuterId = skuOuterId,
                     imageType = json.getString("imageType"),
                     imageUrl = json.getString("imageUrl"),
                     remoteId = json.getLong("id"),
                     createdAt = now
-                )
-                productImageDao.insert(entity)
+                ))
             }
+            productImageDao.replaceImagesForSku(skuOuterId, entities)
         } catch (e: Exception) {
             Log.w("ImageRepository", "同步后端图片列表失败: ${e.message}")
         }

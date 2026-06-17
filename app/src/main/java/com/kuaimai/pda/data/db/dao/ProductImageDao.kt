@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import com.kuaimai.pda.data.db.entity.ProductImageEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -52,4 +53,11 @@ interface ProductImageDao {
      */
     @Query("DELETE FROM product_image")
     suspend fun deleteAll()
+
+    /** 原子替换指定SKU的图片：先删旧记录再批量插入 */
+    @Transaction
+    suspend fun replaceImagesForSku(skuOuterId: String, images: List<ProductImageEntity>) {
+        deleteBySku(skuOuterId)
+        insertAll(images)
+    }
 }

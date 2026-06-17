@@ -1,5 +1,14 @@
 # 快麦取货通 - 变更日志
 
+## 1.21 (2026-06-17)
+
+### 修复
+- P2: 修复MainActivity.enqueueSyncWorker()未去重——改用beginUniqueWork+ExistingWorkPolicy.KEEP
+- P2: 修复ImageRepository.syncImagesFromBackend()无事务保护——新增ProductImageDao.replaceImagesForSku()原子替换
+
+### 修改
+- ProductImageDao新增replaceImagesForSku()事务方法
+
 ## 1.20 (2026-06-17)
 
 ### 修复

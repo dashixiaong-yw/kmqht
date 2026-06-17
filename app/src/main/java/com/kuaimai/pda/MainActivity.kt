@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.work.Constraints
+import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
@@ -80,6 +81,8 @@ class MainActivity : ComponentActivity() {
         val workRequest = OneTimeWorkRequestBuilder<OrderSyncWorker>()
             .setConstraints(constraints)
             .build()
-        WorkManager.getInstance(this).enqueue(workRequest)
+        WorkManager.getInstance(this)
+            .beginUniqueWork("order_sync", ExistingWorkPolicy.KEEP, workRequest)
+            .enqueue()
     }
 }
