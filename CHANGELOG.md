@@ -1,5 +1,16 @@
 # 快麦取货通 - 变更日志
 
+## 1.5 (2026-06-17)
+
+### 修复
+- 修复ImageUploadService不传X-User-Token导致图片上传/删除返回401不可用（P0）
+- 修复AreaApiService缺少createArea/deleteArea方法，拣货区管理不持久化到后端（P1）
+- 修复后端允许用户禁用自己导致永久锁定（P1）
+- 修复后端允许管理员剥夺自己的settings权限导致无法管理用户（P1）
+- 修复UserEditDialog不支持启用/禁用用户账户（P1）
+- 修复UserRepository使用普通SharedPreferences存储token等敏感数据，改用加密存储（P1）
+- 修复updateUser()本地缓存更新不完整，未处理isActive变更（P2）
+
 ## 1.4 (2026-06-17)
 
 ### 新增
