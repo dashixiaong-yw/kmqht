@@ -35,7 +35,20 @@ data class OrderDetailResponse(
     val completedAt: String? = null,
     val expireAt: String = "",
     val items: List<OrderItemResponse> = emptyList()
-)
+) {
+    /** 转换为基础OrderResponse（避免重复字段手动映射） */
+    fun toOrderResponse(): OrderResponse = OrderResponse(
+        id = id,
+        orderNo = orderNo,
+        status = status,
+        completionType = completionType,
+        totalCount = totalCount,
+        completedCount = completedCount,
+        createdAt = createdAt,
+        completedAt = completedAt,
+        expireAt = expireAt
+    )
+}
 
 /** 取货单列表响应 */
 data class OrderListResponse(

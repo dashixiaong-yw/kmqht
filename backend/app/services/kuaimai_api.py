@@ -1,4 +1,4 @@
-"""快麦API客户端 - HMAC-MD5签名与API调用"""
+"""快麦API客户端 - MD5签名与API调用"""
 
 import hashlib
 import logging

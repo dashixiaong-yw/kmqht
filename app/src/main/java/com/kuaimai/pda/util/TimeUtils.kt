@@ -11,20 +11,27 @@ import java.util.TimeZone
 object TimeUtils {
 
     private const val BEIJING_ZONE_ID = "Asia/Shanghai"
+
+    /** 取货单默认过期时间：12小时（毫秒） */
+    const val DEFAULT_EXPIRE_MS: Long = 12 * 60 * 60 * 1000L
+
+    /** 已完成取货单查询范围：7天（毫秒） */
+    const val COMPLETED_ORDER_RANGE_MS: Long = 7 * 24 * 60 * 60 * 1000L
+
     private val beijingZone: TimeZone = TimeZone.getTimeZone(BEIJING_ZONE_ID)
 
-    /** 日期时间格式 */
-    private val dateTimeFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).apply {
+    /** 日期时间格式（使用Locale.CHINA避免ConstantLocale警告） */
+    private val dateTimeFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.CHINA).apply {
         timeZone = beijingZone
     }
 
     /** 日期格式 */
-    private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply {
+    private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.CHINA).apply {
         timeZone = beijingZone
     }
 
     /** 时间格式 */
-    private val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).apply {
+    private val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.CHINA).apply {
         timeZone = beijingZone
     }
 
@@ -99,5 +106,19 @@ object TimeUtils {
      */
     fun diffMinutes(start: Long, end: Long): Long {
         return (end - start) / (60 * 1000)
+    }
+
+    /**
+     * JSON字符串转义（防止双引号等特殊字符破坏JSON格式）
+     * @param value 原始字符串
+     * @return 转义后的字符串
+     */
+    fun escapeJson(value: String): String {
+        return value
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r")
+            .replace("\t", "\\t")
     }
 }

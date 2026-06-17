@@ -3,7 +3,6 @@
 import logging
 import sqlite3
 import threading
-from contextlib import contextmanager
 from typing import Optional
 
 from app.config import DB_PATH
@@ -46,27 +45,10 @@ def get_db() -> sqlite3.Connection:
     return conn
 
 
-@contextmanager
-def get_db_ctx():
-    """获取数据库连接的上下文管理器，自动处理事务"""
-    conn = get_db()
-    try:
-        yield conn
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        raise
-
-
 def init_db() -> None:
-    """初始化数据库：设置PRAGMA并创建所有表"""
+    """初始化数据库：创建所有表（PRAGMA由get_db()处理）"""
     conn = get_db()
     cursor = conn.cursor()
-
-    # PRAGMA设置（仅初始化时执行一次）
-    cursor.execute("PRAGMA journal_mode=WAL")
-    cursor.execute("PRAGMA foreign_keys=ON")
-    cursor.execute("PRAGMA busy_timeout=5000")
 
     # 创建取货单表
     cursor.execute("""

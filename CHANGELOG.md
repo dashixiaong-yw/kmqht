@@ -1,5 +1,40 @@
 # 快麦取货通 - 变更日志
 
+## 0.7 (2026-06-17)
+
+### 修复
+- 修复后端delete_item查询缺少status字段导致KeyError（严重）
+- 修复前端AreaListResponse与后端areas.py返回格式不匹配导致拣货区列表始终为空（严重）
+- 修复KuaimaiInterceptor对所有请求都添加快麦签名导致后端请求可能失败（严重）
+- 修复后端main.py重复定义_BEIJING_TZ（第四轮审查漏删）
+- 修复AuthRepository硬编码URL与AppConstants不一致（api.kuaimai.com vs openapi.kuaimai.com）
+- 修复OrderSyncWorker extractPayloadValue无法处理转义字符（改用JSONObject解析）
+- 修复后端init_db()重复PRAGMA设置
+- 修复后端kuaimai_api.py注释"HMAC-MD5"与实际MD5签名不一致
+
+### 修改
+- escapeJson方法收敛到TimeUtils工具类，消除PickOrderRepository和ProductViewModel重复代码
+- ProductViewModel离线队列操作收敛到PickOrderRepository（新增updateRemarkWithQueue/updateSupplierWithQueue）
+- 后端areas.py返回包裹格式AreaListResponse，与OrderListResponse保持一致
+- 后端models.py新增AreaListResponse模型
+- 删除ProductImageDao重复方法getImagesBySku()
+- 删除PickOrderDao重复方法getActiveOrders()和未使用的Flow版本getOrderById()
+- 删除PickItemDao未使用的Flow版本getItemById()
+
+## 0.6 (2026-06-17)
+
+### 修改
+- 创建AppConstants统一常量类，集中管理服务器地址等配置常量
+- TimeUtils添加DEFAULT_EXPIRE_MS和COMPLETED_ORDER_RANGE_MS命名常量替代魔法数字
+- NetworkModule/ImageUploadService/ProductViewModel引用AppConstants统一常量替代硬编码URL
+- 后端KUAIMAI_API_BASE改为环境变量读取
+- AreaResponse字段名从snake_case改为camelCase（createdAt）
+- PickOrderRepository添加JSON转义防止payload注入
+- OrderDetailResponse添加toOrderResponse()转换方法消除重复字段映射
+- 删除database.py中未使用的get_db_ctx()函数
+- 删除ItemRepositoryImpl中未使用的3个DAO注入
+- config.py改用time_utils的beijing_now/parse_beijing替代本地_BEIJING_TZ
+
 ## 0.5 (2026-06-17)
 
 ### 修复

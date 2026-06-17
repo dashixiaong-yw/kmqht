@@ -1,12 +1,11 @@
 """拣货区路由 - 拣货区CRUD"""
 
 import logging
-from typing import List
 
 from fastapi import APIRouter, HTTPException
 
 from app.database import get_db
-from app.models import AreaRequest, AreaResponse, BaseResponse
+from app.models import AreaListResponse, AreaRequest, AreaResponse, BaseResponse
 from app.utils.time_utils import beijing_now, format_beijing
 
 logger = logging.getLogger(__name__)
@@ -14,8 +13,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/areas", tags=["拣货区"])
 
 
-@router.get("", response_model=List[AreaResponse])
-def list_areas() -> List[AreaResponse]:
+@router.get("", response_model=AreaListResponse)
+def list_areas() -> AreaListResponse:
     """获取所有拣货区"""
     db = get_db()
     cursor = db.cursor()
@@ -23,14 +22,15 @@ def list_areas() -> List[AreaResponse]:
     cursor.execute("SELECT * FROM pick_areas ORDER BY id")
     rows = cursor.fetchall()
 
-    return [
+    areas = [
         AreaResponse(
             id=row["id"],
             name=row["name"],
-            created_at=row["created_at"],
+            createdAt=row["created_at"],
         )
         for row in rows
     ]
+    return AreaListResponse(data=areas)
 
 
 @router.post("", response_model=AreaResponse)
@@ -57,7 +57,7 @@ def create_area(req: AreaRequest) -> AreaResponse:
         return AreaResponse(
             id=row["id"],
             name=row["name"],
-            created_at=row["created_at"],
+            createdAt=row["created_at"],
         )
     except Exception as e:
         db.rollback()

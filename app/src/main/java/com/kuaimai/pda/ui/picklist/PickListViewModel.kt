@@ -86,7 +86,7 @@ class PickListViewModel @Inject constructor(
      */
     private fun loadCompletedOrders() {
         viewModelScope.launch {
-            val sevenDaysAgo = TimeUtils.now() - 7 * 24 * 60 * 60 * 1000L
+            val sevenDaysAgo = TimeUtils.now() - TimeUtils.COMPLETED_ORDER_RANGE_MS
             pickOrderRepository.getCompletedOrders(sevenDaysAgo)
                 .collect { orders ->
                     _completedOrders.value = orders
@@ -126,7 +126,7 @@ class PickListViewModel @Inject constructor(
                     totalCount = response.totalCount,
                     completedCount = response.completedCount,
                     createdAt = TimeUtils.parseBeijingTime(response.createdAt).let { if (it > 0) it else TimeUtils.now() },
-                    expireAt = TimeUtils.parseBeijingTime(response.expireAt).let { if (it > 0) it else TimeUtils.now() + 12 * 60 * 60 * 1000L }
+                    expireAt = TimeUtils.parseBeijingTime(response.expireAt).let { if (it > 0) it else TimeUtils.now() + TimeUtils.DEFAULT_EXPIRE_MS }
                 )
                 pickOrderRepository.insertOrder(order)
                 _showNewOrderDialog.value = false

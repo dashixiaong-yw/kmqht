@@ -400,7 +400,7 @@ def delete_item(order_id: int, item_id: int) -> BaseResponse:
 
         # 检查是否需要将取货单状态从已完成恢复为进行中
         cursor.execute(
-            "SELECT total_count, completed_count FROM pick_orders WHERE id = ?",
+            "SELECT total_count, completed_count, status FROM pick_orders WHERE id = ?",
             (order_id,)
         )
         order_info = cursor.fetchone()

@@ -2,7 +2,7 @@
 
 import logging
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
@@ -21,6 +21,7 @@ from app.config import (
 )
 from app.database import get_db, init_db
 from app.routers import areas, images, orders, system
+from app.utils.time_utils import beijing_now, format_beijing
 
 # 配置日志
 logging.basicConfig(
@@ -29,8 +30,6 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
-
-_BEIJING_TZ = timezone(timedelta(hours=8))
 
 # 创建FastAPI应用
 app = FastAPI(
@@ -165,7 +164,7 @@ def _check_order_timeout() -> None:
     try:
         db = get_db()
         cursor = db.cursor()
-        now = datetime.now(_BEIJING_TZ).strftime("%Y-%m-%d %H:%M:%S")
+        now = beijing_now().strftime("%Y-%m-%d %H:%M:%S")
 
         cursor.execute(
             "SELECT id, order_no FROM pick_orders WHERE status = 0 AND expire_at < ?",
@@ -188,7 +187,7 @@ def _cleanup_completed_orders() -> None:
         db = get_db()
         cursor = db.cursor()
 
-        cutoff = (datetime.now(_BEIJING_TZ) - timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
+        cutoff = (beijing_now() - timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
         cursor.execute(
             "DELETE FROM pick_orders WHERE status = 1 AND completed_at < ?",
             (cutoff,)
@@ -207,7 +206,7 @@ def _cleanup_sku_cache() -> None:
         db = get_db()
         cursor = db.cursor()
 
-        cutoff = (datetime.now(_BEIJING_TZ) - timedelta(hours=24)).strftime("%Y-%m-%d %H:%M:%S")
+        cutoff = (beijing_now() - timedelta(hours=24)).strftime("%Y-%m-%d %H:%M:%S")
         cursor.execute(
             "DELETE FROM sku_cache WHERE cached_at < ?",
             (cutoff,)
@@ -226,7 +225,7 @@ def _cleanup_crash_logs() -> None:
         db = get_db()
         cursor = db.cursor()
 
-        cutoff = (datetime.now(_BEIJING_TZ) - timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
+        cutoff = (beijing_now() - timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
         cursor.execute(
             "DELETE FROM crash_logs WHERE created_at < ?",
             (cutoff,)
@@ -255,7 +254,7 @@ def _cleanup_orphan_images() -> None:
         if not _os.path.exists(IMAGE_DIR):
             return
 
-        cutoff_time = (datetime.now(_BEIJING_TZ) - timedelta(days=7)).timestamp()
+        cutoff_time = (beijing_now() - timedelta(days=7)).timestamp()
         deleted_count = 0
 
         for root, dirs, files in _os.walk(IMAGE_DIR):

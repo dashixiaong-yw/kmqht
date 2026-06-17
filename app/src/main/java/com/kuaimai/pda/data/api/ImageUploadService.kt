@@ -9,6 +9,7 @@ import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
+import com.kuaimai.pda.util.AppConstants
 import java.io.File
 import java.io.IOException
 import javax.inject.Inject
@@ -27,7 +28,7 @@ class ImageUploadService @Inject constructor(
     companion object {
         private const val TAG = "ImageUploadService"
         private const val KEY_SERVER_URL = "server_url"
-        private const val DEFAULT_SERVER_URL = "http://10.0.2.2:8000"
+        private const val DEFAULT_SERVER_URL = AppConstants.DEFAULT_SERVER_URL
         private const val MAX_RETRY = 3
     }
 

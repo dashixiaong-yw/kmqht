@@ -6,13 +6,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kuaimai.pda.data.api.KuaimaiApiService
 import com.kuaimai.pda.data.api.dto.SupplierDto
-import com.kuaimai.pda.data.db.dao.PendingOperationDao
 import com.kuaimai.pda.data.db.dao.PickItemDao
 import com.kuaimai.pda.data.db.dao.ProductImageDao
-import com.kuaimai.pda.data.db.entity.PendingOperationEntity
 import com.kuaimai.pda.data.db.entity.PickItemEntity
 import com.kuaimai.pda.data.db.entity.ProductImageEntity
 import com.kuaimai.pda.data.repository.ImageRepository
+import com.kuaimai.pda.data.repository.PickOrderRepository
+import com.kuaimai.pda.util.AppConstants
 import com.kuaimai.pda.util.TimeUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -60,7 +60,7 @@ class ProductViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val pickItemDao: PickItemDao,
     private val productImageDao: ProductImageDao,
-    private val pendingOperationDao: PendingOperationDao,
+    private val pickOrderRepository: PickOrderRepository,
     private val imageRepository: ImageRepository,
     private val apiService: KuaimaiApiService,
     private val prefs: SharedPreferences
@@ -68,7 +68,7 @@ class ProductViewModel @Inject constructor(
 
     companion object {
         private const val KEY_SERVER_URL = "server_url"
-        private const val DEFAULT_SERVER_URL = "http://10.0.2.2:8000"
+        private const val DEFAULT_SERVER_URL = AppConstants.DEFAULT_SERVER_URL
     }
 
     private val _uiState = MutableStateFlow(ProductUiState())
@@ -210,15 +210,8 @@ class ProductViewModel @Inject constructor(
             try {
                 val item = currentItem
                 if (item != null) {
-                    // 更新本地
-                    pickItemDao.updateRemark(item.id, confirmType.remark)
-                    // 写入离线队列
-                    enqueuePendingOperation(
-                        operationType = "update_remark",
-                        orderId = item.orderId,
-                        targetId = item.id,
-                        payload = """{"remark":"${escapeJson(confirmType.remark)}"}"""
-                    )
+                    // 通过Repository更新本地+写入离线队列
+                    pickOrderRepository.updateRemarkWithQueue(item.id, confirmType.remark)
                 }
                 _uiState.value = _uiState.value.copy(isSavingRemark = false)
             } catch (e: Exception) {
@@ -283,15 +276,8 @@ class ProductViewModel @Inject constructor(
             try {
                 val item = currentItem
                 if (item != null) {
-                    // 更新本地
-                    pickItemDao.updateSupplier(item.id, confirmType.name, confirmType.code)
-                    // 写入离线队列
-                    enqueuePendingOperation(
-                        operationType = "update_supplier",
-                        orderId = item.orderId,
-                        targetId = item.id,
-                        payload = """{"supplier_name":"${escapeJson(confirmType.name)}","supplier_code":"${escapeJson(confirmType.code)}"}"""
-                    )
+                    // 通过Repository更新本地+写入离线队列
+                    pickOrderRepository.updateSupplierWithQueue(item.id, confirmType.name, confirmType.code)
                 }
                 _uiState.value = _uiState.value.copy(
                     isSavingSupplier = false,
@@ -354,41 +340,9 @@ class ProductViewModel @Inject constructor(
     }
 
     /**
-     * 写入离线操作队列
-     */
-    private suspend fun enqueuePendingOperation(
-        operationType: String,
-        orderId: Long,
-        targetId: Long,
-        payload: String
-    ) {
-        val operation = PendingOperationEntity(
-            operationType = operationType,
-            orderId = orderId,
-            targetId = targetId,
-            payload = payload,
-            createdAt = TimeUtils.now(),
-            retryCount = 0
-        )
-        pendingOperationDao.insert(operation)
-    }
-
-    /**
      * 清除错误信息
      */
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
-    }
-
-    /**
-     * JSON字符串转义（防止双引号等特殊字符破坏JSON格式）
-     */
-    private fun escapeJson(value: String): String {
-        return value
-            .replace("\\", "\\\\")
-            .replace("\"", "\\\"")
-            .replace("\n", "\\n")
-            .replace("\r", "\\r")
-            .replace("\t", "\\t")
     }
 }

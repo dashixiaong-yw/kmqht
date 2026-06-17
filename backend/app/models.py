@@ -32,7 +32,14 @@ class AreaResponse(BaseModel):
     """拣货区响应"""
     id: int
     name: str
-    created_at: str
+    createdAt: str
+
+
+class AreaListResponse(BaseModel):
+    """拣货区列表响应"""
+    success: bool = True
+    message: str = "操作成功"
+    data: List[AreaResponse] = []
 
 
 # ==================== 取货单模型 ====================

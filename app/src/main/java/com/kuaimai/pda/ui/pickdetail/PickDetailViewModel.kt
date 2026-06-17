@@ -226,7 +226,7 @@ class PickDetailViewModel @Inject constructor(
                     completedCount = detail.completedCount,
                     createdAt = TimeUtils.parseBeijingTime(detail.createdAt).let { if (it > 0) it else TimeUtils.now() },
                     completedAt = TimeUtils.parseBeijingTimeOrNull(detail.completedAt),
-                    expireAt = TimeUtils.parseBeijingTime(detail.expireAt).let { if (it > 0) it else TimeUtils.now() + 12 * 60 * 60 * 1000L }
+                    expireAt = TimeUtils.parseBeijingTime(detail.expireAt).let { if (it > 0) it else TimeUtils.now() + TimeUtils.DEFAULT_EXPIRE_MS }
                 )
                 pickOrderRepository.updateOrder(orderEntity)
                 loadSuppliers()

@@ -3,7 +3,7 @@
 import json
 import logging
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from pathlib import Path
 from typing import Optional
 
@@ -13,9 +13,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 logger = logging.getLogger(__name__)
-
-# 北京时间
-_BEIJING_TZ = timezone(timedelta(hours=8))
 
 # API 认证密钥
 API_KEY: str = os.getenv("API_KEY", "")
@@ -32,8 +29,8 @@ IMAGE_DIR: str = os.getenv("IMAGE_DIR", "/data/product_images")
 # 数据库路径
 DB_PATH: str = os.getenv("DB_PATH", "/data/kuaimai.db")
 
-# 快麦API基础URL
-KUAIMAI_API_BASE: str = "https://openapi.kuaimai.com/router"
+# 快麦API基础URL（可通过环境变量覆盖）
+KUAIMAI_API_BASE: str = os.getenv("KUAIMAI_API_BASE", "https://openapi.kuaimai.com/router")
 
 
 class KuaimaiCredentials:
@@ -54,11 +51,11 @@ class KuaimaiCredentials:
         if not self.updated_at:
             return None
         try:
-            updated_dt = datetime.strptime(self.updated_at, "%Y-%m-%d %H:%M:%S")
-            updated_dt = updated_dt.replace(tzinfo=_BEIJING_TZ)
+            from app.utils.time_utils import beijing_now, parse_beijing
+            updated_dt = parse_beijing(self.updated_at)
             # 假设session有效期30天
             expire_dt = updated_dt + timedelta(days=30)
-            now = datetime.now(_BEIJING_TZ)
+            now = beijing_now()
             days_left = (expire_dt - now).days
             if days_left <= 5 and days_left > 0:
                 return f"快麦session将在{days_left}天后过期，请及时更新"

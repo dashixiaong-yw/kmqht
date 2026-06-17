@@ -9,6 +9,7 @@ import com.kuaimai.pda.data.api.AreaApiService
 import com.kuaimai.pda.data.api.KuaimaiApiService
 import com.kuaimai.pda.data.api.KuaimaiInterceptor
 import com.kuaimai.pda.data.api.OrderApiService
+import com.kuaimai.pda.util.AppConstants
 import com.kuaimai.pda.util.SessionExpiredEvent
 import dagger.Module
 import dagger.Provides
@@ -35,9 +36,9 @@ object NetworkModule {
 
     private const val PREFS_NAME = "kuaimai_secure_prefs"
     private const val KEY_BASE_URL = "base_url"
-    private const val DEFAULT_BASE_URL = "https://api.kuaimai.com/router"
+    private const val DEFAULT_BASE_URL = AppConstants.KUAIMAI_API_URL
     private const val KEY_SERVER_URL = "server_url"
-    private const val DEFAULT_SERVER_URL = "http://10.0.2.2:8000"
+    private const val DEFAULT_SERVER_URL = AppConstants.DEFAULT_SERVER_URL
     private const val TAG = "NetworkModule"
 
     /** 加密SharedPreferences，存储API密钥等敏感配置 */

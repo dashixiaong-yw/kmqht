@@ -18,12 +18,6 @@ interface ProductImageDao {
      * 根据SKU外部编码获取图片列表
      */
     @Query("SELECT * FROM product_image WHERE sku_outer_id = :skuOuterId")
-    fun getImagesBySku(skuOuterId: String): Flow<List<ProductImageEntity>>
-
-    /**
-     * 根据SKU外部编码获取图片列表（旧方法名兼容）
-     */
-    @Query("SELECT * FROM product_image WHERE sku_outer_id = :skuOuterId")
     fun getBySkuOuterId(skuOuterId: String): Flow<List<ProductImageEntity>>
 
     /**

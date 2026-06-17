@@ -14,6 +14,7 @@ import com.kuaimai.pda.data.db.entity.PendingOperationEntity
 import com.kuaimai.pda.data.repository.AuthRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
 import java.io.File
 
 /**
@@ -159,15 +160,15 @@ class OrderSyncWorker(
 
     /**
      * 从JSON payload中提取值
-     * 简单解析，避免引入JSON库
+     * 使用JSONObject解析，正确处理转义字符
      */
     private fun extractPayloadValue(payload: String, key: String): String? {
-        val keyPattern = "\"$key\":"
-        val keyIndex = payload.indexOf(keyPattern) ?: return null
-        val startIndex = payload.indexOf("\"", keyIndex + keyPattern.length)
-        val endIndex = payload.indexOf("\"", startIndex + 1)
-        return if (startIndex != -1 && endIndex != -1) {
-            payload.substring(startIndex + 1, endIndex)
-        } else null
+        return try {
+            val json = JSONObject(payload)
+            if (json.has(key)) json.getString(key) else null
+        } catch (e: Exception) {
+            Log.w(TAG, "解析payload失败: key=$key, error=${e.message}")
+            null
+        }
     }
 }

@@ -22,22 +22,10 @@ interface PickOrderDao {
     fun getAllOrders(): Flow<List<PickOrderEntity>>
 
     /**
-     * 获取进行中的取货单（status=0）
-     */
-    @Query("SELECT * FROM pick_order WHERE status = 0 ORDER BY created_at DESC")
-    fun getActiveOrders(): Flow<List<PickOrderEntity>>
-
-    /**
      * 获取已完成的取货单（7天内），按完成时间倒序
      */
     @Query("SELECT * FROM pick_order WHERE status = 1 AND completed_at >= :sevenDaysAgo ORDER BY completed_at DESC")
     fun getCompletedOrders(sevenDaysAgo: Long): Flow<List<PickOrderEntity>>
-
-    /**
-     * 根据ID获取取货单（Flow版本）
-     */
-    @Query("SELECT * FROM pick_order WHERE id = :id")
-    fun getOrderById(id: Long): Flow<PickOrderEntity?>
 
     /**
      * 根据ID获取取货单（挂起版本）

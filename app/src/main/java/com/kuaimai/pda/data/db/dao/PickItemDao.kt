@@ -27,12 +27,6 @@ interface PickItemDao {
     fun getItemsByOrder(orderId: Long): Flow<List<PickItemEntity>>
 
     /**
-     * 根据ID获取明细（Flow版本）
-     */
-    @Query("SELECT * FROM pick_item WHERE id = :id")
-    fun getItemById(id: Long): Flow<PickItemEntity?>
-
-    /**
      * 根据ID获取明细（挂起版本）
      */
     @Query("SELECT * FROM pick_item WHERE id = :id")

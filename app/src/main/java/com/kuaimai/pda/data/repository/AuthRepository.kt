@@ -2,6 +2,7 @@ package com.kuaimai.pda.data.repository
 
 import android.content.SharedPreferences
 import com.kuaimai.pda.data.api.KuaimaiApiService
+import com.kuaimai.pda.util.AppConstants
 import javax.inject.Inject
 
 /**
@@ -33,7 +34,7 @@ class AuthRepositoryImpl @Inject constructor(
         private const val KEY_APP_KEY = "app_key"
         private const val KEY_APP_SECRET = "app_secret"
         private const val KEY_BASE_URL = "base_url"
-        private const val DEFAULT_BASE_URL = "https://api.kuaimai.com/router"
+        private const val DEFAULT_BASE_URL = AppConstants.KUAIMAI_API_URL
     }
 
     override suspend fun refreshSession(): Boolean {

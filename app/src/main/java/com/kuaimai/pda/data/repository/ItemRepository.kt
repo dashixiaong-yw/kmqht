@@ -4,9 +4,6 @@ import com.kuaimai.pda.data.api.KuaimaiApiService
 import com.kuaimai.pda.data.api.dto.ItemListResponse
 import com.kuaimai.pda.data.api.dto.SkuListResponse
 import com.kuaimai.pda.data.api.dto.SupplierListResponse
-import com.kuaimai.pda.data.db.dao.PickItemDao
-import com.kuaimai.pda.data.db.dao.PickOrderDao
-import com.kuaimai.pda.data.db.dao.ProductImageDao
 import javax.inject.Inject
 
 /**
@@ -23,10 +20,7 @@ interface ItemRepository {
  * 商品数据仓库实现
  */
 class ItemRepositoryImpl @Inject constructor(
-    private val apiService: KuaimaiApiService,
-    private val pickOrderDao: PickOrderDao,
-    private val pickItemDao: PickItemDao,
-    private val productImageDao: ProductImageDao
+    private val apiService: KuaimaiApiService
 ) : ItemRepository {
 
     override suspend fun queryItemList(params: Map<String, String>): ItemListResponse {

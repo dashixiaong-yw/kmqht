@@ -34,6 +34,13 @@ class KuaimaiInterceptor @Inject constructor(
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()
+
+        // 仅对快麦API请求添加签名，后端API请求跳过
+        val host = originalRequest.url.host
+        if (!host.contains("kuaimai.com")) {
+            return chain.proceed(originalRequest)
+        }
+
         val appKey = prefs.getString(KEY_APP_KEY, "") ?: ""
         val appSecret = prefs.getString(KEY_APP_SECRET, "") ?: ""
         val accessToken = prefs.getString(KEY_ACCESS_TOKEN, "") ?: ""

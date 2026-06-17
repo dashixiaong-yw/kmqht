@@ -33,6 +33,10 @@ interface PickOrderRepository {
     suspend fun deleteOrder(order: PickOrderEntity)
     /** 获取冲突操作列表 */
     suspend fun getConflicts(): List<PendingOperationEntity>
+    /** 更新备注（乐观更新本地+写入离线队列） */
+    suspend fun updateRemarkWithQueue(id: Long, remark: String)
+    /** 更新供应商（乐观更新本地+写入离线队列） */
+    suspend fun updateSupplierWithQueue(id: Long, supplierName: String, supplierCode: String)
 }
 
 /**
@@ -119,7 +123,7 @@ class PickOrderRepositoryImpl @Inject constructor(
                 operationType = "update_remark",
                 orderId = item.orderId,
                 targetId = id,
-                payload = """{"remark":"$remark"}"""
+                payload = """{"remark":"${TimeUtils.escapeJson(remark)}"}"""
             )
         }
     }
@@ -134,13 +138,43 @@ class PickOrderRepositoryImpl @Inject constructor(
                 operationType = "update_supplier",
                 orderId = item.orderId,
                 targetId = id,
-                payload = """{"supplier_name":"$supplierName","supplier_code":"$supplierCode"}"""
+                payload = """{"supplier_name":"${TimeUtils.escapeJson(supplierName)}","supplier_code":"${TimeUtils.escapeJson(supplierCode)}"}"""
             )
         }
     }
 
     override suspend fun getConflicts(): List<PendingOperationEntity> {
         return pendingOperationDao.getConflicts()
+    }
+
+    override suspend fun updateRemarkWithQueue(id: Long, remark: String) {
+        // 乐观更新本地
+        pickItemDao.updateRemark(id, remark)
+        // 写入离线队列
+        val item = pickItemDao.getById(id)
+        if (item != null) {
+            enqueueOperation(
+                operationType = "update_remark",
+                orderId = item.orderId,
+                targetId = id,
+                payload = """{"remark":"${TimeUtils.escapeJson(remark)}"}"""
+            )
+        }
+    }
+
+    override suspend fun updateSupplierWithQueue(id: Long, supplierName: String, supplierCode: String) {
+        // 乐观更新本地
+        pickItemDao.updateSupplier(id, supplierName, supplierCode)
+        // 写入离线队列
+        val item = pickItemDao.getById(id)
+        if (item != null) {
+            enqueueOperation(
+                operationType = "update_supplier",
+                orderId = item.orderId,
+                targetId = id,
+                payload = """{"supplier_name":"${TimeUtils.escapeJson(supplierName)}","supplier_code":"${TimeUtils.escapeJson(supplierCode)}"}"""
+            )
+        }
     }
 
     override suspend fun deleteOrder(order: PickOrderEntity) {

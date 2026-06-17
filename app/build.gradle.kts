@@ -13,8 +13,8 @@ android {
         applicationId = "com.kuaimai.pda"
         minSdk = 24
         targetSdk = 34
-        versionCode = 5
-        versionName = "0.5"
+        versionCode = 7
+        versionName = "0.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -44,6 +44,8 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
+        // 全局opt-in：CameraX ExperimentalGetImage
+        freeCompilerArgs += listOf("-opt-in=androidx.camera.core.ExperimentalGetImage")
     }
 
     buildFeatures {
