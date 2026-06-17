@@ -12,6 +12,7 @@ local.properties
 .env.local
 .env.*.local
 credentials.json
+kuaimai.json
 
 # Python 缓存
 __pycache__/
