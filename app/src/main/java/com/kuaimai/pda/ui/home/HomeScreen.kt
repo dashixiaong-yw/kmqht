@@ -35,6 +35,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -80,13 +81,28 @@ fun HomeScreen(
 
     // 会话即将过期预警（距过期<5天）
     var showSessionWarning by remember { mutableStateOf(false) }
+    var sessionWarningText by remember { mutableStateOf("") }
     LaunchedEffect(authRepository) {
         if (authRepository != null) {
             val expireTime = authRepository.getSessionExpireTime()
             if (expireTime > 0L) {
                 val now = System.currentTimeMillis()
-                val daysLeft = (expireTime - now) / (1000 * 60 * 60 * 24)
-                showSessionWarning = daysLeft in 0..(AppConstants.SESSION_WARNING_DAYS - 1)
+                if (expireTime <= now) {
+                    showSessionWarning = true
+                    sessionWarningText = "会话已过期，请重新授权"
+                } else {
+                    val daysLeft = (expireTime - now) / (1000L * 60 * 60 * 24)
+                    val hoursLeft = (expireTime - now) / (1000L * 60 * 60)
+                    if (daysLeft < AppConstants.SESSION_WARNING_DAYS) {
+                        showSessionWarning = true
+                        sessionWarningText = when {
+                            daysLeft > 1 -> "会话将在${daysLeft}天后过期，请及时刷新"
+                            daysLeft == 1L -> "会话将在1天后过期，请及时刷新"
+                            hoursLeft > 0 -> "会话将在${hoursLeft}小时后过期，请立即刷新"
+                            else -> "会话即将过期，请立即刷新"
+                        }
+                    }
+                }
             }
         }
     }
@@ -95,7 +111,7 @@ fun HomeScreen(
     var showTokenExpiredDialog by remember { mutableStateOf(false) }
     LaunchedEffect(authRepository) {
         if (authRepository != null) {
-            authRepository.tokenRefreshFailed.collect {
+            authRepository.tokenRefreshFailed.collectLatest {
                 showTokenExpiredDialog = true
             }
         }
@@ -183,7 +199,7 @@ fun HomeScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "会话即将过期，请及时刷新",
+                        text = sessionWarningText,
                         style = MaterialTheme.typography.bodyMedium.copy(
                             color = WarningText,
                             fontWeight = FontWeight.Medium

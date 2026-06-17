@@ -67,13 +67,17 @@ async def _call_api(method: str, extra_params: Optional[Dict[str, Any]] = None) 
             result: Dict[str, Any] = response.json()
 
         # 检查API错误
-        error_response = result.get(f"{method.replace('.', '_')}_response", {})
         if "error_response" in result:
             error = result["error_response"]
             logger.error(f"快麦API错误: code={error.get('code')}, msg={error.get('zh_desc', error.get('msg'))}")
             raise ValueError(f"快麦API错误: {error.get('msg', '未知错误')}")
 
-        return error_response
+        # 提取API响应数据
+        api_response = result.get(f"{method.replace('.', '_')}_response", {})
+        if not api_response:
+            logger.warning(f"快麦API响应中缺少{method.replace('.', '_')}_response字段")
+
+        return api_response
     except httpx.TimeoutException as e:
         logger.error(f"快麦API请求超时: {e}")
         raise
@@ -85,7 +89,7 @@ async def _call_api(method: str, extra_params: Optional[Dict[str, Any]] = None) 
         raise
 
 
-# ==================== 7个API方法 ====================
+# ==================== 2个API方法 ====================
 
 async def get_sku_by_outer_id(sku_outer_id: str) -> Optional[Dict[str, Any]]:
     """根据外部编码获取SKU信息"""

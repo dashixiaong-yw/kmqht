@@ -338,13 +338,18 @@ def complete_all_items(order_id: int, user: dict = Depends(get_current_user)) ->
 
 @router.delete("/{order_id}", response_model=BaseResponse)
 def delete_order(order_id: int, user: dict = Depends(get_current_user)) -> BaseResponse:
-    """删除取货单（级联删除明细）"""
+    """删除取货单（仅允许删除未完成的取货单，级联删除明细）"""
     db = get_db()
     cursor = db.cursor()
 
-    cursor.execute("SELECT id FROM pick_orders WHERE id = ?", (order_id,))
-    if not cursor.fetchone():
+    cursor.execute("SELECT id, status FROM pick_orders WHERE id = ?", (order_id,))
+    order_row = cursor.fetchone()
+    if not order_row:
         raise HTTPException(status_code=404, detail="取货单不存在")
+
+    # 不允许删除已完成的取货单
+    if order_row["status"] == 1:
+        raise HTTPException(status_code=400, detail="已完成的取货单不能删除")
 
     try:
         # 先收集该订单关联的SKU（在级联删除前）

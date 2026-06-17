@@ -180,7 +180,7 @@ class SettingsViewModel @Inject constructor(
         }
         _serverUrl.value = trimmed
         prefs.edit().putString(PrefsKeys.KEY_SERVER_URL, trimmed).apply()
-        _successMessage.value = "服务器地址已保存"
+        _successMessage.value = "服务器地址已保存，重启App后生效"
     }
 
     /**

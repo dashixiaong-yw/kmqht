@@ -143,7 +143,7 @@ fun PickDetailScreen(
 
     // 扫码成功反馈 + 连续扫码清空输入框
     LaunchedEffect(Unit) {
-        viewModel.scanSuccessEvent.collect {
+        viewModel.scanSuccessEvent.collectLatest {
             viewModel.provideFeedback(context, ScanFeedbackType.SUCCESS)
             // 连续扫码模式下清空输入框并重新聚焦
             if (continuousScanMode) {
@@ -155,7 +155,7 @@ fun PickDetailScreen(
 
     // 扫码失败反馈
     LaunchedEffect(Unit) {
-        viewModel.scanFailureEvent.collect { message ->
+        viewModel.scanFailureEvent.collectLatest { message ->
             viewModel.provideFeedback(context, ScanFeedbackType.FAILURE)
         }
     }
@@ -249,17 +249,18 @@ fun PickDetailScreen(
 
                 Spacer(modifier = Modifier.padding(horizontal = 4.dp))
 
-                // 相机扫码按钮
+                // 相机扫码按钮（暂未开放）
                 IconButton(
                     onClick = {
                         // TODO: 启动CameraScanScreen
                     },
+                    enabled = false,
                     modifier = Modifier.padding(start = 4.dp)
                 ) {
                     Icon(
                         Icons.Default.CameraAlt,
                         contentDescription = "相机扫码",
-                        tint = BrandBlue
+                        tint = TextSecondary
                     )
                 }
             }

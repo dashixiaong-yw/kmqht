@@ -41,6 +41,8 @@ interface PickOrderRepository {
     suspend fun deleteItemWithQueue(id: Long)
     /** 直接删除取货明细（不入队，用于在线模式API成功后） */
     suspend fun deleteItemDirect(id: Long)
+    /** 图片上传入队（离线模式下图片上传失败时调用） */
+    suspend fun enqueueUploadImage(skuOuterId: String, payload: String)
 }
 
 /**
@@ -173,6 +175,15 @@ class PickOrderRepositoryImpl @Inject constructor(
     override suspend fun deleteItemDirect(id: Long) {
         // 直接删除本地记录（不入队，用于在线模式API成功后）
         pickItemDao.deleteById(id)
+    }
+
+    override suspend fun enqueueUploadImage(skuOuterId: String, payload: String) {
+        enqueueOperation(
+            operationType = "upload_image",
+            orderId = 0L,
+            targetId = 0L,
+            payload = payload
+        )
     }
 
     override suspend fun deleteOrder(order: PickOrderEntity) {

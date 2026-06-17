@@ -165,7 +165,13 @@ object NetworkModule {
     @Singleton
     @Named("backend")
     fun provideBackendRetrofit(client: OkHttpClient, @Named("encrypted") prefs: SharedPreferences): Retrofit {
-        val serverUrl = prefs.getString(PrefsKeys.KEY_SERVER_URL, DEFAULT_SERVER_URL) ?: DEFAULT_SERVER_URL
+        var serverUrl = prefs.getString(PrefsKeys.KEY_SERVER_URL, DEFAULT_SERVER_URL) ?: DEFAULT_SERVER_URL
+        // 未配置服务器地址时使用占位URL，避免Retrofit.baseUrl()抛异常
+        // 占位URL的请求会失败但不崩溃，用户配置后会重新创建Retrofit
+        if (serverUrl.isBlank()) {
+            serverUrl = "http://localhost:1/"
+            Log.w(TAG, "服务器地址未配置，使用占位URL。请在引导页或设置页配置服务器地址")
+        }
         return Retrofit.Builder()
             .baseUrl(serverUrl)
             .client(client)
@@ -254,7 +260,6 @@ class TokenAuthenticator(
 
     companion object {
         private const val TAG = "TokenAuthenticator"
-        private const val KEY_USER_TOKEN = "user_token"
     }
 
     /** 防止并发刷新 */
@@ -282,7 +287,7 @@ class TokenAuthenticator(
 
         try {
             val systemApiService = systemApiServiceProvider.get()
-            val userToken = prefs.getString(KEY_USER_TOKEN, "") ?: ""
+            val userToken = prefs.getString(PrefsKeys.KEY_USER_TOKEN, "") ?: ""
 
             // 通过后端中转刷新快麦session
             val refreshResult = kotlinx.coroutines.runBlocking {

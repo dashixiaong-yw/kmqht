@@ -1,12 +1,17 @@
-"""系统路由 - 健康检查、崩溃报告、版本信息、快麦会话管理"""
+"""系统路由 - 健康检查、崩溃报告、版本信息、快麦会话管理、扫码配置页面"""
 
+import base64
+import io
 import logging
 import os
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import HTMLResponse
+from starlette.requests import Request
 
 from app.auth import get_current_user
-from app.config import kuaimai_creds
+from app.config import API_KEY, SERVER_URL, kuaimai_creds
 from app.database import get_db
 from app.models import (
     AppVersionResponse,
@@ -114,3 +119,126 @@ async def refresh_kuaimai_session(user: dict = Depends(get_current_user)) -> Kua
             success=False,
             message="session刷新失败，请检查refreshToken是否有效或联系快麦客服",
         )
+
+
+@router.get("/setup", response_class=HTMLResponse)
+def setup_page(request: Request) -> HTMLResponse:
+    """扫码配置页面：显示服务器地址二维码，供PDA扫码配置"""
+    # 确定服务器地址：优先使用环境变量，其次使用请求的host
+    server_url = SERVER_URL
+    if not server_url:
+        # 从请求中推断地址
+        host = request.headers.get("host", "")
+        if host:
+            scheme = "https" if request.url.scheme == "https" else "http"
+            server_url = f"{scheme}://{host}"
+
+    if not server_url:
+        return HTMLResponse(content=_build_error_html(
+            "未配置服务器地址",
+            "请在 .env 文件中设置 SERVER_URL=http://NAS_IP:8900 后重启服务"
+        ))
+
+    # 生成二维码内容：kuaimai://setup?server=xxx&apikey=xxx
+    qr_params: dict[str, str] = {"server": server_url}
+    if API_KEY:
+        qr_params["apikey"] = API_KEY
+    qr_content = f"kuaimai://setup?{urlencode(qr_params)}"
+
+    # 生成二维码图片（base64）
+    qr_base64 = _generate_qr_base64(qr_content)
+
+    return HTMLResponse(content=_build_setup_html(server_url, qr_base64, bool(API_KEY)))
+
+
+def _generate_qr_base64(data: str) -> str:
+    """生成二维码图片的base64编码"""
+    import qrcode
+    img = qrcode.make(data, version=1, box_size=10, border=2)
+    buffer = io.BytesIO()
+    img.save(buffer, format="PNG")
+    return base64.b64encode(buffer.getvalue()).decode("utf-8")
+
+
+def _build_setup_html(server_url: str, qr_base64: str, has_api_key: bool) -> str:
+    """构建配置页面HTML"""
+    api_key_status = "已配置" if has_api_key else "未配置（请在.env中设置API_KEY）"
+    return f"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>快麦取货通 - 扫码配置</title>
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+               background: #f5f5f5; display: flex; justify-content: center; align-items: center;
+               min-height: 100vh; padding: 20px; }}
+        .card {{ background: white; border-radius: 16px; padding: 40px; max-width: 420px;
+                 width: 100%; box-shadow: 0 2px 12px rgba(0,0,0,0.08); text-align: center; }}
+        h1 {{ color: #2563EB; font-size: 24px; margin-bottom: 8px; }}
+        .subtitle {{ color: #666; font-size: 14px; margin-bottom: 24px; }}
+        .qr-wrapper {{ background: white; padding: 16px; border-radius: 12px;
+                       display: inline-block; margin-bottom: 20px; border: 1px solid #e5e7eb; }}
+        .qr-wrapper img {{ width: 240px; height: 240px; }}
+        .info {{ text-align: left; background: #f0f7ff; border-radius: 8px; padding: 16px; }}
+        .info-row {{ display: flex; justify-content: space-between; padding: 6px 0;
+                     font-size: 14px; border-bottom: 1px solid #e0eaff; }}
+        .info-row:last-child {{ border-bottom: none; }}
+        .info-label {{ color: #666; }}
+        .info-value {{ color: #1d4ed8; font-weight: 600; word-break: break-all; }}
+        .tip {{ margin-top: 16px; font-size: 12px; color: #999; line-height: 1.6; }}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>快麦取货通</h1>
+        <p class="subtitle">使用PDA扫描下方二维码完成服务器配置</p>
+        <div class="qr-wrapper">
+            <img src="data:image/png;base64,{qr_base64}" alt="配置二维码" />
+        </div>
+        <div class="info">
+            <div class="info-row">
+                <span class="info-label">服务器地址</span>
+                <span class="info-value">{server_url}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">API Key</span>
+                <span class="info-value">{api_key_status}</span>
+            </div>
+        </div>
+        <p class="tip">
+            PDA首次启动App → 引导页 → 点击"扫码配置" → 扫描上方二维码<br>
+            也可在App设置页面随时修改服务器地址
+        </p>
+    </div>
+</body>
+</html>"""
+
+
+def _build_error_html(title: str, message: str) -> str:
+    """构建错误页面HTML"""
+    return f"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>快麦取货通 - 配置错误</title>
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{ font-family: -apple-system, sans-serif; background: #f5f5f5;
+               display: flex; justify-content: center; align-items: center; min-height: 100vh; }}
+        .card {{ background: white; border-radius: 16px; padding: 40px; max-width: 420px;
+                 width: 100%; box-shadow: 0 2px 12px rgba(0,0,0,0.08); text-align: center; }}
+        h1 {{ color: #dc2626; font-size: 20px; margin-bottom: 12px; }}
+        p {{ color: #666; font-size: 14px; line-height: 1.6; }}
+        code {{ background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-size: 13px; }}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>{title}</h1>
+        <p>{message}</p>
+    </div>
+</body>
+</html>"""

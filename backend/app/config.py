@@ -32,6 +32,9 @@ DB_PATH: str = os.getenv("DB_PATH", "/data/kuaimai.db")
 # 快麦API基础URL（2022年4月1日后申请的APP Key统一使用V2正式环境地址）
 KUAIMAI_API_BASE: str = os.getenv("KUAIMAI_API_BASE", "https://gw.superboss.cc/router")
 
+# 服务器对外暴露地址（用于生成配置二维码，格式：http://IP:PORT）
+SERVER_URL: str = os.getenv("SERVER_URL", "")
+
 # CORS允许的来源（逗号分隔，默认*允许所有，生产环境应限制）
 CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", "*")
 

@@ -18,6 +18,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -56,6 +57,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.kuaimai.pda.BuildConfig
 import com.kuaimai.pda.data.api.dto.UserResponse
 import com.kuaimai.pda.data.repository.UserRepository
+import com.kuaimai.pda.scanner.CameraScanScreen
+import com.kuaimai.pda.util.SetupQrParser
 import com.kuaimai.pda.ui.theme.BrandBlue
 import com.kuaimai.pda.ui.theme.DangerBg
 import com.kuaimai.pda.ui.theme.DangerText
@@ -101,6 +104,26 @@ fun SettingsScreen(
     // 配置状态（移到顶层避免重组不一致）
     var serverUrl by remember { mutableStateOf(viewModel.getServerUrl()) }
     var apiKey by remember { mutableStateOf(viewModel.getApiKey()) }
+    var showScanConfig by remember { mutableStateOf(false) }
+
+    // 扫码配置模式
+    if (showScanConfig) {
+        CameraScanScreen(
+            onBarcodeScanned = { barcode ->
+                showScanConfig = false
+                val result = SetupQrParser.parse(barcode)
+                if (result != null) {
+                    serverUrl = result.serverUrl
+                    if (result.apiKey.isNotEmpty()) {
+                        apiKey = result.apiKey
+                        viewModel.saveApiKey(result.apiKey)
+                    }
+                }
+            },
+            onClose = { showScanConfig = false }
+        )
+        return
+    }
 
     // 用户管理状态
     var isLoadingUsers by remember { mutableStateOf(false) }
@@ -269,12 +292,29 @@ fun SettingsScreen(
                         singleLine = true
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Button(
-                        onClick = { viewModel.saveServerUrl(serverUrl) },
-                        modifier = Modifier.align(Alignment.End),
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryLightBg, contentColor = PrimaryLightText)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
                     ) {
-                        Text("保存")
+                        Button(
+                            onClick = { showScanConfig = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = BrandBlue, contentColor = SurfaceWhite)
+                        ) {
+                            Icon(
+                                Icons.Default.QrCodeScanner,
+                                contentDescription = "扫码配置",
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("扫码配置")
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
+                            onClick = { viewModel.saveServerUrl(serverUrl) },
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryLightBg, contentColor = PrimaryLightText)
+                        ) {
+                            Text("保存")
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))

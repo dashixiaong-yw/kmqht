@@ -6,9 +6,7 @@ import com.kuaimai.pda.util.PrefsKeys
 import com.kuaimai.pda.util.SignUtils
 import com.kuaimai.pda.util.TimeUtils
 import okhttp3.Interceptor
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.json.JSONObject
 import javax.inject.Inject
@@ -16,11 +14,12 @@ import javax.inject.Inject
 /**
  * 快麦API签名拦截器
  * MD5签名流程（与快麦开放平台一致）：
- * 1. 添加公共参数（app_key、timestamp、session、method等）
+ * 1. 添加公共参数（appKey、timestamp、session、method等）
  * 2. 所有参数按key字母排序
  * 3. 拼接 key1value1key2value2...
  * 4. 前后追加appSecret
  * 5. MD5(拼接串) 转大写
+ * 请求格式：form-urlencoded（与后端 httpx data= 和快麦官方一致）
  */
 class KuaimaiInterceptor @Inject constructor(
     private val prefs: SharedPreferences
@@ -73,9 +72,12 @@ class KuaimaiInterceptor @Inject constructor(
         val sign = SignUtils.sign(params, appSecret)
         params["sign"] = sign
 
-        // 重建请求体
-        val newBodyJson = JSONObject(params as Map<Any?, Any?>).toString()
-        val newBody = newBodyJson.toRequestBody("application/json; charset=utf-8".toMediaType())
+        // 重建请求体（form-urlencoded格式，与后端httpx data=一致）
+        val formBody = okhttp3.FormBody.Builder()
+        for ((key, value) in params) {
+            formBody.add(key, value)
+        }
+        val newBody = formBody.build()
 
         val newRequest = originalRequest.newBuilder()
             .method(originalRequest.method, newBody)

@@ -9,8 +9,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -24,9 +27,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.kuaimai.pda.scanner.CameraScanScreen
 import com.kuaimai.pda.ui.settings.SettingsViewModel.Companion.KEY_GUIDE_SHOWN
 import com.kuaimai.pda.ui.settings.SettingsViewModel.Companion.KEY_SCAN_METHOD
 import com.kuaimai.pda.util.PrefsKeys
+import com.kuaimai.pda.util.SetupQrParser
 import com.kuaimai.pda.ui.theme.BrandBlue
 import com.kuaimai.pda.ui.theme.PrimaryLightBg
 import com.kuaimai.pda.ui.theme.PrimaryLightText
@@ -34,7 +39,7 @@ import com.kuaimai.pda.ui.theme.SurfaceWhite
 
 /**
  * 首次使用引导页面
- * Step 1: 配置服务器地址
+ * Step 1: 配置服务器地址（支持扫码配置）
  * Step 2: 选择扫码方式
  * Step 3: 完成
  */
@@ -44,8 +49,28 @@ fun GuideScreen(
     onFinish: () -> Unit
 ) {
     var currentStep by remember { mutableIntStateOf(0) }
-    var serverUrl by remember { mutableStateOf("http://") }
+    var serverUrl by remember { mutableStateOf("") }
+    var apiKey by remember { mutableStateOf("") }
     var selectedScanMethod by remember { mutableIntStateOf(0) }
+    var showCameraScan by remember { mutableStateOf(false) }
+
+    // 扫码配置模式
+    if (showCameraScan) {
+        CameraScanScreen(
+            onBarcodeScanned = { barcode ->
+                showCameraScan = false
+                val result = SetupQrParser.parse(barcode)
+                if (result != null) {
+                    serverUrl = result.serverUrl
+                    if (result.apiKey.isNotEmpty()) {
+                        apiKey = result.apiKey
+                    }
+                }
+            },
+            onClose = { showCameraScan = false }
+        )
+        return
+    }
 
     Column(
         modifier = Modifier
@@ -57,10 +82,17 @@ fun GuideScreen(
         when (currentStep) {
             0 -> StepServerConfig(
                 serverUrl = serverUrl,
+                apiKey = apiKey,
                 onServerUrlChange = { serverUrl = it },
+                onApiKeyChange = { apiKey = it },
+                onScanConfig = { showCameraScan = true },
                 onNext = {
-                    // 保存服务器地址到SharedPreferences
+                    // 保存服务器地址和API Key
                     prefs.edit().putString(PrefsKeys.KEY_SERVER_URL, serverUrl.trim()).apply()
+                    if (apiKey.isNotBlank()) {
+                        // API Key保存到加密SharedPreferences（由SettingsViewModel处理）
+                        prefs.edit().putString(PrefsKeys.KEY_API_KEY, apiKey.trim()).apply()
+                    }
                     currentStep = 1
                 }
             )
@@ -85,12 +117,15 @@ fun GuideScreen(
 }
 
 /**
- * Step 1: 配置服务器地址
+ * Step 1: 配置服务器地址（支持扫码配置）
  */
 @Composable
 private fun StepServerConfig(
     serverUrl: String,
+    apiKey: String,
     onServerUrlChange: (String) -> Unit,
+    onApiKeyChange: (String) -> Unit,
+    onScanConfig: () -> Unit,
     onNext: () -> Unit
 ) {
     Text(
@@ -104,22 +139,60 @@ private fun StepServerConfig(
         style = MaterialTheme.typography.titleMedium
     )
     Spacer(modifier = Modifier.height(24.dp))
+
+    // 扫码配置按钮
+    Button(
+        onClick = onScanConfig,
+        modifier = Modifier.fillMaxWidth(),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = BrandBlue,
+            contentColor = SurfaceWhite
+        )
+    ) {
+        Icon(
+            Icons.Default.QrCodeScanner,
+            contentDescription = "扫码配置",
+            modifier = Modifier.padding(end = 8.dp)
+        )
+        Text("扫码配置（推荐）")
+    }
+
+    Spacer(modifier = Modifier.height(12.dp))
+    Text(
+        text = "或手动输入：",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+
     OutlinedTextField(
         value = serverUrl,
         onValueChange = onServerUrlChange,
         label = { Text("服务器地址") },
-        placeholder = { Text("例如: http://192.168.1.100:8000") },
+        placeholder = { Text("例如: http://192.168.1.100:8900") },
         singleLine = true,
         modifier = Modifier.fillMaxWidth()
     )
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    OutlinedTextField(
+        value = apiKey,
+        onValueChange = onApiKeyChange,
+        label = { Text("API Key（可选）") },
+        placeholder = { Text("扫码配置时自动填入") },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth()
+    )
+
     Spacer(modifier = Modifier.height(32.dp))
     Button(
         onClick = onNext,
         enabled = serverUrl.startsWith("http"),
         modifier = Modifier.fillMaxWidth(),
         colors = ButtonDefaults.buttonColors(
-            containerColor = BrandBlue,
-            contentColor = SurfaceWhite
+            containerColor = PrimaryLightBg,
+            contentColor = PrimaryLightText
         )
     ) {
         Text("下一步")

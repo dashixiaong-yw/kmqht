@@ -1,5 +1,6 @@
 package com.kuaimai.pda.ui.product
 
+import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
 import androidx.lifecycle.SavedStateHandle
@@ -17,6 +18,8 @@ import com.kuaimai.pda.util.AppConstants
 import com.kuaimai.pda.util.PrefsKeys
 import com.kuaimai.pda.util.TimeUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -66,7 +69,8 @@ class ProductViewModel @Inject constructor(
     private val pickOrderRepository: PickOrderRepository,
     private val imageRepository: ImageRepository,
     private val apiService: KuaimaiApiService,
-    private val prefs: SharedPreferences
+    private val prefs: SharedPreferences,
+    @ApplicationContext private val appContext: Context
 ) : ViewModel() {
 
     companion object {
@@ -84,6 +88,9 @@ class ProductViewModel @Inject constructor(
 
     /** 当前取货单ID（从导航参数获取，用于精确查询当前订单下的SKU） */
     private var currentOrderId: Long = 0L
+
+    /** 图片加载协程Job，用于取消旧的Flow收集 */
+    private var imagesJob: Job? = null
 
     init {
         val skuOuterId: String = savedStateHandle["skuOuterId"] ?: ""
@@ -138,22 +145,26 @@ class ProductViewModel @Inject constructor(
     }
 
     /**
-     * 加载SKU图片
+     * 加载SKU图片（启动新协程收集，取消旧的避免泄漏）
      */
-    private suspend fun loadImages(skuOuterId: String) {
-        try {
-            val serverUrl = prefs.getString(PrefsKeys.KEY_SERVER_URL, DEFAULT_SERVER_URL) ?: DEFAULT_SERVER_URL
-            productImageDao.getBySkuOuterId(skuOuterId).collectLatest { images ->
-                val areaImage = images.find { it.imageType == "area" }
-                val boxImage = images.find { it.imageType == "box" }
-                _uiState.value = _uiState.value.copy(
-                    areaImageUrl = areaImage?.let { "$serverUrl${it.imageUrl}" },
-                    boxImageUrl = boxImage?.let { "$serverUrl${it.imageUrl}" }
-                )
+    private fun loadImages(skuOuterId: String) {
+        // 取消之前的收集协程
+        imagesJob?.cancel()
+        imagesJob = viewModelScope.launch {
+            try {
+                val serverUrl = prefs.getString(PrefsKeys.KEY_SERVER_URL, DEFAULT_SERVER_URL) ?: DEFAULT_SERVER_URL
+                productImageDao.getBySkuOuterId(skuOuterId).collectLatest { images ->
+                    val areaImage = images.find { it.imageType == "area" }
+                    val boxImage = images.find { it.imageType == "box" }
+                    _uiState.value = _uiState.value.copy(
+                        areaImageUrl = areaImage?.let { "$serverUrl${it.imageUrl}" },
+                        boxImageUrl = boxImage?.let { "$serverUrl${it.imageUrl}" }
+                    )
+                }
+            } catch (e: Exception) {
+                // 图片加载失败不阻塞主流程，但记录日志
+                Log.w("ProductViewModel", "加载SKU图片失败: ${e.message}")
             }
-        } catch (e: Exception) {
-            // 图片加载失败不阻塞主流程，但记录日志
-            Log.w("ProductViewModel", "加载SKU图片失败: ${e.message}")
         }
     }
 
@@ -334,10 +345,26 @@ class ProductViewModel @Inject constructor(
                 }
                 _uiState.value = _uiState.value.copy(isUploading = false, uploadProgress = 100)
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isUploading = false,
-                    error = "上传图片失败: ${e.message}"
-                )
+                // 离线支持：将图片复制到持久目录并入队等待网络恢复后上传
+                try {
+                    val pendingDir = File(appContext.filesDir, "pending_images")
+                    pendingDir.mkdirs()
+                    val pendingFile = File(pendingDir, "${skuOuterId}_${imageType}_${System.currentTimeMillis()}.jpg")
+                    imageFile.copyTo(pendingFile, overwrite = true)
+
+                    val payload = """{"sku_outer_id":"${TimeUtils.escapeJson(skuOuterId)}","image_type":"${imageType}","file_path":"${pendingFile.absolutePath}"}"""
+                    pickOrderRepository.enqueueUploadImage(skuOuterId, payload)
+
+                    _uiState.value = _uiState.value.copy(
+                        isUploading = false,
+                        error = "图片将在网络恢复后自动上传"
+                    )
+                } catch (queueError: Exception) {
+                    _uiState.value = _uiState.value.copy(
+                        isUploading = false,
+                        error = "上传图片失败: ${e.message}"
+                    )
+                }
             }
         }
     }

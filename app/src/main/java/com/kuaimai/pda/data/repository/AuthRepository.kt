@@ -40,7 +40,6 @@ class AuthRepositoryImpl @Inject constructor(
 
     companion object {
         private const val DEFAULT_BASE_URL = AppConstants.KUAIMAI_API_URL
-        private const val KEY_USER_TOKEN = "user_token"
     }
 
     /** Token刷新失败事件流 */
@@ -49,7 +48,7 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun refreshSession(): Boolean {
         return try {
-            val userToken = prefs.getString(KEY_USER_TOKEN, "") ?: ""
+            val userToken = prefs.getString(PrefsKeys.KEY_USER_TOKEN, "") ?: ""
             val result = systemApiService.refreshSession(userToken)
             if (result.success) {
                 true

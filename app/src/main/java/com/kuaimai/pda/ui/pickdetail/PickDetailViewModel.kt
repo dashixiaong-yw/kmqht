@@ -218,6 +218,7 @@ class PickDetailViewModel @Inject constructor(
      */
     fun completeAllItems() {
         viewModelScope.launch {
+            _isLoading.value = true
             try {
                 val token = userRepository.getToken()
                 orderApiService.completeAllItems(token, orderId)
@@ -230,7 +231,17 @@ class PickDetailViewModel @Inject constructor(
                 pickOrderRepository.updateOrderStatus(orderId, 1, now)
                 loadOrder()
             } catch (e: Exception) {
+                // API失败，使用乐观更新+入队（离线模式自动走此路径）
+                val currentItems = items.value
+                val now = TimeUtils.now()
+                currentItems.filter { it.status == 0 }.forEach { item ->
+                    pickOrderRepository.updateItemStatus(item.id, 1, now)
+                }
+                pickOrderRepository.updateOrderStatus(orderId, 1, now)
+                loadOrder()
                 _errorMessage.value = "批量完成失败: ${e.message}"
+            } finally {
+                _isLoading.value = false
             }
         }
     }
@@ -317,6 +328,7 @@ class PickDetailViewModel @Inject constructor(
      */
     fun deleteItem(itemId: Long) {
         viewModelScope.launch {
+            _isLoading.value = true
             try {
                 // 在线模式：先API，成功后直接删除本地（不入队）
                 val token = userRepository.getToken()
@@ -327,6 +339,8 @@ class PickDetailViewModel @Inject constructor(
                 // API失败，使用乐观更新+入队（离线模式自动走此路径）
                 pickOrderRepository.deleteItemWithQueue(itemId)
                 _errorMessage.value = "删除失败: ${e.message}"
+            } finally {
+                _isLoading.value = false
             }
         }
     }
