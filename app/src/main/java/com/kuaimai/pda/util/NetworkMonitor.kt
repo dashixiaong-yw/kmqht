@@ -6,6 +6,7 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.util.Log
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,8 +19,12 @@ import javax.inject.Singleton
  */
 @Singleton
 class NetworkMonitor @Inject constructor(
-    private val context: Context
+    @ApplicationContext private val context: Context
 ) {
+
+    init {
+        register()
+    }
 
     enum class Status {
         ONLINE, OFFLINE, WEAK

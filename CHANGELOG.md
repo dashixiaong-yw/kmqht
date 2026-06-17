@@ -1,5 +1,19 @@
 # 快麦取货通 - 变更日志
 
+## 1.26 (2026-06-18)
+
+### 修复
+- HIGH: NetworkMonitor.register()从未被调用——网络状态指示器始终显示"已离线"
+- HIGH: HomeScreen未传递networkMonitor参数——首页不显示网络状态条（v1.25遗漏）
+- MEDIUM: NetworkMonitor Context注入缺少@ApplicationContext限定符——Hilt编译失败
+- LOW: .env.docker.example SERVER_URL注释改进（增加FRP穿透说明）
+
+### 修改
+- AppNavigation.kt 新增 networkMonitor 参数传递到 HomeScreen
+- HomeScreen.kt 新增 DisposableEffect 生命周期管理网络监听
+- MainActivity.kt 新增 @Inject NetworkMonitor 注入 + import
+- NetworkMonitor.kt 重构为 by lazy + init自动register + @ApplicationContext
+
 ## 1.25 (2026-06-18)
 
 ### 修复

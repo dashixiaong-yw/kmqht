@@ -30,24 +30,36 @@ FRP 外部（frp-off.com:64623）
 
 ### ⚠️ 关于"之前修改的自动获取服务器 IP"
 
-你提到的代码在 [admin.py:L27-L28](file:///d:/trea项目/快麦取货通/backend/app/routers/admin.py#L27-L28)：
+整个项目中 **有且只有2处** 使用 `SERVER_URL` + 自动获取 Host 的逻辑，都在后端：
 
+#### 位置 1：admin.py:L28（二维码生成）
+
+[admin.py:L27-L28](file:///d:/trea项目/快麦取货通/backend/app/routers/admin.py#L27-L28)
 ```python
+# 优先用环境变量 SERVER_URL（兼容反向代理），否则从请求 Host 自动获取
 base_url = SERVER_URL if SERVER_URL else str(request.base_url).rstrip("/")
 ```
 
-**会和 FRP 外部地址冲突吗？不会。**
+#### 位置 2：system.py:L88（OTA APK 下载地址）
 
-这里的逻辑是 **三目运算符**：当 `SERVER_URL` 有值时直接使用，跳过自动获取。只有 `SERVER_URL` 为空字符串（默认值 `""`）时，才从浏览器请求的 Host 自动获取。
+[system.py:L87-L92](file:///d:/trea项目/快麦取货通/backend/app/routers/system.py#L87-L92)
+```python
+# 优先用环境变量 SERVER_URL（兼容反向代理），否则从请求 Host 自动获取
+base_url = SERVER_URL.rstrip("/") if SERVER_URL else str(request.base_url).rstrip("/")
 
-也就是说：
+return AppVersionResponse(
+    ...
+    downloadUrl=f"{base_url}/apk/{info.get('apkFileName', '')}",
+```
 
-| 场景 | `SERVER_URL` 值 | 二维码生成的地址 |
-|:-----|:----------------|:-----------------|
-| 不设置（当前状态） | `""`（未配置） | 自动获取：`http://NAS内网IP:8900` |
-| **设置 FRP 地址（我们要做的）** | `http://frp-off.com:64623` | **使用 FRP 地址：`http://frp-off.com:64623`** |
+两者逻辑完全一致（`SERVER_URL` 优先 → 自动获取作为 fallback）。
 
-**结论：完全兼容，无冲突。** 之前的自动获取逻辑只是保底方案，我们显式设置 `SERVER_URL` 后它就被跳过了，二维码直接生成正确的 FRP 外部地址。
+| 场景 | `SERVER_URL` 值 | 影响 QR 码 | 影响 APK 下载 |
+|:-----|:----------------|:-----------|:--------------|
+| 不设置（当前） | `""`（未配置） | 自动获取内网 IP | 自动获取内网 IP |
+| **设置 FRP（我们要做的）** | `http://frp-off.com:64623` | **FRP 外部地址** | **FRP 外部地址** |
+
+**结论：完全兼容，无冲突。** 两处代码都使用同样的模式——`SERVER_URL` 有值时直接使用，自动获取只作为保底。一个 `.env` 配置变更同时解决两处。
 
 ## 二、改动方案
 

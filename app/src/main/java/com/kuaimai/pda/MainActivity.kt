@@ -20,6 +20,7 @@ import com.kuaimai.pda.ui.theme.KuaimaiTheme
 import com.kuaimai.pda.update.AppUpdateManager
 import com.kuaimai.pda.update.CheckResult
 import com.kuaimai.pda.update.DownloadState
+import com.kuaimai.pda.util.NetworkMonitor
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
