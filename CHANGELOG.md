@@ -3,6 +3,9 @@
 ## 1.3 (2026-06-17)
 
 ### 修复
+- 修复PickDetailScreen未传入库区图/装箱图URL给PickItemRow，导致待办行小方块只显示文字占位（P1）
+- 修复库区图/装箱图点击回调未处理，改为跳转商品详情页（P1）
+- 修复下拉刷新动画不显示，改用viewModel.isRefreshing StateFlow替代本地状态（P2）
 - 修复images.py缺少sqlite3导入导致图片查询接口崩溃（P0）
 - 修复UserRepository.kt引用未定义KEY_USER_ID常量导致编译失败（P0）
 - 修复handleAuthError使用GlobalScope反模式，改用应用级CoroutineScope（P0）

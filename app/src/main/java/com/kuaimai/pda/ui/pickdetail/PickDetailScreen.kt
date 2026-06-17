@@ -106,7 +106,7 @@ fun PickDetailScreen(
     val focusRequester = remember { FocusRequester() }
     var scanInput by remember { mutableStateOf("") }
     val context = LocalContext.current
-    var isRefreshing by remember { mutableStateOf(false) }
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
     var showDeleteConfirm by remember { mutableStateOf<PickItemEntity?>(null) }
 
     // GAP-05: 屏幕常亮
@@ -180,9 +180,7 @@ fun PickDetailScreen(
         PullToRefreshBox(
             isRefreshing = isRefreshing,
             onRefresh = {
-                isRefreshing = true
                 viewModel.refresh()
-                isRefreshing = false
             },
             modifier = Modifier
                 .fillMaxSize()
@@ -292,12 +290,25 @@ fun PickDetailScreen(
                     items = filteredItems,
                     key = { it.id }
                 ) { item ->
+                    // GAP-01: 查询SKU图片URL
+                    var areaImageUrl by remember { mutableStateOf<String?>(null) }
+                    var boxImageUrl by remember { mutableStateOf<String?>(null) }
+                    LaunchedEffect(item.skuOuterId) {
+                        val urls = viewModel.getImageUrls(item.skuOuterId)
+                        areaImageUrl = urls.first
+                        boxImageUrl = urls.second
+                    }
+
                     PickItemRow(
                         item = item,
                         onComplete = { viewModel.completeItem(item.id) },
                         onRestore = { viewModel.restoreItem(item.id) },
                         onLongPress = { showDeleteConfirm = item },
-                        onImageClick = { onNavigateToProduct(item.skuOuterId) }
+                        onImageClick = { onNavigateToProduct(item.skuOuterId) },
+                        areaImageUrl = areaImageUrl,
+                        boxImageUrl = boxImageUrl,
+                        onAreaImageClick = { onNavigateToProduct(item.skuOuterId) },
+                        onBoxImageClick = { onNavigateToProduct(item.skuOuterId) }
                     )
                 }
             }

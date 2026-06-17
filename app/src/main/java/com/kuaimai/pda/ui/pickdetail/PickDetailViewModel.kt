@@ -7,6 +7,7 @@ import com.kuaimai.pda.data.api.OrderApiService
 import com.kuaimai.pda.data.api.dto.AddOrderItemRequest
 import com.kuaimai.pda.data.db.entity.PickItemEntity
 import com.kuaimai.pda.data.db.entity.PickOrderEntity
+import com.kuaimai.pda.data.repository.ImageRepository
 import com.kuaimai.pda.data.repository.PickOrderRepository
 import com.kuaimai.pda.scanner.ScanFeedbackType
 import com.kuaimai.pda.scanner.ScannerManager
@@ -31,7 +32,8 @@ class PickDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val pickOrderRepository: PickOrderRepository,
     private val orderApiService: OrderApiService,
-    private val scannerManager: ScannerManager
+    private val scannerManager: ScannerManager,
+    private val imageRepository: ImageRepository
 ) : ViewModel() {
 
     /** 取货单ID */
@@ -288,5 +290,20 @@ class PickDetailViewModel @Inject constructor(
      */
     fun provideFeedback(context: android.content.Context, type: ScanFeedbackType) {
         scannerManager.provideFeedback(context, type)
+    }
+
+    /**
+     * 获取SKU的库区图和装箱图URL
+     * @param skuOuterId SKU外部编码
+     * @return Pair(areaImageUrl, boxImageUrl)
+     */
+    suspend fun getImageUrls(skuOuterId: String): Pair<String?, String?> {
+        return try {
+            val areaImage = imageRepository.getImageBySkuAndType(skuOuterId, "area")
+            val boxImage = imageRepository.getImageBySkuAndType(skuOuterId, "box")
+            Pair(areaImage?.imageUrl, boxImage?.imageUrl)
+        } catch (e: Exception) {
+            Pair(null, null)
+        }
     }
 }
