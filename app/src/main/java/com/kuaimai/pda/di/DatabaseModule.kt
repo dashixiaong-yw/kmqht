@@ -2,8 +2,6 @@ package com.kuaimai.pda.di
 
 import android.content.Context
 import androidx.room.Room
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
 import com.kuaimai.pda.data.db.AppDatabase
 import com.kuaimai.pda.data.db.dao.PickItemDao
 import com.kuaimai.pda.data.db.dao.PickOrderDao
@@ -17,7 +15,7 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
 /**
- * 数据库层依赖注入：Room Database + DAO + Migration
+ * 数据库层依赖注入：Room Database + DAO
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -34,7 +32,7 @@ object DatabaseModule {
             AppDatabase::class.java,
             "kuaimai_pda.db"
         )
-            .addMigrations(MIGRATION_1_2)
+            // 后续版本升级时在此添加 .addMigrations(MIGRATION_X_Y)
             .build()
     }
 
@@ -60,15 +58,5 @@ object DatabaseModule {
     @Provides
     fun providePendingOperationDao(db: AppDatabase): PendingOperationDao {
         return db.pendingOperationDao()
-    }
-
-    /**
-     * 数据库迁移占位：1→2
-     * 后续版本升级时补充具体SQL
-     */
-    val MIGRATION_1_2 = object : Migration(1, 2) {
-        override fun migrate(db: SupportSQLiteDatabase) {
-            // TODO: 后续版本升级时补充迁移SQL
-        }
     }
 }

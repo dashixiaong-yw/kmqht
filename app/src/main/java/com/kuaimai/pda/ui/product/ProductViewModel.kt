@@ -80,8 +80,13 @@ class ProductViewModel @Inject constructor(
     /** 当前SKU对应的PickItem（可能为null，如果不在取货单中） */
     private var currentItem: PickItemEntity? = null
 
+    /** 当前取货单ID（从导航参数获取，用于精确查询当前订单下的SKU） */
+    private var currentOrderId: Long = 0L
+
     init {
         val skuOuterId: String = savedStateHandle["skuOuterId"] ?: ""
+        val orderId: Long = savedStateHandle["orderId"] ?: 0L
+        currentOrderId = orderId
         if (skuOuterId.isNotEmpty()) {
             loadSkuInfo(skuOuterId)
         }
@@ -95,8 +100,12 @@ class ProductViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             try {
-                // 先从本地数据库查询
-                val item = pickItemDao.getBySkuOuterId(skuOuterId)
+                // 先从本地数据库查询（优先按当前订单精确查询）
+                val item = if (currentOrderId > 0) {
+                    pickItemDao.getByOrderIdAndSkuOuterId(currentOrderId, skuOuterId)
+                } else {
+                    pickItemDao.getBySkuOuterId(skuOuterId)
+                }
                 if (item != null) {
                     currentItem = item
                     _uiState.value = _uiState.value.copy(
@@ -208,7 +217,7 @@ class ProductViewModel @Inject constructor(
                         operationType = "update_remark",
                         orderId = item.orderId,
                         targetId = item.id,
-                        payload = """{"remark":"${confirmType.remark}"}"""
+                        payload = """{"remark":"${escapeJson(confirmType.remark)}"}"""
                     )
                 }
                 _uiState.value = _uiState.value.copy(isSavingRemark = false)
@@ -281,7 +290,7 @@ class ProductViewModel @Inject constructor(
                         operationType = "update_supplier",
                         orderId = item.orderId,
                         targetId = item.id,
-                        payload = """{"supplier_name":"${confirmType.name}","supplier_code":"${confirmType.code}"}"""
+                        payload = """{"supplier_name":"${escapeJson(confirmType.name)}","supplier_code":"${escapeJson(confirmType.code)}"}"""
                     )
                 }
                 _uiState.value = _uiState.value.copy(
@@ -369,5 +378,17 @@ class ProductViewModel @Inject constructor(
      */
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
+    }
+
+    /**
+     * JSON字符串转义（防止双引号等特殊字符破坏JSON格式）
+     */
+    private fun escapeJson(value: String): String {
+        return value
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r")
+            .replace("\t", "\\t")
     }
 }

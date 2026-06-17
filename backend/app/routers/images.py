@@ -40,7 +40,7 @@ async def upload_image(
     if ext not in _ALLOWED_EXTENSIONS:
         raise HTTPException(status_code=400, detail=f"不支持的图片格式: {ext}")
 
-    # 检查是否已存在同类型图片，如存在则先删除旧文件
+    # 检查是否已存在同类型图片（先记录，稍后删除）
     db = get_db()
     cursor = db.cursor()
     cursor.execute(
@@ -48,18 +48,8 @@ async def upload_image(
         (skuOuterId, imageType)
     )
     existing = cursor.fetchone()
-    if existing:
-        # 删除旧图片文件
-        old_file_path = os.path.join(IMAGE_DIR, existing["file_path"])
-        try:
-            if os.path.exists(old_file_path):
-                os.remove(old_file_path)
-        except IOError as e:
-            logger.warning(f"删除旧图片文件失败: {e}")
-        # 删除旧记录
-        cursor.execute("DELETE FROM product_images WHERE id = ?", (existing["id"],))
 
-    # 保存文件
+    # 先保存新文件，成功后再删除旧文件（防止新文件保存失败时旧文件已丢失）
     now = beijing_now()
     date_dir = now.strftime("%Y%m%d")
     save_dir = os.path.join(IMAGE_DIR, date_dir)
@@ -78,6 +68,16 @@ async def upload_image(
     except IOError as e:
         logger.error(f"保存图片失败: {e}")
         raise HTTPException(status_code=500, detail=f"保存图片失败: {e}")
+
+    # 新文件保存成功，删除旧图片文件和记录
+    if existing:
+        old_file_path = os.path.join(IMAGE_DIR, existing["file_path"])
+        try:
+            if os.path.exists(old_file_path):
+                os.remove(old_file_path)
+        except IOError as e:
+            logger.warning(f"删除旧图片文件失败: {e}")
+        cursor.execute("DELETE FROM product_images WHERE id = ?", (existing["id"],))
 
     # 构建URL
     image_url = f"/images/{date_dir}/{file_name}"

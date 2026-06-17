@@ -3,7 +3,7 @@
 import logging
 import os
 import sqlite3
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
@@ -27,8 +27,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/orders", tags=["取货单"])
 
-_BEIJING_TZ = timezone(timedelta(hours=8))
-
 
 @router.post("", response_model=OrderResponse)
 def create_order(req: CreateOrderRequest) -> OrderResponse:
@@ -40,10 +38,13 @@ def create_order(req: CreateOrderRequest) -> OrderResponse:
     date_str = now.strftime("%Y%m%d")
 
     # 查找当日该拣货区已有单号，递增序号
+    # 转义SQL LIKE通配符，防止拣货区名称包含%或_导致意外匹配
+    escaped_area_name = req.areaName.replace("%", "\\%").replace("_", "\\_")
     prefix = f"{date_str}-{req.areaName}"
+    escaped_prefix = f"{date_str}-{escaped_area_name}"
     cursor.execute(
-        "SELECT order_no FROM pick_orders WHERE order_no LIKE ? ORDER BY id DESC",
-        (f"{prefix}%",)
+        "SELECT order_no FROM pick_orders WHERE order_no LIKE ? ESCAPE '\\' ORDER BY id DESC",
+        (f"{escaped_prefix}%",)
     )
     existing = cursor.fetchall()
     # 单号格式：yyyyMMdd-拣货区X（X从1开始递增）
@@ -68,8 +69,8 @@ def create_order(req: CreateOrderRequest) -> OrderResponse:
             if "UNIQUE constraint" in str(e) and attempt < max_retries - 1:
                 # 单号冲突，重新查询并生成
                 cursor.execute(
-                    "SELECT order_no FROM pick_orders WHERE order_no LIKE ? ORDER BY id DESC",
-                    (f"{prefix}%",)
+                    "SELECT order_no FROM pick_orders WHERE order_no LIKE ? ESCAPE '\\' ORDER BY id DESC",
+                    (f"{escaped_prefix}%",)
                 )
                 existing = cursor.fetchall()
                 order_no = f"{prefix}{len(existing) + 1}"
@@ -308,6 +309,10 @@ def complete_all_items(order_id: int) -> BaseResponse:
     if not order_row:
         raise HTTPException(status_code=404, detail="取货单不存在")
 
+    # 空取货单不允许完成
+    if order_row["total_count"] == 0:
+        raise HTTPException(status_code=400, detail="取货单无明细，无法完成")
+
     now = beijing_now()
     try:
         # 完成所有未完成的明细
@@ -392,6 +397,22 @@ def delete_item(order_id: int, item_id: int) -> BaseResponse:
             (order_id,)
         )
         cursor.execute("DELETE FROM pick_items WHERE id = ?", (item_id,))
+
+        # 检查是否需要将取货单状态从已完成恢复为进行中
+        cursor.execute(
+            "SELECT total_count, completed_count FROM pick_orders WHERE id = ?",
+            (order_id,)
+        )
+        order_info = cursor.fetchone()
+        if order_info and order_info["status"] == 1:
+            new_total = order_info["total_count"]
+            new_completed = order_info["completed_count"]
+            if new_completed < new_total:
+                cursor.execute(
+                    "UPDATE pick_orders SET status = 0, completed_at = NULL WHERE id = ?",
+                    (order_id,)
+                )
+
         db.commit()
         return BaseResponse(message="取货明细已删除")
     except Exception as e:

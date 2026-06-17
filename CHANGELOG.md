@@ -1,5 +1,19 @@
 # 快麦取货通 - 变更日志
 
+## 0.5 (2026-06-17)
+
+### 修复
+- 修复OrderSyncWorker离线同步3个方法全部为空实现（备注/供应商/图片同步现在会实际调用API）
+- 修复KuaimaiInterceptor签名拦截器完全未实现（现在会解析请求体、添加公共参数、计算MD5签名）
+- 修复DatabaseModule注册空MIGRATION_1_2但AppDatabase version=1（删除空迁移防止后续升级数据丢失）
+- 修复ProductViewModel使用全局SKU查询而非当前订单（改为精确查询当前订单下的SKU）
+- 修复ProductViewModel JSON payload注入风险（备注/供应商含双引号时格式被破坏）
+- 修复后端delete_item删除已完成明细后不恢复取货单状态
+- 修复后端complete_all_items空取货单可被标记为已完成
+- 修复后端create_order单号LIKE查询SQL通配符未转义
+- 修复后端images.py上传图片先删旧后存新中间失败会丢失图片（改为先存新后删旧）
+- 清理orders.py中未使用的_BEIJING_TZ和timezone导入
+
 ## 0.4 (2026-06-17)
 
 ### 修复

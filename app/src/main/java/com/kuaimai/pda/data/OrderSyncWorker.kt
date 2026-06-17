@@ -4,12 +4,17 @@ import android.content.Context
 import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.kuaimai.pda.data.api.ImageUploadService
 import com.kuaimai.pda.data.api.KuaimaiApiService
+import com.kuaimai.pda.data.api.dto.ItemUpdateRequest
+import com.kuaimai.pda.data.api.dto.SkuUpdateDto
+import com.kuaimai.pda.data.api.dto.SupplierUpdateDto
 import com.kuaimai.pda.data.db.dao.PendingOperationDao
 import com.kuaimai.pda.data.db.entity.PendingOperationEntity
 import com.kuaimai.pda.data.repository.AuthRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.File
 
 /**
  * 离线操作同步Worker
@@ -22,7 +27,8 @@ class OrderSyncWorker(
     params: WorkerParameters,
     private val pendingOperationDao: PendingOperationDao,
     private val apiService: KuaimaiApiService,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val imageUploadService: ImageUploadService
 ) : CoroutineWorker(context, params) {
 
     companion object {
@@ -97,32 +103,57 @@ class OrderSyncWorker(
     }
 
     /**
-     * 同步备注更新
+     * 同步备注更新 - 调用快麦API更新SKU备注
      */
     private suspend fun syncRemarkUpdate(op: PendingOperationEntity): Boolean {
-        // 解析payload获取remark
         val remark = extractPayloadValue(op.payload, "remark") ?: return false
-        // 调用快麦API更新备注
-        // 实际实现需要构建正确的API请求参数
+        val skuId = extractPayloadValue(op.payload, "sys_sku_id")?.toLongOrNull() ?: return false
+        val itemId = extractPayloadValue(op.payload, "sys_item_id")?.toLongOrNull() ?: return false
+
+        val request = ItemUpdateRequest(
+            id = itemId,
+            method = "erp.item.general.addorupdate",
+            skus = listOf(SkuUpdateDto(skuId = skuId, skuRemark = remark))
+        )
+        val result = apiService.updateItemRemark(request)
+        Log.d(TAG, "备注同步完成: skuId=$skuId remark=$remark result=$result")
         return true
     }
 
     /**
-     * 同步供应商更新
+     * 同步供应商更新 - 调用快麦API更新商品供应商
      */
     private suspend fun syncSupplierUpdate(op: PendingOperationEntity): Boolean {
         val supplierName = extractPayloadValue(op.payload, "supplier_name") ?: return false
         val supplierCode = extractPayloadValue(op.payload, "supplier_code") ?: return false
-        // 调用快麦API更新供应商
+        val itemId = extractPayloadValue(op.payload, "sys_item_id")?.toLongOrNull() ?: return false
+
+        val request = ItemUpdateRequest(
+            id = itemId,
+            method = "erp.item.general.addorupdate",
+            suppliers = listOf(SupplierUpdateDto(supplierCode = supplierCode, supplierName = supplierName))
+        )
+        val result = apiService.updateItemSupplier(request)
+        Log.d(TAG, "供应商同步完成: code=$supplierCode name=$supplierName result=$result")
         return true
     }
 
     /**
-     * 同步图片上传
+     * 同步图片上传 - 调用ImageUploadService上传图片到后端
      */
     private suspend fun syncImageUpload(op: PendingOperationEntity): Boolean {
-        // 图片上传由ImageUploadService直接处理
-        // 此处仅标记为完成
+        val skuOuterId = extractPayloadValue(op.payload, "sku_outer_id") ?: return false
+        val imageType = extractPayloadValue(op.payload, "image_type") ?: return false
+        val filePath = extractPayloadValue(op.payload, "file_path") ?: return false
+
+        val imageFile = File(filePath)
+        if (!imageFile.exists()) {
+            Log.e(TAG, "图片文件不存在: $filePath")
+            return false
+        }
+
+        val imageUrl = imageUploadService.uploadImage(imageFile, imageType, skuOuterId)
+        Log.d(TAG, "图片上传同步完成: skuOuterId=$skuOuterId imageUrl=$imageUrl")
         return true
     }
 
