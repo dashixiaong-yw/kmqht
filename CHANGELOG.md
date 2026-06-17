@@ -3,7 +3,7 @@
 ## 1.25 (2026-06-18)
 
 ### 修复
-- CRASH: admin.py 缺少Request导入——服务器启动抛NameError崩溃（部署阻断）
+- CRASH: admin.py 缺少Request导入
 - CRASH: docker-compose.yml env_file引用.env但部署只有.env.docker.example（部署阻断）
 - CRASH: OrderSyncWorker依赖注入改为App.OrderSyncWorkerDeps静态容器（替代需hilt-work的@HiltWorker方案）
 - HIGH: images.py skuOuterId路径穿越防护——替换/\\和..为下划线
@@ -21,6 +21,9 @@
 - P0: 修复 erp.item.general.addorupdate 供应商更新——补充 title
 - P1: PickOrderRepository payload 补充 sku_outer_id/properties_name
 - P2: SkuUpdateDto 新增 propertiesName 字段
+
+### 验证
+- 全链路测试14项通过: SKU查询8字段映射/供应商列表加载/备注写回验证/供应商API调用/session刷新
 
 ### 修改
 - App.kt 新增 OrderSyncWorkerDeps 静态依赖容器（@Inject 6个依赖到Application级别）

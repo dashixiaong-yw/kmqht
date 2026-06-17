@@ -21,10 +21,6 @@ class NetworkMonitor @Inject constructor(
     private val context: Context
 ) {
 
-    init {
-        register()
-    }
-
     enum class Status {
         ONLINE, OFFLINE, WEAK
     }
@@ -32,8 +28,9 @@ class NetworkMonitor @Inject constructor(
     private val _networkStatus = MutableStateFlow(Status.OFFLINE)
     val networkStatus: StateFlow<Status> = _networkStatus.asStateFlow()
 
-    private val connectivityManager =
+    private val connectivityManager by lazy {
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    }
 
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
@@ -82,7 +79,6 @@ class NetworkMonitor @Inject constructor(
         try {
             connectivityManager.unregisterNetworkCallback(networkCallback)
         } catch (e: Exception) {
-            // 注销时可能未注册，忽略但记录日志
             Log.d("NetworkMonitor", "注销网络监听异常: ${e.message}")
         }
     }

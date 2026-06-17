@@ -29,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -73,6 +74,14 @@ fun HomeScreen(
     prefs: SharedPreferences? = null,
     authRepository: AuthRepository? = null
 ) {
+    // 网络监听注册/注销
+    DisposableEffect(networkMonitor) {
+        networkMonitor?.register()
+        onDispose {
+            networkMonitor?.unregister()
+        }
+    }
+
     // 首次使用引导提示
     var showGuide by remember {
         mutableStateOf(prefs?.getBoolean(KEY_GUIDE_SHOWN, false) != true)
