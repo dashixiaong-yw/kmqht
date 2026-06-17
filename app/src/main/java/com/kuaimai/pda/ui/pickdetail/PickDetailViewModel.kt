@@ -33,7 +33,7 @@ class PickDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val pickOrderRepository: PickOrderRepository,
     private val orderApiService: OrderApiService,
-    private val scannerManager: ScannerManager,
+    val scannerManager: ScannerManager,
     private val imageRepository: ImageRepository,
     private val userRepository: UserRepository
 ) : ViewModel() {
@@ -177,11 +177,13 @@ class PickDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                // 在线模式：先调API，成功后再更新本地
+                // 在线模式：先API，成功后直接更新本地（不入队）
                 val token = userRepository.getToken()
                 orderApiService.completeItem(token, orderId, itemId)
-                pickOrderRepository.updateItemStatus(itemId, 1, TimeUtils.now())
+                pickOrderRepository.updateItemStatusDirect(itemId, 1, TimeUtils.now())
             } catch (e: Exception) {
+                // API失败，使用乐观更新+入队（离线模式自动走此路径）
+                pickOrderRepository.updateItemStatus(itemId, 1, TimeUtils.now())
                 _errorMessage.value = "完成明细失败: ${e.message}"
             } finally {
                 _isLoading.value = false
@@ -197,11 +199,13 @@ class PickDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                // 在线模式：先调API，成功后再更新本地
+                // 在线模式：先API，成功后直接更新本地（不入队）
                 val token = userRepository.getToken()
                 orderApiService.restoreItem(token, orderId, itemId)
-                pickOrderRepository.updateItemStatus(itemId, 0, null)
+                pickOrderRepository.updateItemStatusDirect(itemId, 0, null)
             } catch (e: Exception) {
+                // API失败，使用乐观更新+入队（离线模式自动走此路径）
+                pickOrderRepository.updateItemStatus(itemId, 0, null)
                 _errorMessage.value = "恢复明细失败: ${e.message}"
             } finally {
                 _isLoading.value = false
@@ -217,11 +221,11 @@ class PickDetailViewModel @Inject constructor(
             try {
                 val token = userRepository.getToken()
                 orderApiService.completeAllItems(token, orderId)
-                // 更新本地所有未完成明细状态
+                // API成功后直接更新本地（不入队）
                 val currentItems = items.value
                 val now = TimeUtils.now()
                 currentItems.filter { it.status == 0 }.forEach { item ->
-                    pickOrderRepository.updateItemStatus(item.id, 1, now)
+                    pickOrderRepository.updateItemStatusDirect(item.id, 1, now)
                 }
                 pickOrderRepository.updateOrderStatus(orderId, 1, now)
                 loadOrder()
@@ -314,9 +318,14 @@ class PickDetailViewModel @Inject constructor(
     fun deleteItem(itemId: Long) {
         viewModelScope.launch {
             try {
-                pickOrderRepository.deleteItemWithQueue(itemId)
+                // 在线模式：先API，成功后直接删除本地（不入队）
+                val token = userRepository.getToken()
+                orderApiService.deleteItem(token, orderId, itemId)
+                pickOrderRepository.deleteItemDirect(itemId)
                 loadSuppliers()
             } catch (e: Exception) {
+                // API失败，使用乐观更新+入队（离线模式自动走此路径）
+                pickOrderRepository.deleteItemWithQueue(itemId)
                 _errorMessage.value = "删除失败: ${e.message}"
             }
         }

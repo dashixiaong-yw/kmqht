@@ -40,6 +40,7 @@
 | F31 | 条码格式兼容 | 后端对扫码结果做清洗（trim、去除控制字符），支持纯数字、EAN-13、Code128、QR码等多种格式，异常条码友好提示 |
 | F32 | App冷启动优化 | 避免Application.onCreate中做耗时操作，首页数据用Room缓存秒加载，目标冷启动<2秒 |
 | F35 | Token刷新失败处理 | 快麦API Token刷新失败→弹窗提示"会话已过期，请重新授权"→提供"一键跳转快麦后台重新授权"入口→刷新期间暂停写操作 |
+| F36 | 用户权限控制 | 用户登录认证（UUID Token，7天有效期），5种权限代码控制功能访问（settings/update_supplier/update_remark/manage_area_image/manage_box_image），管理员可增删改查用户及分配权限，登录限流（5次失败锁定5分钟），Token过期自动跳转登录页 |
 
 ### 快麦ERP API映射
 
@@ -151,6 +152,8 @@ com.kuaimai.pda/
 ├── data/                           # 数据层
 │   ├── api/                        # 快麦API
 │   │   ├── KuaimaiApiService.kt
+│   │   ├── UserApiService.kt       # 用户管理API
+│   │   ├── AreaApiService.kt       # 拣货区API（含create/delete）
 │   │   ├── ImageUploadService.kt   # 图片上传API
 │   │   ├── KuaimaiInterceptor.kt   # 签名拦截器
 │   │   └── dto/                    # 请求/响应DTO
@@ -170,7 +173,8 @@ com.kuaimai.pda/
 │       ├── ItemRepository.kt       # 商品信息
 │       ├── PickOrderRepository.kt  # 取货单
 │       ├── ImageRepository.kt      # 图片上传
-│       └── AuthRepository.kt       # 会话管理
+│       ├── AuthRepository.kt       # 会话管理
+│       └── UserRepository.kt       # 用户认证与权限管理
 ├── scanner/                        # 扫码模块
 │   ├── ScannerManager.kt           # 统一扫码管理
 │   ├── PdaScannerReceiver.kt       # 硬件扫描头广播接收
@@ -182,6 +186,11 @@ com.kuaimai.pda/
 │   │   ├── Theme.kt
 │   │   ├── Color.kt
 │   │   └── Alignment.kt          # 统一对齐常量，全局唯一对齐方式入口
+│   ├── login/                      # 登录页
+│   │   ├── LoginScreen.kt
+│   │   └── LoginViewModel.kt
+│   ├── guide/                      # 首次使用引导页
+│   │   └── GuideScreen.kt
 │   ├── home/                       # 主页（模块卡片入口，无底部导航）
 │   │   └── HomeScreen.kt
 │   ├── picklist/                   # 取货列表页
@@ -677,6 +686,41 @@ object AppAlignment {
 
 > **本质**：F18修改的是商品与供应商的**关联关系**。回传快麦ERP成功后，立即更新本地supplier_name/code字段（否则用户改完还看到旧值），同时使后端sku_cache中该SKU的缓存失效。
 
+### 流程10：用户登录（F36）
+
+```
+打开App → 检查本地是否有有效Token →
+  → 有Token：验证Token有效性（调用/api/users/me）→
+    → 有效：进入主页
+    → 无效/过期：跳转登录页
+  → 无Token：显示登录页
+登录页 → 输入用户名+密码 → 调用/api/users/login →
+  → 成功：保存Token+userId+permissions到EncryptedSharedPreferences → 进入主页
+  → 失败：显示错误提示（5次失败锁定5分钟）
+```
+
+> **Token过期处理**：App端通过SharedFlow事件流监听token过期事件，收到事件后自动跳转登录页。ImageUploadService等原生OkHttp请求返回401时也触发跳转。
+
+### 流程11：权限检查（F36）
+
+```
+用户操作需权限的功能 → 检查本地permissions列表 →
+  → 有权限：允许操作
+  → 无权限：提示"无权限执行此操作"
+```
+
+**权限与功能映射**：
+
+| 权限代码 | 控制的功能 |
+|---------|----------|
+| settings | 设置页用户管理、拣货区增删 |
+| update_supplier | 商品详情页修改供应商关联（F18） |
+| update_remark | 商品详情页修改规格备注（F4） |
+| manage_area_image | 上传/删除库区图 |
+| manage_box_image | 上传/删除装箱图 |
+
+> **前端控制仅为体验优化**：UI层根据权限显示/隐藏功能入口，后端同时做权限校验（`check_permission(perm)`），前端控制不作为安全屏障。
+
 ## 数据库设计
 
 ### PickOrderEntity（取货单）
@@ -856,6 +900,42 @@ fun sign(params: Map<String, String>, appSecret: String): String {
 
 > crash日志保留30天，每天凌晨4:00自动清理。
 
+#### users（用户表）
+
+| 字段 | 类型 | 约束 | 说明 |
+|---|---|---|---|
+| id | INTEGER | PK AUTOINCREMENT | 自增主键 |
+| username | VARCHAR(64) | UNIQUE NOT NULL | 用户名 |
+| password_hash | VARCHAR(128) | NOT NULL | bcrypt密码哈希 |
+| is_active | INTEGER | NOT NULL DEFAULT 1 | 是否启用：0-禁用 1-启用，CHECK(is_active IN (0,1)) |
+| created_at | DATETIME | NOT NULL | 创建时间（北京时间） |
+| updated_at | DATETIME | NOT NULL | 更新时间（北京时间） |
+
+> **默认管理员**：系统初始化时自动创建 `admin/admin123` 用户，分配全部5个权限。
+
+#### user_permissions（用户权限表）
+
+| 字段 | 类型 | 约束 | 说明 |
+|---|---|---|---|
+| id | INTEGER | PK AUTOINCREMENT | 自增主键 |
+| user_id | INTEGER | NOT NULL FK→users(id) ON DELETE CASCADE | 关联用户ID（用户删除时级联删除权限） |
+| permission | VARCHAR(32) | NOT NULL | 权限代码 |
+
+> **5种权限代码**：`settings`（设置管理）、`update_supplier`（修改供应商）、`update_remark`（修改备注）、`manage_area_image`（管理库区图）、`manage_box_image`（管理装箱图）
+> **约束**：`UNIQUE(user_id, permission)` — 同一用户同一权限不重复
+
+#### user_tokens（用户Token表）
+
+| 字段 | 类型 | 约束 | 说明 |
+|---|---|---|---|
+| id | INTEGER | PK AUTOINCREMENT | 自增主键 |
+| user_id | INTEGER | NOT NULL FK→users(id) ON DELETE CASCADE | 关联用户ID（用户删除时级联删除Token） |
+| token | VARCHAR(64) | UNIQUE NOT NULL | UUID Token |
+| expires_at | DATETIME | NOT NULL | 过期时间（7天有效期） |
+| created_at | DATETIME | NOT NULL | 创建时间（北京时间） |
+
+> **Token策略**：UUID Token，7天有效期。支持多设备同时登录（每个设备一个Token）。禁用用户时清理其所有Token。过期Token由定时任务每小时清理。
+
 ### 后端API设计
 
 #### 取货单相关
@@ -883,6 +963,22 @@ fun sign(params: Map<String, String>, appSecret: String): String {
 
 > **说明**：拣货区数据存储在后端数据库，所有PDA共享同一份拣货区配置。App设置页的增删操作通过API同步到后端。
 
+#### 用户管理相关
+
+| 方法 | 路径 | 说明 | 认证要求 |
+|---|---|---|---|
+| POST | `/api/users/login` | 用户登录（返回token+userId+permissions） | 仅API Key |
+| GET | `/api/users/me` | 获取当前用户信息 | User Token |
+| GET | `/api/users` | 获取用户列表 | settings权限 |
+| POST | `/api/users` | 创建用户 | settings权限 |
+| PUT | `/api/users/{id}` | 更新用户（密码/权限/启用状态） | settings权限 |
+| DELETE | `/api/users/{id}` | 删除用户（清理其Token） | settings权限 |
+| POST | `/api/users/logout` | 退出登录（删除Token） | User Token |
+
+> **自我保护规则**：禁止禁用自己（`isActive=false`）、禁止移除自己的`settings`权限、禁止删除自己。防止管理员误操作导致系统无法管理。
+> **登录限流**：5次失败锁定5分钟（内存级字典，服务重启重置）。
+> **密码安全**：使用bcrypt哈希存储，禁止明文。
+
 #### 图片相关
 
 | 方法 | 路径 | 说明 |
@@ -904,33 +1000,43 @@ fun sign(params: Map<String, String>, appSecret: String): String {
 | 任务 | 说明 |
 |---|---|
 | 12小时超时检查 | 每分钟检查expire_at < 当前时间的未完成取货单，自动标记完成 |
+| 过期Token清理 | 每小时清理user_tokens中expires_at < 当前时间的记录 |
 
-### 后端API安全认证
+### 后端API安全认证（双层认证机制）
 
-所有后端API请求需携带 `X-API-Key` Header，后端中间件校验：
+后端采用双层认证机制，API Key用于系统级访问控制，User Token用于用户级身份认证和权限控制：
 
-```python
-# 认证中间件
-API_KEY = os.environ.get("API_KEY", "kuaimai-pda-secret-key")
+**第一层：API Key认证（X-API-Key Header）**
+- 所有请求必须携带 `X-API-Key` Header
+- 由 `ApiKeyMiddleware` 中间件统一校验
+- 免认证路径：`/images`、`/health`、`/docs`、`/redoc`、`/openapi.json`
 
-@app.middleware("http")
-async def verify_api_key(request: Request, call_next):
-    # 图片静态资源不需要认证
-    if request.url.path.startswith("/images"):
-        return await call_next(request)
-    api_key = request.headers.get("X-API-Key", "")
-    if api_key != API_KEY:
-        return JSONResponse(status_code=401, content={"detail": "Invalid API Key"})
-    return await call_next(request)
+**第二层：用户Token认证（X-User-Token Header）**
+- 需要用户身份的接口必须携带 `X-User-Token` Header
+- 由 `get_current_user()` 依赖注入校验Token有效性（查询user_tokens表）
+- 需要特定权限的接口使用 `check_permission(perm)` 进一步校验
+- 免用户认证：`/api/users/login`、`/api/images/{skuOuterId}`（GET图片）、`/health`、`/api/app-version`
+
+**认证流程**：
+```
+请求 → ApiKeyMiddleware校验X-API-Key → 通过 → 路由处理函数
+                                          ↓
+                              get_current_user()校验X-User-Token
+                                          ↓
+                              check_permission(perm)校验具体权限
 ```
 
-App端OkHttp拦截器自动添加 `X-API-Key` Header。
+**App端实现**：
+- `ApiKeyInterceptor`：OkHttp拦截器，自动添加 `X-API-Key` Header
+- `UserRepository`：登录后获取Token，Retrofit接口通过 `@Header("X-User-Token")` 参数传递
+- `ImageUploadService`：原生OkHttp请求需手动添加 `X-User-Token` Header（从EncryptedSharedPreferences读取）
+- Token存储：使用 `EncryptedSharedPreferences` 加密存储（与API Key共用加密存储实例）
 
 ### Python FastAPI 实现（核心结构）
 
 ```python
 # main.py
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File, Form, Depends, Request, HTTPException
 from fastapi.staticfiles import StaticFiles
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime, timedelta, timezone
@@ -1018,6 +1124,62 @@ scheduler.add_job(check_expired_orders, "interval", minutes=1)
 scheduler.start()
 
 app.mount("/images", StaticFiles(directory=UPLOAD_DIR), name="images")
+```
+
+```python
+# auth.py — 双层认证核心
+API_KEY = os.environ.get("API_KEY", "kuaimai-pda-secret-key")
+VALID_PERMISSIONS = {"settings", "update_supplier", "update_remark", "manage_area_image", "manage_box_image"}
+SKIP_AUTH_PREFIXES = ("/images", "/health", "/docs", "/redoc", "/openapi.json")
+
+@app.middleware("http")
+async def verify_api_key(request: Request, call_next):
+    """第一层：API Key认证"""
+    for prefix in SKIP_AUTH_PREFIXES:
+        if request.url.path.startswith(prefix):
+            return await call_next(request)
+    api_key = request.headers.get("X-API-Key", "")
+    if api_key != API_KEY:
+        return JSONResponse(status_code=401, content={"detail": "Invalid API Key"})
+    return await call_next(request)
+
+async def get_current_user(request: Request) -> dict:
+    """第二层：从X-User-Token Header解析当前用户"""
+    token = request.headers.get("X-User-Token", "")
+    if not token:
+        raise HTTPException(status_code=401, detail="未提供认证Token")
+    # 查询user_tokens表验证Token有效性
+    conn = get_db()
+    row = conn.execute(
+        "SELECT ut.user_id, ut.expires_at FROM user_tokens ut WHERE ut.token = ?",
+        (token,)
+    ).fetchone()
+    if not row:
+        raise HTTPException(status_code=401, detail="无效的Token")
+    expires_at = datetime.fromisoformat(row["expires_at"])
+    if datetime.now(BJ_TZ) > expires_at:
+        raise HTTPException(status_code=401, detail="Token已过期")
+    # 获取用户信息和权限
+    user = conn.execute("SELECT * FROM users WHERE id = ?", (row["user_id"],)).fetchone()
+    if not user or not user["is_active"]:
+        raise HTTPException(status_code=401, detail="用户已被禁用")
+    perms = conn.execute(
+        "SELECT permission FROM user_permissions WHERE user_id = ?",
+        (row["user_id"],)
+    ).fetchall()
+    return {
+        "user_id": user["id"],
+        "username": user["username"],
+        "permissions": [p["permission"] for p in perms]
+    }
+
+def check_permission(perm: str):
+    """权限检查依赖注入工厂"""
+    async def _check(user: dict = Depends(get_current_user)) -> dict:
+        if perm not in user["permissions"]:
+            raise HTTPException(status_code=403, detail="无权限执行此操作")
+        return user
+    return _check
 ```
 
 ### App端数据策略
@@ -1567,6 +1729,12 @@ implementation("commons-codec:commons-codec:1.17.0")
 20. **屏幕常亮**：取货单详情页和商品详情页保持屏幕常亮，退出恢复。
 21. **触摸优化**：所有可点击元素最小触摸热区56dp×56dp（视觉尺寸可以更小如按钮56dp×40dp，但触摸热区必须≥56dp×56dp），供应商等关键信息字体20sp+。
 22. **会话预警**：accessToken过期前3-5天提醒刷新，而非过期后才提示。
+23. **双层认证机制**：后端API采用API Key + User Token双层认证。API Key用于系统级访问控制（防止未授权系统调用），User Token用于用户级身份认证和权限控制。两层认证独立，缺一不可。
+24. **权限粒度**：5种权限代码覆盖核心功能，不采用RBAC角色模型（系统用户少，直接分配权限更灵活）。默认管理员（admin/admin123）拥有全部5个权限。
+25. **Token策略**：UUID Token，7天有效期，存储在SQLite的user_tokens表中。支持多设备同时登录（每个设备一个Token）。禁用用户时清理其所有Token。
+26. **登录安全**：5次失败锁定5分钟（内存级字典，服务重启重置）。密码使用bcrypt哈希存储。
+27. **权限前端控制**：App端登录后获取权限列表缓存在EncryptedSharedPreferences中，UI层根据权限显示/隐藏功能入口。后端同时做权限校验，前端控制仅为体验优化，不作为安全屏障。
+28. **敏感信息加密存储**：用户Token、userId、permissions等敏感信息使用EncryptedSharedPreferences加密存储（与API Key共用加密存储实例），防止PDA丢失后数据泄露。
 
 ## 技术保障
 
@@ -1902,6 +2070,9 @@ val encryptedPrefs = EncryptedSharedPreferences.create(
 | API Key（后端认证） | EncryptedSharedPreferences | 防止PDA丢失后泄露 |
 | 服务器地址 | EncryptedSharedPreferences | 含Tailscale IP等内网信息 |
 | 快麦Session | EncryptedSharedPreferences | 快麦ERP访问凭证 |
+| User Token | EncryptedSharedPreferences | 用户认证Token，7天有效期 |
+| User ID | EncryptedSharedPreferences | 当前登录用户ID |
+| User Permissions | EncryptedSharedPreferences | 当前用户权限列表（Set<String>） |
 | 扫码配置 | 普通DataStore | 非敏感信息，无需加密 |
 
 ### F31 条码格式兼容
@@ -2001,3 +2172,8 @@ class App : Application() {
 7. 备注修改：修改规格备注后，在快麦ERP后台确认同步成功
 8. 图片上传：上传库区图和装箱图，验证服务器存储和URL访问
 9. 会话刷新：30天内自动刷新，过期后提示用户
+10. 用户登录：正确/错误密码登录，5次失败锁定验证
+11. 权限控制：不同权限用户访问受限功能，前端隐藏+后端拒绝
+12. Token过期：7天后Token失效，自动跳转登录页
+13. 用户管理：管理员创建/编辑/禁用/删除用户，自我保护规则验证
+14. 图片上传认证：ImageUploadService携带X-User-Token验证

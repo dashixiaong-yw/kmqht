@@ -55,6 +55,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -156,6 +157,16 @@ fun PickDetailScreen(
     LaunchedEffect(Unit) {
         viewModel.scanFailureEvent.collect { message ->
             viewModel.provideFeedback(context, ScanFeedbackType.FAILURE)
+        }
+    }
+
+    // 监听PDA硬件扫码结果
+    LaunchedEffect(Unit) {
+        viewModel.scannerManager.scanResult.collectLatest { barcode ->
+            if (barcode.isNotEmpty()) {
+                viewModel.onBarcodeScanned(barcode)
+                viewModel.scannerManager.clearResult()
+            }
         }
     }
 

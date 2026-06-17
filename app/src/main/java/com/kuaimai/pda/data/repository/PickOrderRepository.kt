@@ -28,6 +28,8 @@ interface PickOrderRepository {
     suspend fun getItemByOrderIdAndSkuOuterId(orderId: Long, skuOuterId: String): PickItemEntity?
     suspend fun insertItem(item: PickItemEntity): Long
     suspend fun updateItemStatus(id: Long, status: Int, completedAt: Long? = null)
+    /** 直接更新明细状态（不入队，用于在线模式API成功后） */
+    suspend fun updateItemStatusDirect(id: Long, status: Int, completedAt: Long? = null)
     suspend fun deleteOrder(order: PickOrderEntity)
     /** 获取冲突操作列表 */
     suspend fun getConflicts(): List<PendingOperationEntity>
@@ -37,6 +39,8 @@ interface PickOrderRepository {
     suspend fun updateSupplierWithQueue(id: Long, supplierName: String, supplierCode: String)
     /** 删除取货明细（乐观更新本地+写入离线队列） */
     suspend fun deleteItemWithQueue(id: Long)
+    /** 直接删除取货明细（不入队，用于在线模式API成功后） */
+    suspend fun deleteItemDirect(id: Long)
 }
 
 /**
@@ -113,6 +117,11 @@ class PickOrderRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun updateItemStatusDirect(id: Long, status: Int, completedAt: Long?) {
+        // 直接更新本地数据库（不入队，用于在线模式API成功后）
+        pickItemDao.updateStatus(id, status, completedAt)
+    }
+
     override suspend fun getConflicts(): List<PendingOperationEntity> {
         return pendingOperationDao.getConflicts()
     }
@@ -159,6 +168,11 @@ class PickOrderRepositoryImpl @Inject constructor(
                 targetId = id
             )
         }
+    }
+
+    override suspend fun deleteItemDirect(id: Long) {
+        // 直接删除本地记录（不入队，用于在线模式API成功后）
+        pickItemDao.deleteById(id)
     }
 
     override suspend fun deleteOrder(order: PickOrderEntity) {

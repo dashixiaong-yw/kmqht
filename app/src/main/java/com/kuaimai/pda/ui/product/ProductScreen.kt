@@ -645,9 +645,8 @@ private fun uriToFile(uri: Uri, context: Context): java.io.File? {
         val inputStream = context.contentResolver.openInputStream(uri) ?: return null
         val tempFile = java.io.File.createTempFile("upload_", ".jpg", context.cacheDir)
         tempFile.outputStream().use { output ->
-            inputStream.copyTo(output)
+            inputStream.use { it.copyTo(output) }
         }
-        inputStream.close()
         tempFile
     } catch (e: Exception) {
         null

@@ -1,5 +1,18 @@
 # 快麦取货通 - 变更日志
 
+## 1.6 (2026-06-17)
+
+### 修复
+- 修复在线模式completeItem/restoreItem/completeAllItems重复入队离线队列，导致OrderSyncWorker重复执行已完成的操作（P0 BUG-01+06）
+- 修复PickDetailScreen未监听PDA硬件扫码结果，F2扫码待办在PDA硬件扫码模式下完全失效（P1 BUG-02）
+- 修复deleteItem在线模式不调API仅入队，与completeItem/restoreItem逻辑不一致（P1 BUG-03）
+- 修复uriToFile未安全关闭inputStream，copyTo异常时资源泄漏（P2 BUG-04）
+- 修复SettingsScreen配置remember在Card内部定义，重组时可能状态不一致（P2 BUG-05）
+
+### 新增
+- PickOrderRepository新增updateItemStatusDirect/deleteItemDirect方法（只更新本地不入队）
+- PickDetailViewModel在线/离线模式统一策略：API成功→Direct方法，API失败→入队方法
+
 ## 1.5 (2026-06-17)
 
 ### 修复

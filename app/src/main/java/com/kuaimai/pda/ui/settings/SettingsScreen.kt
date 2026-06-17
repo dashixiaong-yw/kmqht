@@ -94,6 +94,10 @@ fun SettingsScreen(
     var editingUserId by remember { mutableStateOf<Long?>(null) }
     var deletingUserId by remember { mutableStateOf<Long?>(null) }
 
+    // 配置状态（移到顶层避免重组不一致）
+    var serverUrl by remember { mutableStateOf(viewModel.getServerUrl()) }
+    var apiKey by remember { mutableStateOf(viewModel.getApiKey()) }
+
     // 用户管理状态
     var isLoadingUsers by remember { mutableStateOf(false) }
     val userList = remember { mutableStateListOf<UserResponse>() }
@@ -253,7 +257,6 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     // 服务器地址
-                    var serverUrl by remember { mutableStateOf(viewModel.getServerUrl()) }
                     OutlinedTextField(
                         value = serverUrl,
                         onValueChange = { serverUrl = it },
@@ -275,7 +278,6 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // API Key
-                    var apiKey by remember { mutableStateOf(viewModel.getApiKey()) }
                     OutlinedTextField(
                         value = apiKey,
                         onValueChange = { apiKey = it },
