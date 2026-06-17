@@ -15,7 +15,7 @@ from app.database import get_db
 logger = logging.getLogger(__name__)
 
 # 不需要认证的路径前缀（/images/匹配静态文件目录，/api/images/仍需认证）
-SKIP_AUTH_PREFIXES = ("/images/", "/health", "/docs", "/redoc", "/openapi.json", "/admin")
+SKIP_AUTH_PREFIXES = ("/images/", "/health", "/docs", "/redoc", "/openapi.json")
 
 # 全部有效权限代码
 VALID_PERMISSIONS = {"settings", "update_supplier", "update_remark", "manage_area_image", "manage_box_image"}

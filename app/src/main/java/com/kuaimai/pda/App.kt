@@ -1,17 +1,13 @@
 package com.kuaimai.pda
 
 import android.app.Application
-import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import com.kuaimai.pda.util.AppConstants
-import com.kuaimai.pda.util.PrefsKeys
 import com.kuaimai.pda.util.TimeUtils
 import dagger.hilt.android.HiltAndroidApp
 import java.io.File
 import java.io.FileWriter
-import javax.inject.Inject
 
 /**
  * 快麦取货通 Application
@@ -21,12 +17,8 @@ import javax.inject.Inject
 @HiltAndroidApp
 class App : Application() {
 
-    @Inject
-    lateinit var prefs: SharedPreferences
-
     companion object {
         private const val TAG = "App"
-        private const val DEFAULT_SERVER_URL = AppConstants.DEFAULT_SERVER_URL
         private const val ANR_THRESHOLD_MS = 5000L
         private const val ANR_CHECK_INTERVAL_MS = 1000L
     }

@@ -47,6 +47,12 @@ def get_db() -> sqlite3.Connection:
 
 def init_db() -> None:
     """初始化数据库：创建所有表（PRAGMA由get_db()处理）"""
+    import os as _os
+    db_dir = _os.path.dirname(DB_PATH)
+    if db_dir and not _os.path.exists(db_dir):
+        _os.makedirs(db_dir, exist_ok=True)
+        logger.info(f"数据库目录已创建: {db_dir}")
+
     conn = get_db()
     cursor = conn.cursor()
 

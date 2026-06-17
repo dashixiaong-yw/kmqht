@@ -79,7 +79,7 @@ class ImageUploadService @Inject constructor(
         skuOuterId: String,
         onProgress: ((Int) -> Unit)?
     ): Pair<Long, String> {
-        val serverUrl = prefs.getString(PrefsKeys.KEY_SERVER_URL, DEFAULT_SERVER_URL)
+        val serverUrl = encryptedPrefs.getString(PrefsKeys.KEY_SERVER_URL, DEFAULT_SERVER_URL)
             ?: DEFAULT_SERVER_URL
         val uploadUrl = "$serverUrl/api/upload"
 
@@ -128,7 +128,7 @@ class ImageUploadService @Inject constructor(
      * @param imageId 图片ID
      */
     suspend fun deleteImage(imageId: Long) = withContext(Dispatchers.IO) {
-        val serverUrl = prefs.getString(PrefsKeys.KEY_SERVER_URL, DEFAULT_SERVER_URL)
+        val serverUrl = encryptedPrefs.getString(PrefsKeys.KEY_SERVER_URL, DEFAULT_SERVER_URL)
             ?: DEFAULT_SERVER_URL
         val deleteUrl = "$serverUrl/api/images/$imageId"
 
@@ -151,7 +151,7 @@ class ImageUploadService @Inject constructor(
      * @return 图片列表JSON字符串
      */
     suspend fun fetchImages(skuOuterId: String): String = withContext(Dispatchers.IO) {
-        val serverUrl = prefs.getString(PrefsKeys.KEY_SERVER_URL, DEFAULT_SERVER_URL)
+        val serverUrl = encryptedPrefs.getString(PrefsKeys.KEY_SERVER_URL, DEFAULT_SERVER_URL)
             ?: DEFAULT_SERVER_URL
         val queryUrl = "$serverUrl/api/images/$skuOuterId"
 

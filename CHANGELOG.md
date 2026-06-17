@@ -1,5 +1,27 @@
 # 快麦取货通 - 变更日志
 
+## 1.14 (2026-06-17)
+
+### 修复
+- P0: 修复服务器地址 SharedPreferences 不匹配——GuideScreen写入普通prefs但NetworkModule从加密prefs读取，导致所有Retrofit后端API不可用
+- P0: 修复Dockerfile多阶段构建pip包丢失——runner阶段未复制site-packages导致容器无法启动
+- P0: 修复docker-deploy中main.py严重过时——缺少admin/users路由、session刷新等核心功能
+- P0: 修复sync-to-docker-deploy.ps1配置文件源路径错误——从项目根查文件但实际在backend/下
+- P1: 修复BackgroundScheduler线程中asyncio事件循环操作——改用asyncio.run()
+- P1: 修复/admin跳过API Key认证——移除自SKIP_AUTH_PREFIXES
+- P1: GuideScreen完善：URL校验改为http://或https://开头、扫码失败提示、重启提示
+- P1: AppNavigation启动鉴权等待期间显示加载指示器替代空白屏
+- P2: 修复AndroidManifest allowBackup=true安全风险
+- P2: 清理App.kt中未使用的prefs/DEFAULT_SERVER_URL注入
+- P2: backend数据库初始化增加/data目录自动创建
+- P2: docker-compose增加512M内存资源限制
+
+### 修改
+- GuideScreen服务器地址改为写入EncryptedSharedPreferences（同时修复ImageUploadService/ProductViewModel读取端）
+- Dockerfile改为单阶段构建，pip install直接在runner阶段执行
+- 同步脚本重写：backend/内容同步到docker-deploy/根目录，configFiles列表增加main.py和kuaimai.example.json
+- .env.docker.example补充SERVER_URL/CORS_ORIGINS/SESSION_WARNING_DAYS环境变量
+
 ## 1.13 (2026-06-17)
 
 ### 修复

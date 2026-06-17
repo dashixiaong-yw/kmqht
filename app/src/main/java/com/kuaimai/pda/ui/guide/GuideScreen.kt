@@ -54,6 +54,7 @@ fun GuideScreen(
     var apiKey by remember { mutableStateOf("") }
     var selectedScanMethod by remember { mutableIntStateOf(0) }
     var showCameraScan by remember { mutableStateOf(false) }
+    var qrScanError by remember { mutableStateOf(false) }
 
     // 扫码配置模式
     if (showCameraScan) {
@@ -66,6 +67,8 @@ fun GuideScreen(
                     if (result.apiKey.isNotEmpty()) {
                         apiKey = result.apiKey
                     }
+                } else {
+                    qrScanError = true
                 }
             },
             onClose = { showCameraScan = false }
@@ -80,6 +83,16 @@ fun GuideScreen(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // 扫码解析失败提示
+        if (qrScanError) {
+            Text(
+                text = "未识别到有效配置二维码，请重试或手动输入",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
         when (currentStep) {
             0 -> StepServerConfig(
                 serverUrl = serverUrl,
@@ -88,8 +101,7 @@ fun GuideScreen(
                 onApiKeyChange = { apiKey = it },
                 onScanConfig = { showCameraScan = true },
                 onNext = {
-                    // 服务器地址保存到普通SharedPreferences
-                    prefs.edit().putString(PrefsKeys.KEY_SERVER_URL, serverUrl.trim()).apply()
+                    encryptedPrefs.edit().putString(PrefsKeys.KEY_SERVER_URL, serverUrl.trim()).apply()
                     if (apiKey.isNotBlank()) {
                         // API Key保存到加密SharedPreferences
                         encryptedPrefs.edit().putString(PrefsKeys.KEY_API_KEY, apiKey.trim()).apply()
@@ -189,7 +201,7 @@ private fun StepServerConfig(
     Spacer(modifier = Modifier.height(32.dp))
     Button(
         onClick = onNext,
-        enabled = serverUrl.startsWith("http"),
+        enabled = serverUrl.startsWith("http://") || serverUrl.startsWith("https://"),
         modifier = Modifier.fillMaxWidth(),
         colors = ButtonDefaults.buttonColors(
             containerColor = PrimaryLightBg,
@@ -261,8 +273,15 @@ private fun StepComplete(onFinish: () -> Unit) {
     )
     Spacer(modifier = Modifier.height(16.dp))
     Text(
-        text = "您可以在设置页面随时修改配置",
-        style = MaterialTheme.typography.bodyMedium
+        text = "配置已保存，请重启App使服务器地址生效",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.error
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    Text(
+        text = "您也可以在设置页面随时修改配置",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
     )
     Spacer(modifier = Modifier.height(32.dp))
     Button(

@@ -1,5 +1,5 @@
 # Sync Script - Local to docker-deploy
-# 同步后端部署文件到 docker-deploy 目录
+# 同步后端部署文件到 docker-deploy 根目录（Docker build context）
 
 param(
     [switch]$Force,
@@ -9,6 +9,7 @@ param(
 $ErrorActionPreference = "Continue"
 
 $ProjectRoot = Split-Path $PSScriptRoot -Parent
+$BackendDir = Join-Path $ProjectRoot "backend"
 $DockerDeployRoot = Join-Path $ProjectRoot "docker-deploy"
 
 Write-Host "========================================="
@@ -22,6 +23,7 @@ if (-not (Test-Path -LiteralPath $DockerDeployRoot)) {
 }
 
 Write-Host "INFO: Project Root: $ProjectRoot"
+Write-Host "INFO: Backend Dir: $BackendDir"
 Write-Host "INFO: Docker Deploy: $DockerDeployRoot"
 Write-Host ""
 
@@ -30,29 +32,30 @@ $syncCount = 0
 $skipCount = 0
 $errorCount = 0
 
-# 同步后端目录
-$sourceDir = Join-Path $ProjectRoot "backend"
-$targetDir = Join-Path $DockerDeployRoot "backend"
+function Sync-Directory {
+    param([string]$SourceDir, [string]$TargetDir, [string]$Label)
 
-if (Test-Path -LiteralPath $sourceDir) {
+    if (-not (Test-Path -LiteralPath $SourceDir)) {
+        Write-Host "WARN: Source dir not found: $SourceDir"
+        return
+    }
+
     Write-Host "-----------------------------------------"
-    Write-Host "INFO: Syncing backend directory"
-    Write-Host "INFO: From: $sourceDir"
-    Write-Host "INFO: To: $targetDir"
+    Write-Host "INFO: Syncing $Label directory"
+    Write-Host "INFO: From: $SourceDir"
+    Write-Host "INFO: To: $TargetDir"
     Write-Host ""
 
-    $files = Get-ChildItem -LiteralPath $sourceDir -Recurse -File | Where-Object {
+    $files = Get-ChildItem -LiteralPath $SourceDir -Recurse -File | Where-Object {
         $_.FullName -notmatch '__pycache__' -and
         $_.FullName -notmatch '\.git' -and
         $_.FullName -notmatch '\.venv' -and
         $_.FullName -notmatch '\.pyc$'
     }
 
-    $totalFiles += $files.Count
-
     foreach ($file in $files) {
-        $relativePath = $file.FullName.Substring($sourceDir.Length + 1)
-        $targetFile = Join-Path $targetDir $relativePath
+        $relativePath = $file.FullName.Substring($SourceDir.Length + 1)
+        $targetFile = Join-Path $TargetDir $relativePath
         $targetFileDir = Split-Path $targetFile -Parent
 
         if (-not (Test-Path -LiteralPath $targetFileDir)) {
@@ -61,39 +64,43 @@ if (Test-Path -LiteralPath $sourceDir) {
             }
         }
 
-        if ($DryRun) {
-            Write-Host "DRYRUN: Would copy: backend/$relativePath"
-            $syncCount++
-        } else {
-            $shouldCopy = $true
+        $script:totalFiles++
 
+        if ($DryRun) {
+            Write-Host "DRYRUN: Would copy: $Label/$relativePath"
+            $script:syncCount++
+        }
+        else {
+            $shouldCopy = $true
             if ((Test-Path -LiteralPath $targetFile) -and -not $Force) {
                 $sourceHash = (Get-FileHash -LiteralPath $file.FullName -Algorithm MD5).Hash
                 $destHash = (Get-FileHash -LiteralPath $targetFile -Algorithm MD5).Hash
                 if ($sourceHash -eq $destHash) {
                     $shouldCopy = $false
-                    $skipCount++
+                    $script:skipCount++
                 }
             }
 
             if ($shouldCopy) {
                 try {
                     Copy-Item -LiteralPath $file.FullName -Destination $targetFile -Force
-                    Write-Host "OK: backend/$relativePath"
-                    $syncCount++
-                } catch {
-                    Write-Host "ERROR: Failed to copy backend/$relativePath : $($_.Exception.Message)"
-                    $errorCount++
+                    Write-Host "OK: $Label/$relativePath"
+                    $script:syncCount++
                 }
-            } else {
-                Write-Host "SKIP: backend/$relativePath (no changes)"
+                catch {
+                    Write-Host "ERROR: Failed to copy $Label/$relativePath : $($_.Exception.Message)"
+                    $script:errorCount++
+                }
+            }
+            else {
+                Write-Host "SKIP: $Label/$relativePath (no changes)"
             }
         }
     }
 
-    # 清理孤立文件
-    if (Test-Path -LiteralPath $targetDir) {
-        $deployFiles = Get-ChildItem -LiteralPath $targetDir -Recurse -File | Where-Object {
+    # cleanup orphans
+    if (Test-Path -LiteralPath $TargetDir) {
+        $deployFiles = Get-ChildItem -LiteralPath $TargetDir -Recurse -File | Where-Object {
             $_.FullName -notmatch '__pycache__' -and
             $_.FullName -notmatch '\.git' -and
             $_.FullName -notmatch '\.venv' -and
@@ -101,19 +108,21 @@ if (Test-Path -LiteralPath $sourceDir) {
         }
 
         foreach ($deployFile in $deployFiles) {
-            $relativePath = $deployFile.FullName.Substring($targetDir.Length + 1)
-            $sourceFile = Join-Path $sourceDir $relativePath
+            $relativePath = $deployFile.FullName.Substring($TargetDir.Length + 1)
+            $sourceFile = Join-Path $SourceDir $relativePath
 
             if (-not (Test-Path -LiteralPath $sourceFile)) {
                 if ($DryRun) {
-                    Write-Host "DRYRUN: Would delete orphan: backend/$relativePath"
-                } else {
+                    Write-Host "DRYRUN: Would delete orphan: $Label/$relativePath"
+                }
+                else {
                     try {
                         Remove-Item -LiteralPath $deployFile.FullName -Force
-                        Write-Host "DELETE: Orphan: backend/$relativePath"
-                    } catch {
-                        Write-Host "ERROR: Failed to delete orphan backend/$relativePath : $($_.Exception.Message)"
-                        $errorCount++
+                        Write-Host "DELETE: Orphan: $Label/$relativePath"
+                    }
+                    catch {
+                        Write-Host "ERROR: Failed to delete orphan $Label/$relativePath : $($_.Exception.Message)"
+                        $script:errorCount++
                     }
                 }
             }
@@ -122,78 +131,94 @@ if (Test-Path -LiteralPath $sourceDir) {
     Write-Host ""
 }
 
-# 同步配置文件
-$configFiles = @(
-    "docker-compose.yml",
-    "Dockerfile",
-    ".dockerignore",
-    ".env.docker.example",
-    "requirements.txt"
-)
+function Sync-File {
+    param([string]$SourceFile, [string]$TargetFile, [string]$Label)
 
-foreach ($cfgFile in $configFiles) {
-    $src = Join-Path $ProjectRoot $cfgFile
-    $dst = Join-Path $DockerDeployRoot $cfgFile
-
-    if (-not (Test-Path -LiteralPath $src)) {
-        continue
+    if (-not (Test-Path -LiteralPath $SourceFile)) {
+        Write-Host "WARN: Source not found: $Label, skipping"
+        return
     }
 
-    $totalFiles++
+    $script:totalFiles++
 
     if ($DryRun) {
-        Write-Host "DRYRUN: Would copy: $cfgFile"
-        $syncCount++
-    } else {
+        Write-Host "DRYRUN: Would copy: $Label"
+        $script:syncCount++
+    }
+    else {
         $shouldCopy = $true
-
-        if ((Test-Path -LiteralPath $dst) -and -not $Force) {
-            $sourceHash = (Get-FileHash -LiteralPath $src -Algorithm MD5).Hash
-            $destHash = (Get-FileHash -LiteralPath $dst -Algorithm MD5).Hash
+        if ((Test-Path -LiteralPath $TargetFile) -and -not $Force) {
+            $sourceHash = (Get-FileHash -LiteralPath $SourceFile -Algorithm MD5).Hash
+            $destHash = (Get-FileHash -LiteralPath $TargetFile -Algorithm MD5).Hash
             if ($sourceHash -eq $destHash) {
                 $shouldCopy = $false
-                $skipCount++
+                $script:skipCount++
             }
         }
 
         if ($shouldCopy) {
             try {
-                Copy-Item -LiteralPath $src -Destination $dst -Force
-                Write-Host "OK: $cfgFile"
-                $syncCount++
-            } catch {
-                Write-Host "ERROR: Failed to copy $cfgFile : $($_.Exception.Message)"
-                $errorCount++
+                Copy-Item -LiteralPath $SourceFile -Destination $TargetFile -Force
+                Write-Host "OK: $Label"
+                $script:syncCount++
             }
-        } else {
-            Write-Host "SKIP: $cfgFile (no changes)"
+            catch {
+                Write-Host "ERROR: Failed to copy $Label : $($_.Exception.Message)"
+                $script:errorCount++
+            }
+        }
+        else {
+            Write-Host "SKIP: $Label (no changes)"
         }
     }
+}
+
+# Sync subdirectories
+$appSource = Join-Path $BackendDir "app"
+$appTarget = Join-Path $DockerDeployRoot "app"
+Sync-Directory -SourceDir $appSource -TargetDir $appTarget -Label "app"
+
+# Sync root-level config files
+$configFiles = @(
+    @{ Name = "main.py"; Src = (Join-Path $BackendDir "main.py"); Dst = (Join-Path $DockerDeployRoot "main.py") }
+    @{ Name = "requirements.txt"; Src = (Join-Path $BackendDir "requirements.txt"); Dst = (Join-Path $DockerDeployRoot "requirements.txt") }
+    @{ Name = "Dockerfile"; Src = (Join-Path $BackendDir "Dockerfile"); Dst = (Join-Path $DockerDeployRoot "Dockerfile") }
+    @{ Name = ".dockerignore"; Src = (Join-Path $BackendDir ".dockerignore"); Dst = (Join-Path $DockerDeployRoot ".dockerignore") }
+    @{ Name = ".env.docker.example"; Src = (Join-Path $BackendDir ".env.docker.example"); Dst = (Join-Path $DockerDeployRoot ".env.docker.example") }
+    @{ Name = "kuaimai.example.json"; Src = (Join-Path $BackendDir "kuaimai.example.json"); Dst = (Join-Path $DockerDeployRoot "kuaimai.example.json") }
+    @{ Name = "docker-compose.yml"; Src = (Join-Path $BackendDir "docker-compose.yml"); Dst = (Join-Path $DockerDeployRoot "docker-compose.yml") }
+)
+
+foreach ($cfg in $configFiles) {
+    Sync-File -SourceFile $cfg.Src -TargetFile $cfg.Dst -Label $cfg.Name
 }
 
 # docker-compose.yml -> docker-compose.yaml
 $yamlSource = Join-Path $DockerDeployRoot "docker-compose.yml"
 $yamlTarget = Join-Path $DockerDeployRoot "docker-compose.yaml"
 if (Test-Path -LiteralPath $yamlSource) {
-    if ($DryRun) {
-        Write-Host "DRYRUN: Would copy: docker-compose.yml -> docker-compose.yaml"
-    } else {
-        $shouldCopy = $true
+    $shouldCopyYaml = $true
+    if (-not $DryRun) {
         if ((Test-Path -LiteralPath $yamlTarget) -and -not $Force) {
             $sourceHash = (Get-FileHash -LiteralPath $yamlSource -Algorithm MD5).Hash
             $destHash = (Get-FileHash -LiteralPath $yamlTarget -Algorithm MD5).Hash
             if ($sourceHash -eq $destHash) {
-                $shouldCopy = $false
+                $shouldCopyYaml = $false
             }
         }
-        if ($shouldCopy) {
-            Copy-Item -LiteralPath $yamlSource -Destination $yamlTarget -Force
-            Write-Host "OK: docker-compose.yml -> docker-compose.yaml"
-            $totalFiles++
-            $syncCount++
-        } else {
-            Write-Host "SKIP: docker-compose.yaml (no changes)"
-        }
+    }
+
+    if ($DryRun) {
+        Write-Host "DRYRUN: Would copy: docker-compose.yml -> docker-compose.yaml"
+    }
+    elseif ($shouldCopyYaml) {
+        Copy-Item -LiteralPath $yamlSource -Destination $yamlTarget -Force
+        Write-Host "OK: docker-compose.yml -> docker-compose.yaml"
+        $totalFiles++
+        $syncCount++
+    }
+    else {
+        Write-Host "SKIP: docker-compose.yaml (no changes)"
     }
 }
 
@@ -203,7 +228,8 @@ Write-Host "SUMMARY"
 Write-Host "  Total Files: $totalFiles"
 if ($DryRun) {
     Write-Host "  Would sync: $syncCount files"
-} else {
+}
+else {
     Write-Host "  Synced: $syncCount files"
     Write-Host "  Skipped: $skipCount files (no changes)"
     if ($errorCount -gt 0) {
@@ -215,6 +241,7 @@ Write-Host ""
 
 if ($errorCount -gt 0) {
     exit 1
-} else {
+}
+else {
     exit 0
 }

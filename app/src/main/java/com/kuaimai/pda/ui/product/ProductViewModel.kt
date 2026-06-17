@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.io.File
 import javax.inject.Inject
+import javax.inject.Named
 
 /**
  * 商品详情UI状态
@@ -69,7 +70,7 @@ class ProductViewModel @Inject constructor(
     private val pickOrderRepository: PickOrderRepository,
     private val imageRepository: ImageRepository,
     private val apiService: KuaimaiApiService,
-    private val prefs: SharedPreferences,
+    @Named("encrypted") private val prefs: SharedPreferences,
     @ApplicationContext private val appContext: Context
 ) : ViewModel() {
 

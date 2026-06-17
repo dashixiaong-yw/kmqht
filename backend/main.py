@@ -321,13 +321,9 @@ def _refresh_kuaimai_session() -> None:
             logger.error(f"定时刷新快麦session异常: {e}")
 
     try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            asyncio.ensure_future(_do_refresh())
-        else:
-            loop.run_until_complete(_do_refresh())
-    except RuntimeError as e:
-        logger.error(f"刷新session时获取事件循环失败: {e}")
+        asyncio.run(_do_refresh())
+    except Exception as e:
+        logger.error(f"刷新session失败: {e}")
 
 
 # ==================== 启动配置 ====================

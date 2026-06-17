@@ -107,6 +107,12 @@
 {"type":"entity","name":"BUG-P1_DeleteImageOrder","entityType":"BugFix","observations":["v1.13修复: ImageRepositoryImpl.deleteImage()先删本地再调远程，与全局'先API后本地'策略不一致","修复: 改为先调uploadService.deleteImage()远程删除，成功后再删本地Room"]}
 {"type":"entity","name":"BUG-P1_BackendDeleteItemStatusCheck","entityType":"BugFix","observations":["v1.13修复: 后端delete_item未校验取货单已完成状态","修复: 新增status=1检查，已完成取货单不允许删除明细"]}
 {"type":"entity","name":"FEAT-P2_MultiPDAImageSync","entityType":"功能增强","observations":["v1.13新增: ImageUploadService.fetchImages()查询后端图片列表","ImageRepository.syncImagesFromBackend()解析JSON并保存到Room","ProductViewModel.loadImages()每次加载SKU时先从后端同步图片","实现多PDA场景下设备A上传的图片在设备B可见"]}
+{"type":"entity","name":"BUG-P0_ServerUrlPrefsMismatch","entityType":"BugFix","observations":["v1.14修复: GuideScreen将服务器地址写入普通SharedPreferences(prefs)，但NetworkModule.provideBackendRetrofit()从加密SharedPreferences(@Named('encrypted'))读取","导致所有Retrofit后端API调用使用占位URL http://localhost:1/，取货单/用户/拣货区/系统API全部失败","修复: GuideScreen改为写入encryptedPrefs，ImageUploadService/ProductViewModel同步改为从encryptedPrefs读取"]}
+{"type":"entity","name":"BUG-P0_DockerfilePipLoss","entityType":"BugFix","observations":["v1.14修复: Dockerfile多阶段构建导致runner阶段丢失全部pip安装的包","修复: 改为单阶段构建，pip install直接在最终阶段执行"]}
+{"type":"entity","name":"BUG-P0_DockerDeployStale","entityType":"BugFix","observations":["v1.14修复: docker-deploy/main.py为严重过时版本，缺少admin/users路由、session刷新定时任务","修复: 重写同步脚本，backend/内容平铺到docker-deploy/根目录，增加main.py和kuaimai.example.json到同步列表"]}
+{"type":"entity","name":"BUG-P1_AsyncioEventLoop","entityType":"BugFix","observations":["v1.14修复: _refresh_kuaimai_session在APScheduler后台线程中使用get_event_loop()+ensure_future()","修复: 改用asyncio.run()独立运行异步函数"]}
+{"type":"entity","name":"SEC-AdminAuthSkip","entityType":"安全修复","observations":["v1.14修复: /admin路径跳过API Key认证中间件","修复: 从SKIP_AUTH_PREFIXES中移除/admin"]}
+{"type":"entity","name":"docker-deploy同步策略","entityType":"设计决策","observations":["v1.14确立: backend/目录下所有内容同步到docker-deploy/根目录","app子目录→docker-deploy/app/","部署配置文件(main.py/Dockerfile等)→docker-deploy/根目录","docker-compose context指向docker-deploy/根目录"]}
 {"type":"relation","from":"F1_取货单管理","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F2_扫码待办","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F3_取货单自动完成","to":"快麦取货通项目","relationType":"属于"}
