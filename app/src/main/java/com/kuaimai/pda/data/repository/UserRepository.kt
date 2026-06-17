@@ -2,6 +2,7 @@ package com.kuaimai.pda.data.repository
 
 import android.content.SharedPreferences
 import android.util.Log
+import com.kuaimai.pda.data.api.SystemApiService
 import com.kuaimai.pda.data.api.UserApiService
 import com.kuaimai.pda.data.api.dto.LoginResponse
 import com.kuaimai.pda.data.api.dto.CreateUserRequest
@@ -72,6 +73,7 @@ interface UserRepository {
 @Singleton
 class UserRepositoryImpl @Inject constructor(
     private val apiService: UserApiService,
+    private val systemApiService: SystemApiService,
     @Named("encrypted") private val prefs: SharedPreferences
 ) : UserRepository {
 
@@ -122,6 +124,8 @@ class UserRepositoryImpl @Inject constructor(
                     .putLong(PrefsKeys.KEY_SESSION_EXPIRE, expireTime)
                     .apply()
                 _currentUser.value = user
+                // 登录成功后同步快麦凭证到本地
+                syncKuaimaiCredentials(response.token)
                 Log.i(TAG, "登录成功: $username")
                 Result.success(user)
             } else {
@@ -265,6 +269,25 @@ class UserRepositoryImpl @Inject constructor(
                 username = username,
                 permissions = permissions.toList()
             )
+        }
+    }
+
+    /** 登录成功后同步快麦凭证到本地 */
+    private fun syncKuaimaiCredentials(token: String) {
+        appScope.launch {
+            try {
+                val creds = systemApiService.getKuaimaiCredentials(token)
+                if (creds.appKey.isNotEmpty()) {
+                    prefs.edit()
+                        .putString(PrefsKeys.KEY_APP_KEY, creds.appKey)
+                        .putString(PrefsKeys.KEY_APP_SECRET, creds.appSecret)
+                        .putString(PrefsKeys.KEY_SESSION, creds.session)
+                        .apply()
+                    Log.i(TAG, "快麦凭证同步成功: appKey=${creds.appKey}")
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "快麦凭证同步失败（登录后重试）: ${e.message}")
+            }
         }
     }
 

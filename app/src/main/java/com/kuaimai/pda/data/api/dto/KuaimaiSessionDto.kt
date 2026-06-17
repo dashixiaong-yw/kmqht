@@ -21,3 +21,10 @@ data class KuaimaiRefreshResponse(
     val message: String = "",
     val daysLeft: Int? = null
 )
+
+/** 快麦凭证响应（登录后从后端同步） */
+data class KuaimaiCredentialsResponse(
+    val appKey: String = "",
+    val appSecret: String = "",
+    val session: String = ""
+)

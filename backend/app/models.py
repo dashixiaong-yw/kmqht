@@ -226,3 +226,10 @@ class KuaimaiCredentialsRequest(BaseModel):
     app_secret: str = Field(..., min_length=1, description="快麦App Secret")
     session: str = Field(..., min_length=1, description="快麦Session")
     refresh_token: str = Field(default="", description="快麦Refresh Token")
+
+
+class KuaimaiCredentialsResponse(BaseModel):
+    """快麦凭证响应（供PDA端同步）"""
+    appKey: str = ""
+    appSecret: str = ""
+    session: str = ""

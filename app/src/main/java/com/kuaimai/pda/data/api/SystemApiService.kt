@@ -1,5 +1,6 @@
 package com.kuaimai.pda.data.api
 
+import com.kuaimai.pda.data.api.dto.KuaimaiCredentialsResponse
 import com.kuaimai.pda.data.api.dto.KuaimaiRefreshResponse
 import com.kuaimai.pda.data.api.dto.KuaimaiSessionStatusResponse
 import retrofit2.http.GET
@@ -23,4 +24,10 @@ interface SystemApiService {
     suspend fun refreshSession(
         @Header("X-User-Token") token: String
     ): KuaimaiRefreshResponse
+
+    /** 获取快麦凭证（登录后同步到本地） */
+    @GET("api/kuaimai/credentials")
+    suspend fun getKuaimaiCredentials(
+        @Header("X-User-Token") token: String
+    ): KuaimaiCredentialsResponse
 }

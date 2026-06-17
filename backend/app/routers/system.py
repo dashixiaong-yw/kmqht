@@ -17,8 +17,8 @@ from app.models import (
     AppVersionResponse,
     BaseResponse,
     CrashReportRequest,
-    HealthResponse,
     KuaimaiCredentialsRequest,
+    KuaimaiCredentialsResponse,
     KuaimaiRefreshResponse,
     KuaimaiSessionStatusResponse,
 )
@@ -120,6 +120,16 @@ async def refresh_kuaimai_session(user: dict = Depends(check_permission("setting
             success=False,
             message="session刷新失败，请检查refreshToken是否有效或联系快麦客服",
         )
+
+
+@router.get("/api/kuaimai/credentials", response_model=KuaimaiCredentialsResponse)
+def get_kuaimai_credentials(user: dict = Depends(check_permission("settings"))) -> KuaimaiCredentialsResponse:
+    """获取快麦凭证（PDA端登录后同步使用）"""
+    return KuaimaiCredentialsResponse(
+        appKey=kuaimai_creds.app_key,
+        appSecret=kuaimai_creds.app_secret,
+        session=kuaimai_creds.session,
+    )
 
 
 @router.post("/api/kuaimai/update-credentials", response_model=BaseResponse)

@@ -130,6 +130,7 @@
 {"type":"entity","name":"BUG-P2_PrefsNullGuide","entityType":"BugFix","observations":["v1.17修复: HomeScreen引导条prefs=null时永不显示","修复: prefs?.getBoolean(...) != true"]}
 {"type":"entity","name":"BUG-P1_GetImageUrlsCompileConstant","entityType":"BugFix","observations":["v1.18修复: PickDetailViewModel.getImageUrls()使用AppConstants.DEFAULT_SERVER_URL（编译时常量空字符串）而非运行时从encryptedPrefs读取","导致配置服务器地址后库区图/箱图URL缺少服务器前缀，图片永不可见","修复: 注入@Named('encrypted') SharedPreferences，改为prefs.getString(KEY_SERVER_URL, '')"]}
 {"type":"entity","name":"SEC-OkHttpLoggingDowngrade","entityType":"安全修复","observations":["v1.18修复: HttpLoggingInterceptor使用Level.BODY在Logcat中泄露登录密码和Token","修复: 改为Level.HEADERS，不打印请求体"]}
+{"type":"entity","name":"BUG-KuaimaiCredentialsNotSyncedToPDA","entityType":"BugFix","observations":["修复: PDA端KuaimaiInterceptor所需appKey/appSecret/session从未写入SharedPreferences","根因: AuthRepository.setAppKey()/setAppSecret()无调用方，凭证仅存在于后端kuaimai.json","修复1: 后端新增GET /api/kuaimai/credentials接口返回凭证","修复2: PDA SystemApiService新增getKuaimaiCredentials()","修复3: UserRepositoryImpl.login()登录成功后自动同步凭证到本地encryptedPrefs"]}
 {"type":"relation","from":"F1_取货单管理","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F2_扫码待办","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F3_取货单自动完成","to":"快麦取货通项目","relationType":"属于"}
