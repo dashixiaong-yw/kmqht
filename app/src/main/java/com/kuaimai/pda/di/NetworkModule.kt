@@ -11,6 +11,7 @@ import com.kuaimai.pda.data.api.KuaimaiInterceptor
 import com.kuaimai.pda.data.api.OrderApiService
 import com.kuaimai.pda.data.api.UserApiService
 import com.kuaimai.pda.util.AppConstants
+import com.kuaimai.pda.util.PrefsKeys
 import com.kuaimai.pda.util.SessionExpiredEvent
 import dagger.Module
 import dagger.Provides
@@ -36,9 +37,7 @@ import javax.inject.Singleton
 object NetworkModule {
 
     private const val PREFS_NAME = "kuaimai_encrypted_prefs"
-    private const val KEY_BASE_URL = "base_url"
     private const val DEFAULT_BASE_URL = AppConstants.KUAIMAI_API_URL
-    private const val KEY_SERVER_URL = "server_url"
     private const val DEFAULT_SERVER_URL = AppConstants.DEFAULT_SERVER_URL
     private const val TAG = "NetworkModule"
 
@@ -145,7 +144,7 @@ object NetworkModule {
         client: OkHttpClient,
         @Named("encrypted") prefs: SharedPreferences
     ): Retrofit {
-        val baseUrl = prefs.getString(KEY_BASE_URL, DEFAULT_BASE_URL) ?: DEFAULT_BASE_URL
+        val baseUrl = prefs.getString(PrefsKeys.KEY_BASE_URL, DEFAULT_BASE_URL) ?: DEFAULT_BASE_URL
         return Retrofit.Builder()
             .baseUrl(baseUrl)
             .client(client)
@@ -165,7 +164,7 @@ object NetworkModule {
     @Singleton
     @Named("backend")
     fun provideBackendRetrofit(client: OkHttpClient, @Named("encrypted") prefs: SharedPreferences): Retrofit {
-        val serverUrl = prefs.getString(KEY_SERVER_URL, DEFAULT_SERVER_URL) ?: DEFAULT_SERVER_URL
+        val serverUrl = prefs.getString(PrefsKeys.KEY_SERVER_URL, DEFAULT_SERVER_URL) ?: DEFAULT_SERVER_URL
         return Retrofit.Builder()
             .baseUrl(serverUrl)
             .client(client)
@@ -202,12 +201,8 @@ class ApiKeyInterceptor(
     private val prefs: SharedPreferences
 ) : okhttp3.Interceptor {
 
-    companion object {
-        private const val KEY_API_KEY = "api_key"
-    }
-
     override fun intercept(chain: okhttp3.Interceptor.Chain): okhttp3.Response {
-        val apiKey = prefs.getString(KEY_API_KEY, "") ?: ""
+        val apiKey = prefs.getString(PrefsKeys.KEY_API_KEY, "") ?: ""
         val request = chain.request().newBuilder()
             .addHeader("X-API-Key", apiKey)
             .build()
@@ -251,7 +246,6 @@ class TokenAuthenticator(
 
     companion object {
         private const val TAG = "TokenAuthenticator"
-        private const val KEY_SESSION = "session"
     }
 
     /** 防止并发刷新 */
@@ -292,7 +286,7 @@ class TokenAuthenticator(
             if (refreshResult != null && refreshResult.containsKey("session")) {
                 // 更新本地session
                 val newSession = refreshResult["session"] as? String ?: ""
-                prefs.edit().putString(KEY_SESSION, newSession).apply()
+                prefs.edit().putString(PrefsKeys.KEY_SESSION, newSession).apply()
                 Log.i(TAG, "Token刷新成功")
 
                 // 重试原请求

@@ -1,5 +1,7 @@
 """认证模块 - API Key中间件 + 用户Token校验 + 权限检查"""
 
+import hashlib
+import hmac
 import logging
 from typing import List, Optional
 
@@ -12,8 +14,8 @@ from app.database import get_db
 
 logger = logging.getLogger(__name__)
 
-# 不需要认证的路径前缀
-SKIP_AUTH_PREFIXES = ("/images", "/health", "/docs", "/redoc", "/openapi.json")
+# 不需要认证的路径前缀（/images/匹配静态文件目录，/api/images/仍需认证）
+SKIP_AUTH_PREFIXES = ("/images/", "/health", "/docs", "/redoc", "/openapi.json")
 
 # 全部有效权限代码
 VALID_PERMISSIONS = {"settings", "update_supplier", "update_remark", "manage_area_image", "manage_box_image"}
@@ -37,7 +39,7 @@ class ApiKeyMiddleware(BaseHTTPMiddleware):
                 content={"success": False, "message": "缺少API Key"}
             )
 
-        if api_key != API_KEY:
+        if not hmac.compare_digest(api_key, API_KEY):
             logger.warning(f"API Key无效: {request.url.path}")
             return JSONResponse(
                 status_code=403,

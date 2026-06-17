@@ -6,8 +6,8 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 
-from app.config import KUAIMAI_API_BASE, kuaimai_creds
-from app.utils.time_utils import beijing_now
+from app.config import KUAIMAI_API_BASE, kuaimai_creds, save_kuaimai_config
+from app.utils.time_utils import beijing_now, format_beijing
 
 logger = logging.getLogger(__name__)
 
@@ -116,60 +116,49 @@ async def get_item_detail(sys_item_id: int) -> Optional[Dict[str, Any]]:
         return None
 
 
-async def get_supplier_list() -> List[Dict[str, Any]]:
-    """获取供应商列表"""
-    try:
-        result = await _call_api("kuaimai.supplier.list.get")
-        return result.get("suppliers", [])
-    except Exception as e:
-        logger.error(f"查询供应商列表失败: {e}")
-        return []
+# ==================== 会话刷新 ====================
 
+async def refresh_session() -> bool:
+    """
+    调用快麦开放平台刷新会话接口(open.token.refresh)
+    刷新成功后accessToken和refreshToken值不变，仅延长30天有效期
+    :return: 刷新是否成功
+    """
+    if not kuaimai_creds.has_refresh_token():
+        logger.warning("refreshToken未配置，无法自动刷新session")
+        return False
 
-async def get_trade_list(status: str, page: int = 1, page_size: int = 50) -> Dict[str, Any]:
-    """获取交易订单列表"""
-    try:
-        result = await _call_api(
-            "kuaimai.trade.list.get",
-            {"status": status, "page": page, "page_size": page_size}
-        )
-        return result
-    except Exception as e:
-        logger.error(f"查询交易列表失败: {e}")
-        return {}
-
-
-async def get_trade_detail(tid: int) -> Optional[Dict[str, Any]]:
-    """获取交易订单详情"""
     try:
         result = await _call_api(
-            "kuaimai.trade.detail.get",
-            {"tid": tid}
+            "open.token.refresh",
+            {"refreshToken": kuaimai_creds.refresh_token}
         )
-        return result.get("trade")
+
+        # 解析响应
+        session_data = result.get("session", {})
+        if not session_data:
+            logger.error("刷新会话响应中缺少session数据")
+            return False
+
+        # 更新凭证（刷新后token值不变，但更新updated_at记录刷新时间）
+        now = beijing_now()
+        kuaimai_creds.updated_at = format_beijing(now)
+
+        # 如果响应中返回了新的token，也更新（防御性处理）
+        new_access_token = session_data.get("accessToken", "")
+        new_refresh_token = session_data.get("refreshToken", "")
+        if new_access_token:
+            kuaimai_creds.session = new_access_token
+        if new_refresh_token:
+            kuaimai_creds.refresh_token = new_refresh_token
+
+        # 持久化到文件
+        save_kuaimai_config()
+
+        days_left = kuaimai_creds.get_days_left()
+        logger.info(f"快麦session刷新成功，剩余天数: {days_left}")
+        return True
+
     except Exception as e:
-        logger.error(f"查询交易详情失败 tid={tid}: {e}")
-        return None
-
-
-async def get_delivery_templates() -> List[Dict[str, Any]]:
-    """获取物流模板列表"""
-    try:
-        result = await _call_api("kuaimai.delivery.template.get")
-        return result.get("templates", [])
-    except Exception as e:
-        logger.error(f"查询物流模板失败: {e}")
-        return []
-
-
-async def search_items(keyword: str, page: int = 1, page_size: int = 50) -> Dict[str, Any]:
-    """搜索商品"""
-    try:
-        result = await _call_api(
-            "kuaimai.item.search",
-            {"keyword": keyword, "page": page, "page_size": page_size}
-        )
-        return result
-    except Exception as e:
-        logger.error(f"搜索商品失败 keyword={keyword}: {e}")
-        return {}
+        logger.error(f"刷新快麦session失败: {e}")
+        return False

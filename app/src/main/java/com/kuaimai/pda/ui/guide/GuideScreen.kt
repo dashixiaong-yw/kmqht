@@ -26,7 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.kuaimai.pda.ui.settings.SettingsViewModel.Companion.KEY_GUIDE_SHOWN
 import com.kuaimai.pda.ui.settings.SettingsViewModel.Companion.KEY_SCAN_METHOD
-import com.kuaimai.pda.ui.settings.SettingsViewModel.Companion.KEY_SERVER_URL
+import com.kuaimai.pda.util.PrefsKeys
 import com.kuaimai.pda.ui.theme.BrandBlue
 import com.kuaimai.pda.ui.theme.PrimaryLightBg
 import com.kuaimai.pda.ui.theme.PrimaryLightText
@@ -60,7 +60,7 @@ fun GuideScreen(
                 onServerUrlChange = { serverUrl = it },
                 onNext = {
                     // 保存服务器地址到SharedPreferences
-                    prefs.edit().putString(KEY_SERVER_URL, serverUrl.trim()).apply()
+                    prefs.edit().putString(PrefsKeys.KEY_SERVER_URL, serverUrl.trim()).apply()
                     currentStep = 1
                 }
             )

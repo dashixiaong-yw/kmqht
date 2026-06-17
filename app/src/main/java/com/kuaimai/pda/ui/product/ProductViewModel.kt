@@ -14,6 +14,7 @@ import com.kuaimai.pda.data.db.entity.ProductImageEntity
 import com.kuaimai.pda.data.repository.ImageRepository
 import com.kuaimai.pda.data.repository.PickOrderRepository
 import com.kuaimai.pda.util.AppConstants
+import com.kuaimai.pda.util.PrefsKeys
 import com.kuaimai.pda.util.TimeUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -69,7 +70,6 @@ class ProductViewModel @Inject constructor(
 ) : ViewModel() {
 
     companion object {
-        private const val KEY_SERVER_URL = "server_url"
         private const val DEFAULT_SERVER_URL = AppConstants.DEFAULT_SERVER_URL
     }
 
@@ -142,7 +142,7 @@ class ProductViewModel @Inject constructor(
      */
     private suspend fun loadImages(skuOuterId: String) {
         try {
-            val serverUrl = prefs.getString(KEY_SERVER_URL, DEFAULT_SERVER_URL) ?: DEFAULT_SERVER_URL
+            val serverUrl = prefs.getString(PrefsKeys.KEY_SERVER_URL, DEFAULT_SERVER_URL) ?: DEFAULT_SERVER_URL
             productImageDao.getBySkuOuterId(skuOuterId).collectLatest { images ->
                 val areaImage = images.find { it.imageType == "area" }
                 val boxImage = images.find { it.imageType == "box" }
@@ -325,7 +325,7 @@ class ProductViewModel @Inject constructor(
                 )
                 imageRepository.saveImage(entity)
 
-                val serverUrl = prefs.getString(KEY_SERVER_URL, DEFAULT_SERVER_URL) ?: DEFAULT_SERVER_URL
+                val serverUrl = prefs.getString(PrefsKeys.KEY_SERVER_URL, DEFAULT_SERVER_URL) ?: DEFAULT_SERVER_URL
                 val fullUrl = "$serverUrl$imageUrl"
                 _uiState.value = if (imageType == "area") {
                     _uiState.value.copy(areaImageUrl = fullUrl)

@@ -1,4 +1,4 @@
-"""系统路由 - 健康检查、崩溃报告、版本信息"""
+"""系统路由 - 健康检查、崩溃报告、版本信息、快麦会话管理"""
 
 import logging
 import os
@@ -6,12 +6,15 @@ import os
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.auth import get_current_user
+from app.config import kuaimai_creds
 from app.database import get_db
 from app.models import (
     AppVersionResponse,
     BaseResponse,
     CrashReportRequest,
     HealthResponse,
+    KuaimaiRefreshResponse,
+    KuaimaiSessionStatusResponse,
 )
 from app.utils.time_utils import beijing_now, format_beijing
 
@@ -61,7 +64,7 @@ def crash_report(req: CrashReportRequest, user: dict = Depends(get_current_user)
     except Exception as e:
         db.rollback()
         logger.error(f"保存崩溃报告失败: {e}")
-        raise HTTPException(status_code=500, detail=f"保存崩溃报告失败: {e}")
+        raise HTTPException(status_code=500, detail="保存崩溃报告失败，请稍后重试")
 
 
 @router.get("/api/app-version", response_model=AppVersionResponse)
@@ -71,3 +74,43 @@ def get_app_version() -> AppVersionResponse:
         latestVersion=LATEST_VERSION,
         downloadUrl=APK_DOWNLOAD_URL,
     )
+
+
+@router.get("/api/kuaimai/session-status", response_model=KuaimaiSessionStatusResponse)
+def get_kuaimai_session_status(user: dict = Depends(get_current_user)) -> KuaimaiSessionStatusResponse:
+    """查询快麦session状态（剩余天数、是否有效等）"""
+    days_left = kuaimai_creds.get_days_left()
+    is_valid = kuaimai_creds.is_valid() and (days_left is None or days_left > 0)
+
+    return KuaimaiSessionStatusResponse(
+        isValid=is_valid,
+        daysLeft=days_left,
+        updatedAt=kuaimai_creds.updated_at,
+        hasRefreshToken=kuaimai_creds.has_refresh_token(),
+    )
+
+
+@router.post("/api/kuaimai/refresh-session", response_model=KuaimaiRefreshResponse)
+async def refresh_kuaimai_session(user: dict = Depends(get_current_user)) -> KuaimaiRefreshResponse:
+    """手动刷新快麦session"""
+    from app.services.kuaimai_api import refresh_session
+
+    if not kuaimai_creds.has_refresh_token():
+        return KuaimaiRefreshResponse(
+            success=False,
+            message="refreshToken未配置，无法刷新。请在kuaimai.json中配置refresh_token",
+        )
+
+    success = await refresh_session()
+    if success:
+        days_left = kuaimai_creds.get_days_left()
+        return KuaimaiRefreshResponse(
+            success=True,
+            message="session刷新成功",
+            daysLeft=days_left,
+        )
+    else:
+        return KuaimaiRefreshResponse(
+            success=False,
+            message="session刷新失败，请检查refreshToken是否有效或联系快麦客服",
+        )

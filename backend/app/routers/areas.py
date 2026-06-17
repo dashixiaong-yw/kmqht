@@ -63,7 +63,7 @@ def create_area(req: AreaRequest, user: dict = Depends(check_permission("setting
     except Exception as e:
         db.rollback()
         logger.error(f"创建拣货区失败: {e}")
-        raise HTTPException(status_code=500, detail=f"创建拣货区失败: {e}")
+        raise HTTPException(status_code=500, detail="创建拣货区失败，请稍后重试")
 
 
 @router.delete("/{area_id}", response_model=BaseResponse)
@@ -83,4 +83,4 @@ def delete_area(area_id: int, user: dict = Depends(check_permission("settings"))
     except Exception as e:
         db.rollback()
         logger.error(f"删除拣货区失败: {e}")
-        raise HTTPException(status_code=500, detail=f"删除拣货区失败: {e}")
+        raise HTTPException(status_code=500, detail="删除拣货区失败，请稍后重试")

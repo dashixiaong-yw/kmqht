@@ -168,6 +168,7 @@ class LoginResponse(BaseModel):
     userId: int = 0
     username: str = ""
     permissions: List[str] = []
+    mustChangePassword: bool = False
 
 
 class CreateUserRequest(BaseModel):
@@ -198,3 +199,22 @@ class UserListResponse(BaseModel):
     success: bool = True
     message: str = "操作成功"
     data: List[UserResponse] = []
+
+
+# ==================== 快麦会话模型 ====================
+
+class KuaimaiSessionStatusResponse(BaseModel):
+    """快麦session状态响应"""
+    success: bool = True
+    message: str = "操作成功"
+    isValid: bool = False
+    daysLeft: Optional[int] = None
+    updatedAt: str = ""
+    hasRefreshToken: bool = False
+
+
+class KuaimaiRefreshResponse(BaseModel):
+    """快麦session刷新响应"""
+    success: bool = True
+    message: str = "操作成功"
+    daysLeft: Optional[int] = None

@@ -8,6 +8,7 @@ import com.kuaimai.pda.data.api.AreaCreateRequest
 import com.kuaimai.pda.data.api.dto.AreaResponse
 import com.kuaimai.pda.data.repository.UserRepository
 import com.kuaimai.pda.util.AppConstants
+import com.kuaimai.pda.util.PrefsKeys
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,8 +30,6 @@ class SettingsViewModel @Inject constructor(
 ) : ViewModel() {
 
     companion object {
-        const val KEY_SERVER_URL = "server_url"
-        const val KEY_API_KEY = "api_key"
         const val KEY_SCAN_METHOD = "scan_method"
         const val KEY_SOUND_ENABLED = "sound_enabled"
         const val KEY_VIBRATION_ENABLED = "vibration_enabled"
@@ -47,13 +46,13 @@ class SettingsViewModel @Inject constructor(
 
     /** 服务器地址 */
     private val _serverUrl = MutableStateFlow(
-        prefs.getString(KEY_SERVER_URL, AppConstants.DEFAULT_SERVER_URL) ?: AppConstants.DEFAULT_SERVER_URL
+        prefs.getString(PrefsKeys.KEY_SERVER_URL, AppConstants.DEFAULT_SERVER_URL) ?: AppConstants.DEFAULT_SERVER_URL
     )
     val serverUrl: StateFlow<String> = _serverUrl.asStateFlow()
 
     /** API Key（存储在加密SharedPreferences中） */
     private val _apiKey = MutableStateFlow(
-        encryptedPrefs.getString(KEY_API_KEY, "") ?: ""
+        encryptedPrefs.getString(PrefsKeys.KEY_API_KEY, "") ?: ""
     )
     val apiKey: StateFlow<String> = _apiKey.asStateFlow()
 
@@ -175,7 +174,7 @@ class SettingsViewModel @Inject constructor(
             return
         }
         _serverUrl.value = trimmed
-        prefs.edit().putString(KEY_SERVER_URL, trimmed).apply()
+        prefs.edit().putString(PrefsKeys.KEY_SERVER_URL, trimmed).apply()
         _successMessage.value = "服务器地址已保存"
     }
 
@@ -197,7 +196,7 @@ class SettingsViewModel @Inject constructor(
     fun saveApiKey(key: String) {
         val trimmed = key.trim()
         _apiKey.value = trimmed
-        encryptedPrefs.edit().putString(KEY_API_KEY, trimmed).apply()
+        encryptedPrefs.edit().putString(PrefsKeys.KEY_API_KEY, trimmed).apply()
         _successMessage.value = "API Key已保存"
     }
 

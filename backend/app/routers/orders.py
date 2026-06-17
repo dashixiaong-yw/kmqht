@@ -78,7 +78,7 @@ def create_order(req: CreateOrderRequest, user: dict = Depends(get_current_user)
                 logger.warning(f"单号冲突，重试生成: {order_no} (attempt={attempt + 1})")
             else:
                 logger.error(f"创建取货单失败: {e}")
-                raise HTTPException(status_code=500, detail=f"创建取货单失败: {e}")
+                raise HTTPException(status_code=500, detail="创建取货单失败，请稍后重试")
 
     cursor.execute("SELECT * FROM pick_orders WHERE order_no = ?", (order_no,))
     row = cursor.fetchone()
@@ -210,7 +210,7 @@ async def add_item(order_id: int, req: AddItemRequest, user: dict = Depends(get_
     except Exception as e:
         db.rollback()
         logger.error(f"添加取货明细失败: {e}")
-        raise HTTPException(status_code=500, detail=f"添加取货明细失败: {e}")
+        raise HTTPException(status_code=500, detail="添加取货明细失败，请稍后重试")
 
 
 @router.put("/{order_id}/items/{item_id}/complete", response_model=BaseResponse)
@@ -254,7 +254,7 @@ def complete_item(order_id: int, item_id: int, user: dict = Depends(get_current_
     except Exception as e:
         db.rollback()
         logger.error(f"完成取货明细失败: {e}")
-        raise HTTPException(status_code=500, detail=f"完成取货明细失败: {e}")
+        raise HTTPException(status_code=500, detail="完成取货明细失败，请稍后重试")
 
 
 @router.put("/{order_id}/items/{item_id}/restore", response_model=BaseResponse)
@@ -296,7 +296,7 @@ def restore_item(order_id: int, item_id: int, user: dict = Depends(get_current_u
     except Exception as e:
         db.rollback()
         logger.error(f"恢复取货明细失败: {e}")
-        raise HTTPException(status_code=500, detail=f"恢复取货明细失败: {e}")
+        raise HTTPException(status_code=500, detail="恢复取货明细失败，请稍后重试")
 
 
 @router.put("/{order_id}/complete-all", response_model=BaseResponse)
@@ -333,7 +333,7 @@ def complete_all_items(order_id: int, user: dict = Depends(get_current_user)) ->
     except Exception as e:
         db.rollback()
         logger.error(f"批量完成失败: {e}")
-        raise HTTPException(status_code=500, detail=f"批量完成失败: {e}")
+        raise HTTPException(status_code=500, detail="批量完成失败，请稍后重试")
 
 
 @router.delete("/{order_id}", response_model=BaseResponse)
@@ -372,7 +372,7 @@ def delete_order(order_id: int, user: dict = Depends(get_current_user)) -> BaseR
     except Exception as e:
         db.rollback()
         logger.error(f"删除取货单失败: {e}")
-        raise HTTPException(status_code=500, detail=f"删除取货单失败: {e}")
+        raise HTTPException(status_code=500, detail="删除取货单失败，请稍后重试")
 
 
 @router.delete("/{order_id}/items/{item_id}", response_model=BaseResponse)
@@ -419,7 +419,7 @@ def delete_item(order_id: int, item_id: int, user: dict = Depends(get_current_us
     except Exception as e:
         db.rollback()
         logger.error(f"删除取货明细失败: {e}")
-        raise HTTPException(status_code=500, detail=f"删除取货明细失败: {e}")
+        raise HTTPException(status_code=500, detail="删除取货明细失败，请稍后重试")
 
 
 @router.get("/{order_id}/suppliers", response_model=List[str])

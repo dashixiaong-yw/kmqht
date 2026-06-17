@@ -10,6 +10,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
 import com.kuaimai.pda.util.AppConstants
+import com.kuaimai.pda.util.PrefsKeys
 import org.json.JSONObject
 import java.io.File
 import java.io.IOException
@@ -30,10 +31,8 @@ class ImageUploadService @Inject constructor(
 
     companion object {
         private const val TAG = "ImageUploadService"
-        private const val KEY_SERVER_URL = "server_url"
         private const val DEFAULT_SERVER_URL = AppConstants.DEFAULT_SERVER_URL
         private const val MAX_RETRY = 3
-        private const val KEY_USER_TOKEN = "user_token"
     }
 
     /**
@@ -80,7 +79,7 @@ class ImageUploadService @Inject constructor(
         skuOuterId: String,
         onProgress: ((Int) -> Unit)?
     ): String {
-        val serverUrl = prefs.getString(KEY_SERVER_URL, DEFAULT_SERVER_URL)
+        val serverUrl = prefs.getString(PrefsKeys.KEY_SERVER_URL, DEFAULT_SERVER_URL)
             ?: DEFAULT_SERVER_URL
         val uploadUrl = "$serverUrl/api/upload"
 
@@ -105,7 +104,7 @@ class ImageUploadService @Inject constructor(
             requestBody
         }
 
-        val token = encryptedPrefs.getString(KEY_USER_TOKEN, "") ?: ""
+        val token = encryptedPrefs.getString(PrefsKeys.KEY_USER_TOKEN, "") ?: ""
         val request = Request.Builder()
             .url(uploadUrl)
             .post(progressBody)
@@ -129,11 +128,11 @@ class ImageUploadService @Inject constructor(
      * @param imageId 图片ID
      */
     suspend fun deleteImage(imageId: Long) = withContext(Dispatchers.IO) {
-        val serverUrl = prefs.getString(KEY_SERVER_URL, DEFAULT_SERVER_URL)
+        val serverUrl = prefs.getString(PrefsKeys.KEY_SERVER_URL, DEFAULT_SERVER_URL)
             ?: DEFAULT_SERVER_URL
         val deleteUrl = "$serverUrl/api/images/$imageId"
 
-        val token = encryptedPrefs.getString(KEY_USER_TOKEN, "") ?: ""
+        val token = encryptedPrefs.getString(PrefsKeys.KEY_USER_TOKEN, "") ?: ""
         val request = Request.Builder()
             .url(deleteUrl)
             .delete()

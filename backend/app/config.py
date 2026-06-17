@@ -32,6 +32,12 @@ DB_PATH: str = os.getenv("DB_PATH", "/data/kuaimai.db")
 # 快麦API基础URL（可通过环境变量覆盖）
 KUAIMAI_API_BASE: str = os.getenv("KUAIMAI_API_BASE", "https://openapi.kuaimai.com/router")
 
+# CORS允许的来源（逗号分隔，默认*允许所有，生产环境应限制）
+CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", "*")
+
+# 会话过期预警天数（与前端SESSION_WARNING_DAYS保持一致）
+SESSION_WARNING_DAYS: int = int(os.getenv("SESSION_WARNING_DAYS", "5"))
+
 
 class KuaimaiCredentials:
     """快麦平台凭证"""
@@ -40,11 +46,16 @@ class KuaimaiCredentials:
         self.app_key: str = ""
         self.app_secret: str = ""
         self.session: str = ""
+        self.refresh_token: str = ""
         self.updated_at: str = ""
 
     def is_valid(self) -> bool:
         """检查凭证是否已配置"""
         return bool(self.app_key and self.app_secret and self.session)
+
+    def has_refresh_token(self) -> bool:
+        """检查是否配置了refreshToken"""
+        return bool(self.refresh_token)
 
     def check_session_expiry(self) -> Optional[str]:
         """检查session是否即将过期，返回警告消息或None"""
@@ -53,17 +64,30 @@ class KuaimaiCredentials:
         try:
             from app.utils.time_utils import beijing_now, parse_beijing
             updated_dt = parse_beijing(self.updated_at)
-            # 假设session有效期30天
+            # session有效期30天
             expire_dt = updated_dt + timedelta(days=30)
             now = beijing_now()
             days_left = (expire_dt - now).days
-            if days_left <= 5 and days_left > 0:
+            if days_left <= SESSION_WARNING_DAYS and days_left > 0:
                 return f"快麦session将在{days_left}天后过期，请及时更新"
             if days_left <= 0:
                 return "快麦session已过期，请立即更新"
         except ValueError as e:
             logger.warning(f"解析updated_at失败: {e}")
         return None
+
+    def get_days_left(self) -> Optional[int]:
+        """获取session剩余天数，未配置返回None"""
+        if not self.updated_at:
+            return None
+        try:
+            from app.utils.time_utils import beijing_now, parse_beijing
+            updated_dt = parse_beijing(self.updated_at)
+            expire_dt = updated_dt + timedelta(days=30)
+            now = beijing_now()
+            return (expire_dt - now).days
+        except ValueError:
+            return None
 
 
 # 全局凭证实例
@@ -83,10 +107,32 @@ def load_kuaimai_config() -> None:
         kuaimai_creds.app_key = data.get("app_key", "")
         kuaimai_creds.app_secret = data.get("app_secret", "")
         kuaimai_creds.session = data.get("session", "")
+        kuaimai_creds.refresh_token = data.get("refresh_token", "")
         kuaimai_creds.updated_at = data.get("updated_at", "")
         logger.info("快麦凭证加载成功")
     except (json.JSONDecodeError, IOError) as e:
         logger.error(f"加载快麦凭证失败: {e}")
+
+
+def save_kuaimai_config() -> None:
+    """将快麦凭证写回JSON文件（刷新session后更新updated_at）"""
+    config_path = Path(KUAIMAI_CONFIG_PATH)
+    try:
+        data: dict = {}
+        if config_path.exists():
+            with open(config_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+
+        # 更新字段
+        data["updated_at"] = kuaimai_creds.updated_at
+        if kuaimai_creds.refresh_token:
+            data["refresh_token"] = kuaimai_creds.refresh_token
+
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        logger.info("快麦凭证已保存到文件")
+    except (json.JSONDecodeError, IOError) as e:
+        logger.error(f"保存快麦凭证失败: {e}")
 
 
 def start_config_watcher() -> None:

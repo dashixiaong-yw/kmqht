@@ -13,6 +13,7 @@ from starlette.responses import JSONResponse
 from app.auth import ApiKeyMiddleware
 from app.config import (
     API_KEY,
+    CORS_ORIGINS,
     IMAGE_DIR,
     SERVER_PORT,
     check_session_warning,
@@ -38,10 +39,11 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# CORS中间件（开发环境允许所有来源）
+# CORS中间件（来源从环境变量配置，生产环境应限制为前端域名）
+_origins = [o.strip() for o in CORS_ORIGINS.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -147,7 +149,16 @@ def _start_scheduler() -> None:
         replace_existing=True,
     )
 
-    # 每24小时检查session过期警告
+    # 每7天自动刷新快麦session（30天有效期，7天刷新留足余量）
+    scheduler.add_job(
+        _refresh_kuaimai_session,
+        "interval",
+        days=7,
+        id="kuaimai_session_refresh",
+        replace_existing=True,
+    )
+
+    # 每24小时检查session过期警告（仅日志提醒，不自动刷新）
     scheduler.add_job(
         check_session_warning,
         "interval",
@@ -291,6 +302,31 @@ def _cleanup_orphan_images() -> None:
             logger.info(f"已清理{deleted_count}个孤立图片文件")
     except Exception as e:
         logger.error(f"清理孤立图片失败: {e}")
+
+
+def _refresh_kuaimai_session() -> None:
+    """定时刷新快麦session（每7天执行一次）"""
+    import asyncio
+    from app.services.kuaimai_api import refresh_session
+
+    async def _do_refresh() -> None:
+        try:
+            success = await refresh_session()
+            if success:
+                logger.info("定时刷新快麦session成功")
+            else:
+                logger.warning("定时刷新快麦session失败，将在下个周期重试")
+        except Exception as e:
+            logger.error(f"定时刷新快麦session异常: {e}")
+
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(_do_refresh())
+        else:
+            loop.run_until_complete(_do_refresh())
+    except RuntimeError as e:
+        logger.error(f"刷新session时获取事件循环失败: {e}")
 
 
 # ==================== 启动配置 ====================

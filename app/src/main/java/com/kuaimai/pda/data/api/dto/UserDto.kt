@@ -18,7 +18,8 @@ data class LoginResponse(
     val token: String = "",
     val userId: Long = 0,
     val username: String = "",
-    val permissions: List<String> = emptyList()
+    val permissions: List<String> = emptyList(),
+    val mustChangePassword: Boolean = false
 )
 
 /** 创建用户请求 */

@@ -3,11 +3,13 @@ package com.kuaimai.pda.data.repository
 import android.content.SharedPreferences
 import android.util.Log
 import com.kuaimai.pda.data.api.UserApiService
+import com.kuaimai.pda.data.api.dto.LoginResponse
 import com.kuaimai.pda.data.api.dto.CreateUserRequest
 import com.kuaimai.pda.data.api.dto.LoginRequest
 import com.kuaimai.pda.data.api.dto.UpdateUserRequest
 import com.kuaimai.pda.data.api.dto.UserListResponse
 import com.kuaimai.pda.data.api.dto.UserResponse
+import com.kuaimai.pda.util.PrefsKeys
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -44,6 +46,9 @@ interface UserRepository {
     /** 获取用户token */
     fun getToken(): String
 
+    /** 获取最近一次登录结果（含mustChangePassword标志） */
+    fun getLoginResult(): LoginResponse?
+
     /** 获取用户列表（需settings权限） */
     suspend fun getUsers(): Result<UserListResponse>
 
@@ -75,14 +80,15 @@ class UserRepositoryImpl @Inject constructor(
 
     companion object {
         private const val TAG = "UserRepository"
-        private const val KEY_USER_TOKEN = "user_token"
-        private const val KEY_USER_ID = "user_id"
-        private const val KEY_USER_NAME = "user_name"
-        private const val KEY_USER_PERMISSIONS = "user_permissions"
+        /** Token有效期7天（毫秒） */
+        private const val TOKEN_EXPIRE_MS = 7L * 24 * 60 * 60 * 1000
     }
 
     private val _currentUser = MutableStateFlow<UserResponse?>(null)
     override val currentUser: StateFlow<UserResponse?> = _currentUser
+
+    /** 最近一次登录结果 */
+    private var _lastLoginResult: LoginResponse? = null
 
     private val _loginRequired = MutableSharedFlow<Unit>()
     override val loginRequired: SharedFlow<Unit> = _loginRequired
@@ -100,17 +106,20 @@ class UserRepositoryImpl @Inject constructor(
         return try {
             val response = apiService.login(LoginRequest(username, password))
             if (response.success && response.token.isNotEmpty()) {
+                _lastLoginResult = response
                 val user = UserResponse(
                     id = response.userId,
                     username = response.username,
                     permissions = response.permissions
                 )
-                // 保存到本地
+                // 保存到本地（含session过期时间，供HomeScreen预警使用）
+                val expireTime = System.currentTimeMillis() + TOKEN_EXPIRE_MS
                 prefs.edit()
-                    .putString(KEY_USER_TOKEN, response.token)
-                    .putLong(KEY_USER_ID, response.userId)
-                    .putString(KEY_USER_NAME, response.username)
-                    .putStringSet(KEY_USER_PERMISSIONS, response.permissions.toSet())
+                    .putString(PrefsKeys.KEY_USER_TOKEN, response.token)
+                    .putLong(PrefsKeys.KEY_USER_ID, response.userId)
+                    .putString(PrefsKeys.KEY_USER_NAME, response.username)
+                    .putStringSet(PrefsKeys.KEY_USER_PERMISSIONS, response.permissions.toSet())
+                    .putLong(PrefsKeys.KEY_SESSION_EXPIRE, expireTime)
                     .apply()
                 _currentUser.value = user
                 Log.i(TAG, "登录成功: $username")
@@ -142,7 +151,11 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override fun getToken(): String {
-        return prefs.getString(KEY_USER_TOKEN, "") ?: ""
+        return prefs.getString(PrefsKeys.KEY_USER_TOKEN, "") ?: ""
+    }
+
+    override fun getLoginResult(): LoginResponse? {
+        return _lastLoginResult
     }
 
     override suspend fun getUsers(): Result<UserListResponse> {
@@ -182,7 +195,7 @@ class UserRepositoryImpl @Inject constructor(
                 _currentUser.value = updatedUser
                 prefs.edit().apply {
                     if (permissions != null) {
-                        putStringSet(KEY_USER_PERMISSIONS, permissions.toSet())
+                        putStringSet(PrefsKeys.KEY_USER_PERMISSIONS, permissions.toSet())
                     }
                 }.apply()
             }
@@ -214,9 +227,9 @@ class UserRepositoryImpl @Inject constructor(
             _currentUser.value = user
             // 更新本地缓存（包含id）
             prefs.edit()
-                .putLong(KEY_USER_ID, user.id)
-                .putString(KEY_USER_NAME, user.username)
-                .putStringSet(KEY_USER_PERMISSIONS, user.permissions.toSet())
+                .putLong(PrefsKeys.KEY_USER_ID, user.id)
+                .putString(PrefsKeys.KEY_USER_NAME, user.username)
+                .putStringSet(PrefsKeys.KEY_USER_PERMISSIONS, user.permissions.toSet())
                 .apply()
             true
         } catch (e: Exception) {
@@ -243,10 +256,10 @@ class UserRepositoryImpl @Inject constructor(
 
     /** 从本地缓存恢复用户状态 */
     private fun restoreFromCache() {
-        val token = prefs.getString(KEY_USER_TOKEN, "") ?: ""
-        val userId = prefs.getLong(KEY_USER_ID, 0L)
-        val username = prefs.getString(KEY_USER_NAME, "") ?: ""
-        val permissions = prefs.getStringSet(KEY_USER_PERMISSIONS, emptySet()) ?: emptySet()
+        val token = prefs.getString(PrefsKeys.KEY_USER_TOKEN, "") ?: ""
+        val userId = prefs.getLong(PrefsKeys.KEY_USER_ID, 0L)
+        val username = prefs.getString(PrefsKeys.KEY_USER_NAME, "") ?: ""
+        val permissions = prefs.getStringSet(PrefsKeys.KEY_USER_PERMISSIONS, emptySet()) ?: emptySet()
 
         if (token.isNotEmpty() && username.isNotEmpty()) {
             _currentUser.value = UserResponse(
@@ -260,10 +273,11 @@ class UserRepositoryImpl @Inject constructor(
     /** 清除本地用户数据 */
     private fun clearLocalUser() {
         prefs.edit()
-            .remove(KEY_USER_TOKEN)
-            .remove(KEY_USER_ID)
-            .remove(KEY_USER_NAME)
-            .remove(KEY_USER_PERMISSIONS)
+            .remove(PrefsKeys.KEY_USER_TOKEN)
+            .remove(PrefsKeys.KEY_USER_ID)
+            .remove(PrefsKeys.KEY_USER_NAME)
+            .remove(PrefsKeys.KEY_USER_PERMISSIONS)
+            .remove(PrefsKeys.KEY_SESSION_EXPIRE)
             .apply()
         _currentUser.value = null
         Log.i(TAG, "本地用户数据已清除")

@@ -2,6 +2,7 @@ package com.kuaimai.pda.data.api
 
 import android.content.SharedPreferences
 import android.util.Log
+import com.kuaimai.pda.util.PrefsKeys
 import com.kuaimai.pda.util.SignUtils
 import com.kuaimai.pda.util.TimeUtils
 import okhttp3.Interceptor
@@ -27,8 +28,6 @@ class KuaimaiInterceptor @Inject constructor(
 
     companion object {
         private const val TAG = "KuaimaiInterceptor"
-        private const val KEY_APP_KEY = "app_key"
-        private const val KEY_APP_SECRET = "app_secret"
         private const val KEY_ACCESS_TOKEN = "access_token"
     }
 
@@ -41,8 +40,8 @@ class KuaimaiInterceptor @Inject constructor(
             return chain.proceed(originalRequest)
         }
 
-        val appKey = prefs.getString(KEY_APP_KEY, "") ?: ""
-        val appSecret = prefs.getString(KEY_APP_SECRET, "") ?: ""
+        val appKey = prefs.getString(PrefsKeys.KEY_APP_KEY, "") ?: ""
+        val appSecret = prefs.getString(PrefsKeys.KEY_APP_SECRET, "") ?: ""
         val accessToken = prefs.getString(KEY_ACCESS_TOKEN, "") ?: ""
 
         // 从请求体中提取参数

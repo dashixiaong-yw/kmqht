@@ -3,8 +3,10 @@
 import logging
 import os
 import sqlite3
+import threading
+import time
 import uuid
-from typing import List
+from typing import Dict, List
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
@@ -24,6 +26,26 @@ _ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 # 最大文件大小（2MB）
 _MAX_FILE_SIZE = 2 * 1024 * 1024
 
+# 上传速率限制：每用户每分钟最多10次
+_UPLOAD_RATE_LIMIT = 10
+_UPLOAD_RATE_WINDOW = 60
+_upload_counts: Dict[int, List[float]] = {}
+_upload_rate_lock = threading.Lock()
+
+
+def _check_upload_rate(user_id: int) -> None:
+    """检查上传速率限制"""
+    import time as _time
+    with _upload_rate_lock:
+        now = _time.time()
+        if user_id not in _upload_counts:
+            _upload_counts[user_id] = []
+        # 清理过期记录
+        _upload_counts[user_id] = [t for t in _upload_counts[user_id] if now - t < _UPLOAD_RATE_WINDOW]
+        if len(_upload_counts[user_id]) >= _UPLOAD_RATE_LIMIT:
+            raise HTTPException(status_code=429, detail="上传过于频繁，请稍后重试")
+        _upload_counts[user_id].append(now)
+
 
 @router.post("/upload", response_model=ImageResponse)
 async def upload_image(
@@ -33,6 +55,9 @@ async def upload_image(
     user: dict = Depends(get_current_user),
 ) -> ImageResponse:
     """上传商品图片（multipart表单），需对应图片管理权限"""
+    # 上传速率限制
+    _check_upload_rate(user["user_id"])
+
     # 验证图片类型
     if imageType not in ("area", "box"):
         raise HTTPException(status_code=400, detail="imageType必须为area或box")
@@ -75,7 +100,7 @@ async def upload_image(
             f.write(content)
     except IOError as e:
         logger.error(f"保存图片失败: {e}")
-        raise HTTPException(status_code=500, detail=f"保存图片失败: {e}")
+        raise HTTPException(status_code=500, detail="保存图片失败，请稍后重试")
 
     # 新文件保存成功，删除旧图片文件和记录
     if existing:
@@ -111,11 +136,11 @@ async def upload_image(
         if os.path.exists(file_path):
             os.remove(file_path)
         logger.error(f"保存图片记录失败: {e}")
-        raise HTTPException(status_code=500, detail=f"保存图片记录失败: {e}")
+        raise HTTPException(status_code=500, detail="保存图片记录失败，请稍后重试")
 
 
 @router.get("/images/{sku_outer_id}", response_model=ImageListResponse)
-def get_images(sku_outer_id: str) -> ImageListResponse:
+def get_images(sku_outer_id: str, user: dict = Depends(get_current_user)) -> ImageListResponse:
     """获取SKU的所有图片"""
     db = get_db()
     cursor = db.cursor()
@@ -163,7 +188,7 @@ def delete_image(
     except Exception as e:
         db.rollback()
         logger.error(f"删除图片记录失败: {e}")
-        raise HTTPException(status_code=500, detail=f"删除图片记录失败: {e}")
+        raise HTTPException(status_code=500, detail="删除图片记录失败，请稍后重试")
 
 
 def _row_to_image_response(row: sqlite3.Row) -> ImageResponse:

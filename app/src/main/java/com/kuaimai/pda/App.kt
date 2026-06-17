@@ -6,6 +6,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import com.kuaimai.pda.util.AppConstants
+import com.kuaimai.pda.util.PrefsKeys
 import com.kuaimai.pda.util.TimeUtils
 import dagger.hilt.android.HiltAndroidApp
 import java.io.File
@@ -25,7 +26,6 @@ class App : Application() {
 
     companion object {
         private const val TAG = "App"
-        private const val KEY_SERVER_URL = "server_url"
         private const val DEFAULT_SERVER_URL = AppConstants.DEFAULT_SERVER_URL
         private const val ANR_THRESHOLD_MS = 5000L
         private const val ANR_CHECK_INTERVAL_MS = 1000L
@@ -98,22 +98,6 @@ class App : Application() {
             Log.w(TAG, "ANR detected: blocked ${blockDurationMs}ms")
         } catch (e: Exception) {
             Log.e(TAG, "记录ANR日志失败: ${e.message}")
-        }
-    }
-
-    /**
-     * 发送崩溃报告到后端
-     * 不使用第三方SaaS，直接POST到自有后端
-     */
-    private fun sendCrashReport(errorMessage: String, stackTrace: String) {
-        try {
-            val serverUrl = prefs.getString(KEY_SERVER_URL, DEFAULT_SERVER_URL) ?: DEFAULT_SERVER_URL
-            val url = "$serverUrl/api/crash-report"
-            // 使用OkHttp发送崩溃报告
-            // 实际实现由ACRA或自定义UncaughtExceptionHandler处理
-            Log.d(TAG, "崩溃报告将发送到: $url")
-        } catch (e: Exception) {
-            Log.e(TAG, "发送崩溃报告失败: ${e.message}")
         }
     }
 }

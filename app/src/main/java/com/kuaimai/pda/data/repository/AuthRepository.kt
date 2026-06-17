@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import android.util.Log
 import com.kuaimai.pda.data.api.KuaimaiApiService
 import com.kuaimai.pda.util.AppConstants
+import com.kuaimai.pda.util.PrefsKeys
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import javax.inject.Inject
@@ -38,11 +39,6 @@ class AuthRepositoryImpl @Inject constructor(
 ) : AuthRepository {
 
     companion object {
-        private const val KEY_API_KEY = "api_key"
-        private const val KEY_APP_KEY = "app_key"
-        private const val KEY_APP_SECRET = "app_secret"
-        private const val KEY_BASE_URL = "base_url"
-        private const val KEY_SESSION_EXPIRE = "session_expire_time"
         private const val DEFAULT_BASE_URL = AppConstants.KUAIMAI_API_URL
     }
 
@@ -67,38 +63,38 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override fun getApiKey(): String {
-        return prefs.getString(KEY_API_KEY, "") ?: ""
+        return prefs.getString(PrefsKeys.KEY_API_KEY, "") ?: ""
     }
 
     override fun setApiKey(key: String) {
-        prefs.edit().putString(KEY_API_KEY, key).apply()
+        prefs.edit().putString(PrefsKeys.KEY_API_KEY, key).apply()
     }
 
     override fun getAppKey(): String {
-        return prefs.getString(KEY_APP_KEY, "") ?: ""
+        return prefs.getString(PrefsKeys.KEY_APP_KEY, "") ?: ""
     }
 
     override fun setAppKey(key: String) {
-        prefs.edit().putString(KEY_APP_KEY, key).apply()
+        prefs.edit().putString(PrefsKeys.KEY_APP_KEY, key).apply()
     }
 
     override fun getAppSecret(): String {
-        return prefs.getString(KEY_APP_SECRET, "") ?: ""
+        return prefs.getString(PrefsKeys.KEY_APP_SECRET, "") ?: ""
     }
 
     override fun setAppSecret(secret: String) {
-        prefs.edit().putString(KEY_APP_SECRET, secret).apply()
+        prefs.edit().putString(PrefsKeys.KEY_APP_SECRET, secret).apply()
     }
 
     override fun getBaseUrl(): String {
-        return prefs.getString(KEY_BASE_URL, DEFAULT_BASE_URL) ?: DEFAULT_BASE_URL
+        return prefs.getString(PrefsKeys.KEY_BASE_URL, DEFAULT_BASE_URL) ?: DEFAULT_BASE_URL
     }
 
     override fun setBaseUrl(url: String) {
-        prefs.edit().putString(KEY_BASE_URL, url).apply()
+        prefs.edit().putString(PrefsKeys.KEY_BASE_URL, url).apply()
     }
 
     override fun getSessionExpireTime(): Long {
-        return prefs.getLong(KEY_SESSION_EXPIRE, 0L)
+        return prefs.getLong(PrefsKeys.KEY_SESSION_EXPIRE, 0L)
     }
 }

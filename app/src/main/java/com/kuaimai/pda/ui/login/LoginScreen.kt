@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -53,6 +54,11 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
+    var showChangePasswordDialog by remember { mutableStateOf(false) }
+    var newPassword by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var changePasswordError by remember { mutableStateOf("") }
+    var isChangingPassword by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     Scaffold(
@@ -161,7 +167,18 @@ fun LoginScreen(
                             val result = userRepository.login(username, password)
                             isLoading = false
                             if (result.isSuccess) {
-                                onLoginSuccess()
+                                val user = result.getOrNull()
+                                if (user != null) {
+                                    // 检查是否需要强制修改密码
+                                    val loginResult = userRepository.getLoginResult()
+                                    if (loginResult?.mustChangePassword == true) {
+                                        showChangePasswordDialog = true
+                                    } else {
+                                        onLoginSuccess()
+                                    }
+                                } else {
+                                    onLoginSuccess()
+                                }
                             } else {
                                 errorMessage = friendlyErrorMessage(result.exceptionOrNull())
                             }
@@ -182,6 +199,87 @@ fun LoginScreen(
                 }
             }
         }
+    }
+
+    // 强制修改密码对话框
+    if (showChangePasswordDialog) {
+        AlertDialog(
+            onDismissRequest = { /* 不允许关闭，必须修改密码 */ },
+            title = { Text("安全提示") },
+            text = {
+                Column {
+                    Text("检测到您使用的是默认密码，请立即修改密码以确保安全")
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value = newPassword,
+                        onValueChange = {
+                            newPassword = it
+                            changePasswordError = ""
+                        },
+                        label = { Text("新密码") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isChangingPassword
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = confirmPassword,
+                        onValueChange = {
+                            confirmPassword = it
+                            changePasswordError = ""
+                        },
+                        label = { Text("确认密码") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isChangingPassword
+                    )
+                    if (changePasswordError.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = changePasswordError,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (newPassword.length < 4) {
+                            changePasswordError = "密码长度不能少于4位"
+                            return@Button
+                        }
+                        if (newPassword != confirmPassword) {
+                            changePasswordError = "两次密码输入不一致"
+                            return@Button
+                        }
+                        isChangingPassword = true
+                        scope.launch {
+                            val userId = userRepository.currentUser.value?.id ?: 0L
+                            val result = userRepository.updateUser(
+                                userId,
+                                newPassword,
+                                null,
+                                null
+                            )
+                            isChangingPassword = false
+                            if (result.isSuccess) {
+                                showChangePasswordDialog = false
+                                onLoginSuccess()
+                            } else {
+                                changePasswordError = "修改密码失败: ${result.exceptionOrNull()?.message}"
+                            }
+                        }
+                    },
+                    enabled = !isChangingPassword
+                ) {
+                    Text(if (isChangingPassword) "修改中..." else "确认修改")
+                }
+            }
+        )
     }
 }
 
