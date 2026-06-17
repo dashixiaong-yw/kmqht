@@ -1,5 +1,22 @@
 # 快麦取货通 - 变更日志
 
+## 1.3 (2026-06-17)
+
+### 修复
+- 修复images.py缺少sqlite3导入导致图片查询接口崩溃（P0）
+- 修复UserRepository.kt引用未定义KEY_USER_ID常量导致编译失败（P0）
+- 修复handleAuthError使用GlobalScope反模式，改用应用级CoroutineScope（P0）
+- 修复AppNavigation未监听loginRequired事件，token过期后不会自动跳转登录页（P1）
+- 修复restoreFromCache未恢复用户id，导致SettingsScreen删除按钮判断失效（P1）
+- 修复禁用用户时未清理其token，被禁用用户7天内仍可使用系统（P1）
+- 修复登录接口无暴力破解防护，添加5次失败锁定5分钟限流（P1）
+- 修复修改自己权限后本地缓存不更新，需重新登录才能生效（P1）
+- 删除auth.py中未使用的SKIP_USER_TOKEN_PREFIXES死代码（P2）
+- 修复HomeScreen引导提示对所有用户显示，改为仅settings权限用户可见（P2）
+- 修复LoginScreen网络异常提示不友好，添加中文友好提示（P2）
+- 修复ProductScreen无图片权限时图片区域完全隐藏，改为只读显示（P2）
+- 修复users.py中timedelta导入在函数内部，移到文件头部（P2）
+
 ## 1.2 (2026-06-17)
 
 ### 新增
