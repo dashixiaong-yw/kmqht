@@ -17,6 +17,18 @@
 # ---- WorkManager Worker ----
 -keep class com.kuaimai.pda.data.OrderSyncWorker { *; }
 
+# ---- Sealed/Enum 类（R8全模式需要） ----
+-keep class com.kuaimai.pda.update.CheckResult { *; }
+-keep class com.kuaimai.pda.update.DownloadState { *; }
+-keep enum com.kuaimai.pda.scanner.ScanFeedbackType { *; }
+-keep enum com.kuaimai.pda.util.NetworkMonitor$Status { *; }
+-keep class com.kuaimai.pda.ui.settings.UpdateCheckUiState { *; }
+
+# ---- Hilt/Dagger 组件 ----
+-keep class dagger.hilt.** { *; }
+-keep class javax.inject.** { *; }
+-keep class * extends dagger.hilt.android.internal.managers.ViewComponentManager$FragmentContextWrapper { *; }
+
 # ---- 抑制警告 ----
 -dontwarn okhttp3.**
 -dontwarn okio.**

@@ -16,6 +16,9 @@ logger = logging.getLogger(__name__)
 # HTTP客户端超时配置
 _TIMEOUT = 30.0
 
+# 全局凭证访问锁（多线程安全）
+_config_lock = threading.Lock()
+
 
 def _sign(params: Dict[str, Any], app_secret: str) -> str:
     """
@@ -100,31 +103,18 @@ async def _call_api(method: str, extra_params: Optional[Dict[str, Any]] = None) 
 # ==================== 2个API方法 ====================
 
 async def get_sku_by_outer_id(sku_outer_id: str) -> Optional[Dict[str, Any]]:
-    """根据外部编码获取SKU信息"""
+    """根据外部编码获取SKU信息（V2 erp.item.sku.list.get）"""
     try:
         result = await _call_api(
-            "kuaimai.item.sku.get",
-            {"sku_outer_id": sku_outer_id}
+            "erp.item.sku.list.get",
+            {"outerId": sku_outer_id}
         )
-        sku_list = result.get("skus", [])
+        sku_list = result.get("itemSkus", [])
         if sku_list:
             return sku_list[0]
         return None
     except Exception as e:
         logger.error(f"查询SKU失败 sku_outer_id={sku_outer_id}: {e}")
-        return None
-
-
-async def get_item_detail(sys_item_id: int) -> Optional[Dict[str, Any]]:
-    """获取商品详情"""
-    try:
-        result = await _call_api(
-            "kuaimai.item.detail.get",
-            {"sys_item_id": sys_item_id}
-        )
-        return result.get("item")
-    except Exception as e:
-        logger.error(f"查询商品详情失败 sys_item_id={sys_item_id}: {e}")
         return None
 
 

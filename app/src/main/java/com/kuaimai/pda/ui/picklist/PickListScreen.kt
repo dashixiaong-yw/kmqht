@@ -30,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -69,12 +70,14 @@ fun PickListScreen(
     val deleteTarget by viewModel.deleteTarget.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
+    val errorMessageToken = remember { mutableStateOf(0) }
 
-    // 错误消息提示
-    LaunchedEffect(errorMessage) {
+    // 错误消息提示（使用计数器确保相同消息可重复触发）
+    LaunchedEffect(errorMessageToken.value) {
         errorMessage?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.clearError()
+            errorMessageToken.value++
         }
     }
 
@@ -266,24 +269,14 @@ private fun CompletedOrdersList(
     onBack: () -> Unit,
     onOrderClick: (PickOrderEntity) -> Unit
 ) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("已完成取货单", color = SurfaceWhite) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "返回", tint = SurfaceWhite)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = BrandBlue)
-            )
-        }
-    ) { innerPadding ->
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
         if (orders.isEmpty()) {
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
+                    .fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -296,7 +289,6 @@ private fun CompletedOrdersList(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
             ) {
                 items(
                     items = orders,

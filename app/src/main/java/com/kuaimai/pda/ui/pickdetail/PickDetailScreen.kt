@@ -214,6 +214,7 @@ fun PickDetailScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(innerPadding)
         ) {
             // 扫码输入框
             Row(

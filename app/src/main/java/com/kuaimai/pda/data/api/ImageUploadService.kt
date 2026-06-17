@@ -3,6 +3,7 @@ package com.kuaimai.pda.data.api
 import android.content.SharedPreferences
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
@@ -62,7 +63,7 @@ class ImageUploadService @Inject constructor(
                 if (attempt < MAX_RETRY - 1) {
                     // 指数退避：1s, 2s, 4s
                     val delayMs = (1L shl attempt) * 1000
-                    Thread.sleep(delayMs)
+                    delay(delayMs)
                 }
             }
         }

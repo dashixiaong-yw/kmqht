@@ -258,7 +258,12 @@ fun LoginScreen(
                         }
                         isChangingPassword = true
                         scope.launch {
-                            val userId = userRepository.currentUser.value?.id ?: 0L
+                            val currentUser = userRepository.currentUser.value
+                            val userId = currentUser?.id ?: run {
+                                changePasswordError = "无法获取用户信息，请重新登录"
+                                isChangingPassword = false
+                                return@launch
+                            }
                             val result = userRepository.updateUser(
                                 userId,
                                 newPassword,

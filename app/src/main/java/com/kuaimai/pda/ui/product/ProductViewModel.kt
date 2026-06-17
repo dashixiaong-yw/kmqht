@@ -265,7 +265,12 @@ class ProductViewModel @Inject constructor(
     private fun loadSuppliers() {
         viewModelScope.launch {
             try {
-                val result = apiService.querySupplierList(mapOf("method" to "supplier.list.query"))
+                val sysItemId = currentItem?.sysItemId ?: 0L
+                val params = mutableMapOf("method" to "item.supplier.list.get")
+                if (sysItemId > 0) {
+                    params["sysItemIds"] = sysItemId.toString()
+                }
+                val result = apiService.querySupplierList(params)
                 _suppliers.value = result.suppliers
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(

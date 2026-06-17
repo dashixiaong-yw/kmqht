@@ -126,16 +126,26 @@ fun PickOrderCard(
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    repeat(order.totalCount) { index ->
-                        Box(
-                            modifier = Modifier
-                                .size(10.dp)
-                                .background(
-                                    color = if (index < order.completedCount) SuccessText else BorderGray,
-                                    shape = CircleShape
-                                )
-                        )
+                    val maxDots = minOf(order.totalCount, 20)
+                repeat(maxDots) { index ->
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .background(
+                                color = if (index < order.completedCount) SuccessText else BorderGray,
+                                shape = CircleShape
+                            )
+                    )
+                }
+                if (order.totalCount > 20) {
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("...", fontSize = 8.sp, color = TextSecondary)
                     }
+                }
                 }
             }
         }

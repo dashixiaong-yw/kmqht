@@ -273,7 +273,7 @@ private fun StepComplete(onFinish: () -> Unit) {
     )
     Spacer(modifier = Modifier.height(16.dp))
     Text(
-        text = "配置已保存，请重启App使服务器地址生效",
+        text = "配置已保存，立即生效",
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.error
     )

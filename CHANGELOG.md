@@ -1,5 +1,23 @@
 # 快麦取货通 - 变更日志
 
+## 1.24 (2026-06-17)
+
+### 修复
+- CRASH: 修复kuaimai_api.py `_config_lock`未定义引用——v1.23修复遗漏的行
+- CRASH: 修复PickListScreen嵌套Scaffold——"已完成"视图独立Scaffold移除，改用Column
+- HIGH: 修复proguard缺少sealed/enum规则——补充CheckResult/DownloadState/ScanFeedbackType等keep
+- HIGH: 修复ImageUploadService Thread.sleep阻塞IO线程——改用delay()
+- HIGH: 修复PickDetailScreen PullToRefreshBox innerPadding未传递到内层Column
+- HIGH: 修复PickDetailViewModel getImageUrls serverUrl为空时拼接无效相对URL
+- HIGH: 修复PickListScreen LaunchedEffect(errorMessage)相同消息不重复触发——加计数器key
+- MEDIUM: 修复PickOrderCard进度点`repeat(totalCount)`无上限——最多20个+...提示
+- MEDIUM: 修复LoginScreen userId=0L时修改密码静默卡死——添加null检查+错误提示
+- MEDIUM: 修复GuideScreen"重启App"误导提示——改为"立即生效"
+
+### 修改
+- kuaimai_api.py新增_config_lock线程锁定义
+- proguard-rules.pro新增Hilt/Dagger keep规则
+
 ## 1.23 (2026-06-17)
 
 ### 修复
