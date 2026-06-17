@@ -17,6 +17,10 @@
 - P0: sku_cache 表新增 `item_outer_id` 列及缓存处理
 - P1: 补充 Android ItemUpdateRequest outerId/title 字段
 - P1: 补充 Android SkuUpdateDto skuOuterId(outerId) 字段
+- P0: 修复 erp.item.general.addorupdate 备注更新——补充 outerId/title/skus[].outerId/skus[].propertiesName
+- P0: 修复 erp.item.general.addorupdate 供应商更新——补充 title
+- P1: PickOrderRepository payload 补充 sku_outer_id/properties_name
+- P2: SkuUpdateDto 新增 propertiesName 字段
 
 ### 修改
 - App.kt 新增 OrderSyncWorkerDeps 静态依赖容器（@Inject 6个依赖到Application级别）

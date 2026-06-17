@@ -199,8 +199,6 @@ class ImageUploadService @Inject constructor(
                 throw IOException("响应中未找到id或imageUrl字段")
             }
             Pair(remoteId, imageUrl)
-        } catch (e: IOException) {
-            throw e
         } catch (e: Exception) {
             throw IOException("解析上传响应失败: ${e.message}")
         }

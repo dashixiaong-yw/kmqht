@@ -15,10 +15,11 @@ data class ItemUpdateRequest(
     val suppliers: List<SupplierUpdateDto> = emptyList()
 )
 
-/** SKU备注更新（V2: id + skuOuterId + remark） */
+/** SKU备注更新（V2: id + outerId + propertiesName + remark） */
 data class SkuUpdateDto(
     @SerializedName("id") val skuId: Long = 0,
     @SerializedName("outerId") val skuOuterId: String = "",
+    @SerializedName("propertiesName") val skuPropertiesName: String = "",
     @SerializedName("remark") val skuRemark: String = ""
 )
 

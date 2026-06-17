@@ -183,10 +183,15 @@ class OrderSyncWorker(
         val remark = extractPayloadValue(op.payload, "remark") ?: return false
         val skuId = extractPayloadValue(op.payload, "sys_sku_id")?.toLongOrNull() ?: return false
         val itemId = extractPayloadValue(op.payload, "sys_item_id")?.toLongOrNull() ?: return false
+        val skuOuterId = extractPayloadValue(op.payload, "sku_outer_id") ?: return false
+        val propertiesName = extractPayloadValue(op.payload, "properties_name") ?: return false
+        val outerId = skuOuterId.substringBefore("-")
         val request = ItemUpdateRequest(
             id = itemId,
             method = "erp.item.general.addorupdate",
-            skus = listOf(SkuUpdateDto(skuId = skuId, skuRemark = remark))
+            outerId = outerId,
+            title = ".",
+            skus = listOf(SkuUpdateDto(skuId = skuId, skuOuterId = skuOuterId, skuRemark = remark, skuPropertiesName = propertiesName))
         )
         apiService.updateItemRemark(request)
         return true
@@ -199,6 +204,7 @@ class OrderSyncWorker(
         val request = ItemUpdateRequest(
             id = itemId,
             method = "erp.item.general.addorupdate",
+            title = ".",
             suppliers = listOf(SupplierUpdateDto(supplierCode = supplierCode, supplierName = supplierName))
         )
         apiService.updateItemSupplier(request)

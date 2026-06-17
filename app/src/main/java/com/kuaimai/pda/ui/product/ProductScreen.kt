@@ -337,6 +337,7 @@ private fun SkuInfoCard(
                 contentDescription = "商品图片",
                 modifier = Modifier
                     .size(72.dp)
+                    .clip(RoundedCornerShape(10.dp))
                     .align(Alignment.Top)
             )
 

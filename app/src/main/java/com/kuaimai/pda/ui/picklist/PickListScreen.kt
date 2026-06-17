@@ -70,14 +70,12 @@ fun PickListScreen(
     val deleteTarget by viewModel.deleteTarget.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
-    val errorMessageToken = remember { mutableStateOf(0) }
 
-    // 错误消息提示（使用计数器确保相同消息可重复触发）
-    LaunchedEffect(errorMessageToken.value) {
+    // 错误消息提示
+    LaunchedEffect(errorMessage) {
         errorMessage?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.clearError()
-            errorMessageToken.value++
         }
     }
 

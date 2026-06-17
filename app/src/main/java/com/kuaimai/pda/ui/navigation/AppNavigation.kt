@@ -34,6 +34,7 @@ import com.kuaimai.pda.ui.picklist.PickListScreen
 import com.kuaimai.pda.ui.product.ProductScreen
 import com.kuaimai.pda.ui.settings.SettingsScreen
 import com.kuaimai.pda.ui.settings.SettingsViewModel.Companion.KEY_GUIDE_SHOWN
+import com.kuaimai.pda.util.NetworkMonitor
 import com.kuaimai.pda.util.SessionExpiredEvent
 import javax.inject.Named
 
@@ -64,7 +65,8 @@ fun AppNavigation(
     userRepository: UserRepository,
     prefs: SharedPreferences,
     @Named("encrypted") encryptedPrefs: SharedPreferences,
-    authRepository: AuthRepository
+    authRepository: AuthRepository,
+    networkMonitor: NetworkMonitor
 ) {
     val navController = rememberNavController()
     var isCheckingAuth by remember { mutableStateOf(true) }
@@ -162,7 +164,8 @@ fun AppNavigation(
                 },
                 onNavigateToSettings = { navController.navigate(Routes.SETTINGS) },
                 prefs = prefs,
-                authRepository = authRepository
+                authRepository = authRepository,
+                networkMonitor = networkMonitor
             )
         }
 

@@ -51,6 +51,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var appUpdateManager: AppUpdateManager
 
+    @Inject
+    lateinit var networkMonitor: NetworkMonitor
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -60,7 +63,8 @@ class MainActivity : ComponentActivity() {
                     userRepository = userRepository,
                     prefs = prefs,
                     encryptedPrefs = encryptedPrefs,
-                    authRepository = authRepository
+                    authRepository = authRepository,
+                    networkMonitor = networkMonitor
                 )
             }
         }

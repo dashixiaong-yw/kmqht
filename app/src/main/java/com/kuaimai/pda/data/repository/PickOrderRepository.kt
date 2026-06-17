@@ -156,7 +156,7 @@ class PickOrderRepositoryImpl @Inject constructor(
                 operationType = "update_remark",
                 orderId = item.orderId,
                 targetId = id,
-                payload = """{"remark":"${TimeUtils.escapeJson(remark)}","sys_sku_id":${item.sysSkuId},"sys_item_id":${item.sysItemId}}"""
+                payload = """{"remark":"${TimeUtils.escapeJson(remark)}","sys_sku_id":${item.sysSkuId},"sys_item_id":${item.sysItemId},"sku_outer_id":"${TimeUtils.escapeJson(item.skuOuterId)}","properties_name":"${TimeUtils.escapeJson(item.propertiesName)}"}"""
             )
         }
     }
@@ -171,7 +171,7 @@ class PickOrderRepositoryImpl @Inject constructor(
                 operationType = "update_supplier",
                 orderId = item.orderId,
                 targetId = id,
-                payload = """{"supplier_name":"${TimeUtils.escapeJson(supplierName)}","supplier_code":"${TimeUtils.escapeJson(supplierCode)}","sys_item_id":${item.sysItemId}}"""
+                payload = """{"supplier_name":"${TimeUtils.escapeJson(supplierName)}","supplier_code":"${TimeUtils.escapeJson(supplierCode)}","sys_item_id":${item.sysItemId},"sku_outer_id":"${TimeUtils.escapeJson(item.skuOuterId)}"}"""
             )
         }
     }
