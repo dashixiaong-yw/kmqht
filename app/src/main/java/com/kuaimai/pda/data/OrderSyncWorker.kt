@@ -6,6 +6,8 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.kuaimai.pda.data.api.ImageUploadService
 import com.kuaimai.pda.data.api.KuaimaiApiService
+import com.kuaimai.pda.data.api.OrderApiService
+import com.kuaimai.pda.data.api.dto.AddOrderItemRequest
 import com.kuaimai.pda.data.api.dto.ItemUpdateRequest
 import com.kuaimai.pda.data.api.dto.SkuUpdateDto
 import com.kuaimai.pda.data.api.dto.SupplierUpdateDto
@@ -22,12 +24,24 @@ import java.io.File
  * 使用WorkManager在后台同步待操作队列
  * 按orderId分组，不同订单间并行，同订单内串行
  * 成功后从Room删除，失败递增retryCount，最多3次后标记冲突
+ *
+ * 支持的操作类型（统一小写下划线风格）：
+ * - complete_item: 完成取货明细 → 后端API
+ * - restore_item: 恢复取货明细 → 后端API
+ * - update_remark: 更新备注 → 快麦API
+ * - update_supplier: 更新供应商 → 快麦API
+ * - upload_image: 上传图片 → 后端图片服务
+ * - add_item: 添加取货明细 → 后端API
+ * - complete_all: 批量完成 → 后端API
+ * - delete_item: 删除取货明细 → 后端API
+ * - delete_order: 删除取货单 → 后端API
  */
 class OrderSyncWorker(
     context: Context,
     params: WorkerParameters,
     private val pendingOperationDao: PendingOperationDao,
     private val apiService: KuaimaiApiService,
+    private val orderApiService: OrderApiService,
     private val authRepository: AuthRepository,
     private val imageUploadService: ImageUploadService
 ) : CoroutineWorker(context, params) {
@@ -89,18 +103,90 @@ class OrderSyncWorker(
     private suspend fun syncOperation(op: PendingOperationEntity): Boolean {
         return try {
             when (op.operationType) {
+                // 后端API同步
+                "complete_item" -> syncCompleteItem(op)
+                "restore_item" -> syncRestoreItem(op)
+                "add_item" -> syncAddItem(op)
+                "complete_all" -> syncCompleteAll(op)
+                "delete_item" -> syncDeleteItem(op)
+                "delete_order" -> syncDeleteOrder(op)
+                // 快麦API同步
                 "update_remark" -> syncRemarkUpdate(op)
                 "update_supplier" -> syncSupplierUpdate(op)
+                // 图片服务同步
                 "upload_image" -> syncImageUpload(op)
                 else -> {
-                    Log.w(TAG, "未知操作类型: ${op.operationType}")
-                    true // 未知类型直接删除
+                    Log.e(TAG, "未知操作类型: ${op.operationType}，标记为冲突而非静默删除")
+                    false
                 }
             }
         } catch (e: Exception) {
             Log.e(TAG, "同步操作失败: ${op.operationType}, error=${e.message}")
             false
         }
+    }
+
+    /**
+     * 同步完成取货明细 - 调用后端API
+     */
+    private suspend fun syncCompleteItem(op: PendingOperationEntity): Boolean {
+        val orderId = op.orderId
+        val itemId = op.targetId
+        orderApiService.completeItem(orderId, itemId)
+        Log.d(TAG, "完成明细同步完成: orderId=$orderId itemId=$itemId")
+        return true
+    }
+
+    /**
+     * 同步恢复取货明细 - 调用后端API
+     */
+    private suspend fun syncRestoreItem(op: PendingOperationEntity): Boolean {
+        val orderId = op.orderId
+        val itemId = op.targetId
+        orderApiService.restoreItem(orderId, itemId)
+        return true
+    }
+
+    /**
+     * 同步添加取货明细 - 调用后端API
+     */
+    private suspend fun syncAddItem(op: PendingOperationEntity): Boolean {
+        val skuOuterId = extractPayloadValue(op.payload, "sku_outer_id") ?: return false
+        val orderId = op.orderId
+        orderApiService.addItem(orderId, AddOrderItemRequest(skuOuterId = skuOuterId))
+        Log.d(TAG, "添加明细同步完成: orderId=$orderId skuOuterId=$skuOuterId")
+        return true
+    }
+
+    /**
+     * 同步批量完成 - 调用后端API
+     */
+    private suspend fun syncCompleteAll(op: PendingOperationEntity): Boolean {
+        val orderId = op.orderId
+        orderApiService.completeAllItems(orderId)
+        Log.d(TAG, "批量完成同步完成: orderId=$orderId")
+        return true
+    }
+
+    /**
+     * 同步删除取货明细 - 调用后端API
+     */
+    private suspend fun syncDeleteItem(op: PendingOperationEntity): Boolean {
+        val orderId = op.orderId
+        val itemId = op.targetId
+        orderApiService.deleteItem(orderId, itemId)
+        Log.d(TAG, "删除明细同步完成: orderId=$orderId itemId=$itemId")
+        return true
+    }
+
+    /**
+     * 同步删除取货单 - 调用后端API
+     */
+    private suspend fun syncDeleteOrder(op: PendingOperationEntity): Boolean {
+        val orderId = op.orderId
+        orderApiService.deleteOrder(orderId)
+        Log.d(TAG, "删除取货单同步完成: orderId=$orderId")
+        return true
     }
 
     /**

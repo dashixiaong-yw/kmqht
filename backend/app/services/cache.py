@@ -1,7 +1,7 @@
 """SKU缓存服务 - 查询缓存与快麦API"""
 
-import asyncio
 import logging
+import sqlite3
 from typing import Any, Dict, Optional
 
 from app.database import get_db
@@ -96,7 +96,7 @@ def invalidate_sku_cache(sku_outer_id: str) -> bool:
         return False
 
 
-def _cache_row_to_dict(row) -> Dict[str, Any]:
+def _cache_row_to_dict(row: sqlite3.Row) -> Dict[str, Any]:
     """缓存行转字典"""
     return {
         "sku_outer_id": row["sku_outer_id"],

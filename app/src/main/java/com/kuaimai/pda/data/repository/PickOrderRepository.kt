@@ -106,7 +106,7 @@ class PickOrderRepositoryImpl @Inject constructor(
         // 写入离线队列
         val item = pickItemDao.getById(id)
         if (item != null) {
-            val operationType = if (status == 1) "COMPLETE_ITEM" else "RESTORE_ITEM"
+            val operationType = if (status == 1) "complete_item" else "restore_item"
             enqueueOperation(operationType, item.orderId, id)
         }
     }
@@ -125,7 +125,7 @@ class PickOrderRepositoryImpl @Inject constructor(
                 operationType = "update_remark",
                 orderId = item.orderId,
                 targetId = id,
-                payload = """{"remark":"${TimeUtils.escapeJson(remark)}"}"""
+                payload = """{"remark":"${TimeUtils.escapeJson(remark)}","sys_sku_id":${item.sysSkuId},"sys_item_id":${item.sysItemId}}"""
             )
         }
     }
@@ -140,7 +140,7 @@ class PickOrderRepositoryImpl @Inject constructor(
                 operationType = "update_supplier",
                 orderId = item.orderId,
                 targetId = id,
-                payload = """{"supplier_name":"${TimeUtils.escapeJson(supplierName)}","supplier_code":"${TimeUtils.escapeJson(supplierCode)}"}"""
+                payload = """{"supplier_name":"${TimeUtils.escapeJson(supplierName)}","supplier_code":"${TimeUtils.escapeJson(supplierCode)}","sys_item_id":${item.sysItemId}}"""
             )
         }
     }

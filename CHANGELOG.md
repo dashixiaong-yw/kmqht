@@ -1,5 +1,23 @@
 # 快麦取货通 - 变更日志
 
+## 0.9 (2026-06-17)
+
+### 修复
+- 修复OrderSyncWorker仅处理3种操作类型，6种操作被静默删除导致离线完成/恢复/删除操作永远不会同步到后端（严重）
+- 修复KuaimaiInterceptor缺少format/v/sign_method公共参数，与后端_build_common_params不一致
+- 修复ProductViewModel.loadImages()使用Flow.collect导致多次调用时Flow收集泄漏，改用collectLatest
+- 修复AuthRepository.refreshSession()异常被静默吞掉不记录日志
+- 修复NetworkMonitor.unregister()空catch块静默吞掉异常
+
+### 修改
+- OrderSyncWorker新增6种操作类型同步方法（complete_item/restore_item/add_item/complete_all/delete_item/delete_order）
+- 操作类型命名风格统一为小写下划线（原COMPLETE_ITEM→complete_item等）
+- 未知操作类型不再静默删除，改为标记冲突保留记录
+- 删除commons-codec依赖（SignUtils使用java.security.MessageDigest，无需commons-codec）
+- 删除ItemUpdateRequest.kt和ItemListResponse.kt未使用的SerializedName导入
+- 删除cache.py未使用的asyncio导入
+- 后端辅助函数添加参数类型注解（_row_to_image_response/_cleanup_sku_images/_cache_row_to_dict）
+
 ## 0.8 (2026-06-17)
 
 ### 修复

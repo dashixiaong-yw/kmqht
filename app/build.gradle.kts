@@ -13,8 +13,8 @@ android {
         applicationId = "com.kuaimai.pda"
         minSdk = 24
         targetSdk = 34
-        versionCode = 8
-        versionName = "0.8"
+        versionCode = 9
+        versionName = "0.9"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -123,9 +123,6 @@ dependencies {
 
     // ML Kit 条码扫描
     implementation("com.google.mlkit:barcode-scanning:17.3.0")
-
-    // Commons Codec (HMAC-MD5)
-    implementation("commons-codec:commons-codec:1.17.0")
 
     // Core
     implementation("androidx.core:core-ktx:1.13.1")

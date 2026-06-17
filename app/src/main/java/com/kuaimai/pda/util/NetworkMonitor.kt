@@ -5,6 +5,7 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -76,8 +77,9 @@ class NetworkMonitor @Inject constructor(
     fun unregister() {
         try {
             connectivityManager.unregisterNetworkCallback(networkCallback)
-        } catch (_: Exception) {
-            // 忽略未注册时的异常
+        } catch (e: Exception) {
+            // 注销时可能未注册，忽略但记录日志
+            Log.d("NetworkMonitor", "注销网络监听异常: ${e.message}")
         }
     }
 

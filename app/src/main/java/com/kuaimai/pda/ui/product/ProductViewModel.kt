@@ -1,6 +1,7 @@
 package com.kuaimai.pda.ui.product
 
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -17,6 +18,7 @@ import com.kuaimai.pda.util.TimeUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.io.File
@@ -141,7 +143,7 @@ class ProductViewModel @Inject constructor(
     private suspend fun loadImages(skuOuterId: String) {
         try {
             val serverUrl = prefs.getString(KEY_SERVER_URL, DEFAULT_SERVER_URL) ?: DEFAULT_SERVER_URL
-            productImageDao.getBySkuOuterId(skuOuterId).collect { images ->
+            productImageDao.getBySkuOuterId(skuOuterId).collectLatest { images ->
                 val areaImage = images.find { it.imageType == "area" }
                 val boxImage = images.find { it.imageType == "box" }
                 _uiState.value = _uiState.value.copy(
@@ -149,8 +151,9 @@ class ProductViewModel @Inject constructor(
                     boxImageUrl = boxImage?.let { "$serverUrl${it.imageUrl}" }
                 )
             }
-        } catch (_: Exception) {
-            // 图片加载失败不阻塞主流程
+        } catch (e: Exception) {
+            // 图片加载失败不阻塞主流程，但记录日志
+            Log.w("ProductViewModel", "加载SKU图片失败: ${e.message}")
         }
     }
 

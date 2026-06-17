@@ -20,13 +20,13 @@ data class PendingOperationEntity(
     val id: Long = 0,
 
     /**
-     * 操作类型：
-     * - ADD_ITEM: 添加取货明细
-     * - COMPLETE_ITEM: 完成取货明细
-     * - RESTORE_ITEM: 恢复取货明细
-     * - COMPLETE_ALL: 批量完成
-     * - DELETE_ITEM: 删除取货明细
-     * - DELETE_ORDER: 删除取货单
+     * 操作类型（统一小写下划线风格）：
+     * - complete_item: 完成取货明细
+     * - restore_item: 恢复取货明细
+     * - complete_all: 批量完成
+     * - add_item: 添加取货明细
+     * - delete_item: 删除取货明细
+     * - delete_order: 删除取货单
      * - update_remark: 更新备注
      * - update_supplier: 更新供应商
      * - upload_image: 上传图片

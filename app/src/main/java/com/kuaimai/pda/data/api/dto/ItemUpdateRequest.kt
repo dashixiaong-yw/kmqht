@@ -1,7 +1,5 @@
 package com.kuaimai.pda.data.api.dto
 
-import com.google.gson.annotations.SerializedName
-
 /**
  * 商品更新请求 erp.item.general.addorupdate
  * 用于备注更新和供应商更新

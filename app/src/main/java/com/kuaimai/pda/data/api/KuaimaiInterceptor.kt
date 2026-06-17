@@ -63,10 +63,13 @@ class KuaimaiInterceptor @Inject constructor(
             }
         }
 
-        // 添加公共参数
+        // 添加公共参数（与后端 _build_common_params 保持一致）
         params["app_key"] = appKey
         params["timestamp"] = TimeUtils.formatTimestamp(TimeUtils.now())
         params["session"] = accessToken
+        params["format"] = "json"
+        params["v"] = "2.0"
+        params["sign_method"] = "md5"
 
         // 计算签名
         val sign = SignUtils.sign(params, appSecret)

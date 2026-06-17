@@ -1,6 +1,7 @@
 package com.kuaimai.pda.data.repository
 
 import android.content.SharedPreferences
+import android.util.Log
 import com.kuaimai.pda.data.api.KuaimaiApiService
 import com.kuaimai.pda.util.AppConstants
 import javax.inject.Inject
@@ -42,6 +43,7 @@ class AuthRepositoryImpl @Inject constructor(
             val result = apiService.refreshSession(emptyMap())
             result.containsKey("session")
         } catch (e: Exception) {
+            Log.w("AuthRepository", "刷新session失败: ${e.message}")
             false
         }
     }

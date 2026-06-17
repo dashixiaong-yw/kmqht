@@ -3,7 +3,7 @@
 import logging
 import os
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
@@ -470,7 +470,7 @@ def _row_to_item_response(row: sqlite3.Row) -> ItemResponse:
     )
 
 
-def _cleanup_sku_images(cursor, sku_outer_id: str) -> None:
+def _cleanup_sku_images(cursor: sqlite3.Cursor, sku_outer_id: str) -> None:
     """清理不被其他订单引用的SKU图片文件和记录"""
     try:
         cursor.execute(

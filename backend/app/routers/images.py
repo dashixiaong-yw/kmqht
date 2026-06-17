@@ -150,7 +150,7 @@ def delete_image(image_id: int) -> BaseResponse:
         raise HTTPException(status_code=500, detail=f"删除图片记录失败: {e}")
 
 
-def _row_to_image_response(row) -> ImageResponse:
+def _row_to_image_response(row: sqlite3.Row) -> ImageResponse:
     """数据库行转ImageResponse"""
     return ImageResponse(
         id=row["id"],
