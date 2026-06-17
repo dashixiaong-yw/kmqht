@@ -6,11 +6,20 @@
 - 后端新增 /setup 扫码配置页面，显示服务器地址+API Key二维码
 - App引导页和设置页新增"扫码配置"按钮，PDA扫码自动填入服务器地址
 - 新增 SetupQrParser 工具类，支持 kuaimai://setup 协议和纯URL两种二维码格式
+- 图片上传离线支持：上传失败时自动保存图片到本地并入队，网络恢复后重试上传
 
 ### 修改
 - DEFAULT_SERVER_URL 从模拟器IP改为空字符串，真机部署需通过扫码或手动配置
 - 保存服务器地址后提示"重启App后生效"
 - NetworkModule 未配置服务器地址时使用占位URL避免崩溃
+- 后端delete_order接口增加已完成状态检查，禁止删除已完成的取货单
+- 相机扫码按钮设为禁用状态（灰色），避免用户误点无响应
+
+### 修复
+- 修复completeAllItems/deleteItem未设置isLoading导致可连续点击触发并发操作的P0 bug
+- 修复ProductViewModel.loadImages() Flow收集泄漏导致多次扫码切换SKU后UI状态闪烁的P0 bug
+- 修复scanFailureEvent/tokenRefreshFailed使用collect而非collectLatest可能丢失事件的P1问题
+- 修复completeAllItems catch块未调用loadOrder导致进度显示不准确的P1问题
 
 ## 1.8 (2026-06-17)
 
