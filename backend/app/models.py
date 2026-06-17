@@ -139,11 +139,15 @@ class CrashReportRequest(BaseModel):
 
 
 class AppVersionResponse(BaseModel):
-    """应用版本响应"""
+    """应用版本响应（供 PDA 端查询）"""
     success: bool = True
     message: str = "操作成功"
     latestVersion: str = ""
     downloadUrl: str = ""
+    updateNotes: str = ""
+    forceUpdate: bool = False
+    apkSize: int = 0
+    publishedAt: str = ""
 
 
 class HealthResponse(BaseModel):

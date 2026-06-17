@@ -43,7 +43,7 @@
 
 - ✅ 所有任务代码修改已完成（逐项确认，无遗漏）
 - ✅ `./gradlew lint` 通过
-- ✅ `./gradlew assembleDebug`（开发验证）或 `./gradlew assembleRelease`（分发签名APK）构建成功
+- ✅ `./gradlew assembleRelease`（分发签名APK）构建成功
 
 **收尾阶段禁止回退**：进入Step 5后禁止再修改任何代码文件。若发现遗漏，必须完成当前收尾（Step 5-8），再以新版本号重新走完整流程。
 
@@ -230,7 +230,7 @@ mcp_kuaimai-memory_search_nodes(query="取货单")
 - [ ] 所有任务代码修改已完成（批量任务时逐项确认无遗漏）
 - [ ] 代码修改在 `app/` 目录完成
 - [ ] 代码验证通过（lint）
-- [ ] APK构建成功（debug 构建产出 `debug/快麦取货通-版本号.apk`，release 构建产出 `release/快麦取货通-版本号.apk`）
+- [ ] APK构建成功（release 构建产出 `release/快麦取货通-版本号.apk`）
 
 **收尾阶段**：
 

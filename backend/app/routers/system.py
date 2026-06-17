@@ -1,4 +1,5 @@
 """系统路由 - 健康检查、崩溃报告、版本信息、快麦会话管理"""
+import json
 import logging
 import os
 
@@ -6,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 
 from app.auth import check_permission, get_current_user
-from app.config import kuaimai_creds
+from app.config import APK_DIR, APK_VERSION_FILE, SERVER_URL, kuaimai_creds
 from app.database import get_db
 from app.models import (
     AppVersionResponse,
@@ -24,9 +25,14 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["系统"])
 
-# APK下载地址（从环境变量读取，默认为空）
-APK_DOWNLOAD_URL: str = os.getenv("APK_DOWNLOAD_URL", "")
-LATEST_VERSION: str = os.getenv("LATEST_VERSION", "1.0")
+
+def _load_version_info() -> dict:
+    """从 JSON 文件读取版本信息"""
+    try:
+        with open(APK_VERSION_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
 
 
 @router.get("/health", response_model=HealthResponse)
@@ -71,10 +77,22 @@ def crash_report(req: CrashReportRequest, user: dict = Depends(get_current_user)
 
 @router.get("/api/app-version", response_model=AppVersionResponse)
 def get_app_version() -> AppVersionResponse:
-    """获取最新应用版本及下载地址"""
+    """获取当前分发的应用版本（无需认证，供PDA启动时自动检查）"""
+    info = _load_version_info()
+    if not info or not info.get("currentVersion"):
+        return AppVersionResponse(latestVersion="", downloadUrl="")
+
+    apk_path = os.path.join(APK_DIR, info.get("apkFileName", ""))
+    apk_size = os.path.getsize(apk_path) if os.path.exists(apk_path) else 0
+    server_url = SERVER_URL.rstrip("/") if SERVER_URL else ""
+
     return AppVersionResponse(
-        latestVersion=LATEST_VERSION,
-        downloadUrl=APK_DOWNLOAD_URL,
+        latestVersion=info.get("currentVersion", ""),
+        downloadUrl=f"{server_url}/apk/{info.get('apkFileName', '')}",
+        updateNotes=info.get("updateNotes", ""),
+        forceUpdate=info.get("forceUpdate", False),
+        apkSize=apk_size,
+        publishedAt=info.get("publishedAt", ""),
     )
 
 

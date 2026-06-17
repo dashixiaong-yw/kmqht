@@ -78,6 +78,7 @@ fun SettingsScreen(
 ) {
     val scope = rememberCoroutineScope()
     val currentUser by userRepository.currentUser.collectAsState()
+    val updateCheckState by viewModel.updateCheckResult.collectAsState()
     var showLogoutDialog by remember { androidx.compose.runtime.mutableStateOf(false) }
 
     // 退出登录确认弹窗
@@ -103,6 +104,73 @@ fun SettingsScreen(
                 }
             }
         )
+    }
+
+    // 检查更新弹窗
+    when (val state = updateCheckState) {
+        is UpdateCheckUiState.Checking -> {
+            AlertDialog(
+                onDismissRequest = { viewModel.dismissUpdateCheck() },
+                title = { Text("检查更新") },
+                text = { Text("正在检查更新，请稍候...") },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.dismissUpdateCheck() }) {
+                        Text("取消")
+                    }
+                }
+            )
+        }
+        is UpdateCheckUiState.HasUpdate -> {
+            AlertDialog(
+                onDismissRequest = {
+                    if (!state.info.forceUpdate) viewModel.dismissUpdateCheck()
+                },
+                title = { Text("发现新版本") },
+                text = {
+                    Text("最新版本: v${state.info.latestVersion}\n\n${state.info.updateNotes}")
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        viewModel.startDownload(state.info)
+                        viewModel.dismissUpdateCheck()
+                    }) {
+                        Text("立即更新")
+                    }
+                },
+                dismissButton = {
+                    if (!state.info.forceUpdate) {
+                        TextButton(onClick = { viewModel.dismissUpdateCheck() }) {
+                            Text("稍后再说")
+                        }
+                    }
+                }
+            )
+        }
+        is UpdateCheckUiState.NoUpdate -> {
+            AlertDialog(
+                onDismissRequest = { viewModel.dismissUpdateCheck() },
+                title = { Text("检查更新") },
+                text = { Text("当前已是最新版本") },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.dismissUpdateCheck() }) {
+                        Text("确定")
+                    }
+                }
+            )
+        }
+        is UpdateCheckUiState.Error -> {
+            AlertDialog(
+                onDismissRequest = { viewModel.dismissUpdateCheck() },
+                title = { Text("检查更新失败") },
+                text = { Text(state.message) },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.dismissUpdateCheck() }) {
+                        Text("确定")
+                    }
+                }
+            )
+        }
+        else -> {}
     }
 
     Scaffold(
@@ -278,7 +346,9 @@ fun SettingsScreen(
                 text = "v${BuildConfig.VERSION_NAME}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { viewModel.checkForUpdate() },
                 textAlign = TextAlign.Center
             )
 

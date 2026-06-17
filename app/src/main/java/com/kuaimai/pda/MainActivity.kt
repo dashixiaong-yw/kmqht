@@ -9,6 +9,7 @@ import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.lifecycle.lifecycleScope
 import androidx.work.WorkManager
 import com.kuaimai.pda.data.OrderSyncWorker
 import com.kuaimai.pda.data.repository.AuthRepository
@@ -16,7 +17,11 @@ import com.kuaimai.pda.data.repository.UserRepository
 import com.kuaimai.pda.scanner.ScannerManager
 import com.kuaimai.pda.ui.navigation.AppNavigation
 import com.kuaimai.pda.ui.theme.KuaimaiTheme
+import com.kuaimai.pda.update.AppUpdateManager
+import com.kuaimai.pda.update.CheckResult
+import com.kuaimai.pda.update.DownloadState
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Named
 
@@ -43,6 +48,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var scannerManager: ScannerManager
 
+    @Inject
+    lateinit var appUpdateManager: AppUpdateManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -58,6 +66,23 @@ class MainActivity : ComponentActivity() {
         }
         // 启动时触发离线同步Worker（网络恢复后自动重试）
         enqueueSyncWorker()
+
+        // 启动时自动检查应用更新
+        lifecycleScope.launch {
+            when (val result = appUpdateManager.checkForUpdate()) {
+                is CheckResult.HasUpdate -> {
+                    appUpdateManager.downloadApk(result.info)
+                    launch {
+                        appUpdateManager.downloadState.collect { state ->
+                            if (state is DownloadState.Completed) {
+                                appUpdateManager.installApk(state.file)
+                            }
+                        }
+                    }
+                }
+                else -> {}
+            }
+        }
     }
 
     override fun onResume() {

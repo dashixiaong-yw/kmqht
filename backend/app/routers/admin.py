@@ -1,14 +1,19 @@
 """管理后台路由 - Web管理页面"""
 
+import json
 import logging
+import os
+import shutil
 from urllib.parse import urlencode
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse
 
-from app.config import API_KEY, SERVER_URL, kuaimai_creds
+from app.auth import check_permission
+from app.config import API_KEY, APK_DIR, APK_VERSION_FILE, SERVER_URL, kuaimai_creds
 from app.database import get_db
 from app.utils.qr_utils import generate_qr_base64
+from app.utils.time_utils import beijing_now, format_beijing
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +24,74 @@ router = APIRouter(tags=["管理后台"])
 def admin_page() -> HTMLResponse:
     """管理后台页面"""
     return HTMLResponse(content=_build_admin_html())
+
+
+@router.post("/api/app-version/upload")
+def upload_app_version(
+    file: UploadFile = File(...),
+    latestVersion: str = Form(...),
+    updateNotes: str = Form(""),
+    forceUpdate: bool = Form(False),
+    user: dict = Depends(check_permission("settings")),
+) -> dict:
+    """上传新版本 APK（暂存，删除旧文件）"""
+    if not latestVersion.strip():
+        raise HTTPException(status_code=400, detail="版本号不能为空")
+    os.makedirs(APK_DIR, exist_ok=True)
+    # 删除旧 APK 文件
+    if os.path.exists(APK_DIR):
+        for old_file in os.listdir(APK_DIR):
+            if old_file.endswith(".apk"):
+                os.remove(os.path.join(APK_DIR, old_file))
+    # 保存新 APK
+    apk_filename = f"快麦取货通-{latestVersion}.apk"
+    apk_path = os.path.join(APK_DIR, apk_filename)
+    try:
+        with open(apk_path, "wb") as f:
+            shutil.copyfileobj(file.file, f)
+    except Exception as e:
+        logger.error(f"保存APK文件失败: {e}")
+        raise HTTPException(status_code=500, detail="保存APK文件失败")
+    # 更新版本信息 JSON
+    info = _load_version_info()
+    info["currentVersion"] = latestVersion
+    info["apkFileName"] = apk_filename
+    info["updateNotes"] = updateNotes
+    info["forceUpdate"] = forceUpdate
+    if "publishedAt" in info:
+        del info["publishedAt"]
+    _save_version_info(info)
+    logger.info(f"用户 {user.get('username', '?')} 上传了新版本 {latestVersion}")
+    return {"success": True, "message": "上传成功，点击分发后所有PDA将收到更新"}
+
+
+@router.post("/api/app-version/publish")
+def publish_app_version(
+    user: dict = Depends(check_permission("settings")),
+) -> dict:
+    """分发当前暂存的版本（正式发布）"""
+    info = _load_version_info()
+    if not info.get("currentVersion"):
+        raise HTTPException(status_code=400, detail="没有待分发的版本，请先上传")
+    info["publishedAt"] = format_beijing(beijing_now())
+    _save_version_info(info)
+    logger.info(f"用户 {user.get('username', '?')} 分发了版本 {info.get('currentVersion')}")
+    return {"success": True, "message": "分发成功，所有PDA下次启动将自动更新"}
+
+
+def _load_version_info() -> dict:
+    """读取版本信息 JSON"""
+    try:
+        with open(APK_VERSION_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
+def _save_version_info(info: dict) -> None:
+    """写入版本信息 JSON"""
+    with open(APK_VERSION_FILE, "w", encoding="utf-8") as f:
+        json.dump(info, f, ensure_ascii=False, indent=2)
 
 
 def _build_admin_html() -> str:
@@ -160,6 +233,7 @@ input:focus,select:focus {{ border-color:#2563eb; }}
       <button class="tab" data-tab="kuaimai">快麦配置</button>
       <button class="tab" data-tab="system">系统配置</button>
       <button class="tab" data-tab="images">图片查看</button>
+      <button class="tab" data-tab="apk">APK管理</button>
     </div>
     <div class="content">
       <!-- 仪表盘 -->
@@ -251,6 +325,21 @@ input:focus,select:focus {{ border-color:#2563eb; }}
           <button class="btn btn-primary" onclick="searchImages()">搜索</button>
         </div>
         <div id="imageResults"></div>
+      </div>
+
+      <!-- APK 管理 -->
+      <div id="panel-apk" class="panel">
+        <div id="apkStatus"></div>
+        <div class="card" id="apkUploadSection">
+          <h3>上传新版本</h3>
+          <div class="form-group"><label>APK 文件</label><input type="file" id="apkFileInput" accept=".apk" /></div>
+          <div class="form-group"><label>版本号</label><input id="apkVersionInput" placeholder="例如 1.19" style="width:100%" /></div>
+          <div class="form-group"><label>更新说明</label><textarea id="apkNotesInput" rows="4" style="width:100%" placeholder="每行一条更新说明"></textarea></div>
+          <div class="form-group">
+            <label class="checkbox-item"><input type="checkbox" id="apkForceUpdate" /> 强制更新（用户无法取消）</label>
+          </div>
+          <button class="btn btn-primary" onclick="uploadApk()" id="btnUploadApk">上传</button>
+        </div>
       </div>
     </div>
   </div>
@@ -363,6 +452,7 @@ document.querySelectorAll('.tab').forEach(tab => {{
     else if (name === 'areas') loadAreas();
     else if (name === 'kuaimai') loadKuaimai();
     else if (name === 'system') loadSystem();
+    else if (name === 'apk') loadApk();
   }};
 }});
 
@@ -603,6 +693,74 @@ async function searchImages() {{
     `).join('');
   }} catch(e) {{
     document.getElementById('imageResults').innerHTML = '<div class="empty">查询失败: ' + e.message + '</div>';
+  }}
+}}
+
+// ========== APK 管理 ==========
+async function loadApk() {{
+  try {{
+    const r = await api('/api/app-version');
+    const container = document.getElementById('apkStatus');
+    const uploadSection = document.getElementById('apkUploadSection');
+    if (r.latestVersion) {{
+      const forceLabel = r.forceUpdate ? '<span class="badge badge-red">强制更新</span>' : '<span class="badge badge-green">可选更新</span>';
+      const sizeStr = r.apkSize ? (r.apkSize / 1024 / 1024).toFixed(1) + ' MB' : '未知';
+      const publishedInfo = r.publishedAt ? '<p style="font-size:13px;color:#666;margin-top:4px">已分发时间: ' + r.publishedAt + '</p>' : '<p style="font-size:13px;color:#dc2626;margin-top:4px">尚未分发</p>';
+      const publishBtn = r.publishedAt ? '' : '<button class="btn btn-success" onclick="publishApk()" style="margin-top:8px">立即分发</button>';
+      container.innerHTML = `
+        <div class="card">
+          <h3>当前版本信息</h3>
+          <p>版本号: <strong>${{escapeHtml(r.latestVersion)}}</strong> ${{forceLabel}}</p>
+          <p>APK 大小: ${{sizeStr}}</p>
+          <p>更新说明:</p>
+          <pre style="background:#f8fafc;padding:8px;border-radius:4px;font-size:13px;white-space:pre-wrap">${{escapeHtml(r.updateNotes || '无')}}</pre>
+          ${{publishedInfo}}
+          ${{publishBtn}}
+        </div>
+      `;
+      uploadSection.style.display = 'block';
+    }} else {{
+      container.innerHTML = '<div class="empty">暂无版本信息</div>';
+      uploadSection.style.display = 'block';
+    }}
+  }} catch(e) {{
+    document.getElementById('apkStatus').innerHTML = '<div class="empty">加载失败: ' + e.message + '</div>';
+  }}
+}}
+
+async function uploadApk() {{
+  const fileInput = document.getElementById('apkFileInput');
+  const version = document.getElementById('apkVersionInput').value.trim();
+  const notes = document.getElementById('apkNotesInput').value.trim();
+  const forceUpdate = document.getElementById('apkForceUpdate').checked;
+  if (!fileInput.files || !fileInput.files[0]) {{ alert('请选择 APK 文件'); return; }}
+  if (!version) {{ alert('请输入版本号'); return; }}
+  const formData = new FormData();
+  formData.append('file', fileInput.files[0]);
+  formData.append('latestVersion', version);
+  formData.append('updateNotes', notes);
+  formData.append('forceUpdate', forceUpdate ? 'true' : 'false');
+  const btn = document.getElementById('btnUploadApk');
+  btn.disabled = true; btn.textContent = '上传中...';
+  try {{
+    const r = await api('/api/app-version/upload', {{ method: 'POST', body: formData, headers: {{}} }});
+    alert(r.message || '上传成功');
+    loadApk();
+  }} catch(e) {{
+    alert('上传失败: ' + e.message);
+  }} finally {{
+    btn.disabled = false; btn.textContent = '上传';
+  }}
+}}
+
+async function publishApk() {{
+  if (!confirm('确定要分发当前版本吗？所有 PDA 下次启动将自动更新。')) return;
+  try {{
+    const r = await api('/api/app-version/publish', {{ method: 'POST' }});
+    alert(r.message || '分发成功');
+    loadApk();
+  }} catch(e) {{
+    alert('分发失败: ' + e.message);
   }}
 }}
 

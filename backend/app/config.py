@@ -41,6 +41,10 @@ CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", "*")
 # 会话过期预警天数（与前端SESSION_WARNING_DAYS保持一致）
 SESSION_WARNING_DAYS: int = int(os.getenv("SESSION_WARNING_DAYS", "5"))
 
+# APK 版本配置（用于 OTA 更新）
+APK_DIR: str = os.getenv("APK_DIR", "/data/apk")
+APK_VERSION_FILE: str = os.getenv("APK_VERSION_FILE", "/data/apk_version.json")
+
 
 class KuaimaiCredentials:
     """快麦平台凭证"""

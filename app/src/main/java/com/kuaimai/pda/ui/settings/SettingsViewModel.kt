@@ -2,11 +2,17 @@ package com.kuaimai.pda.ui.settings
 
 import android.content.SharedPreferences
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.kuaimai.pda.data.api.dto.AppVersionResponse
+import com.kuaimai.pda.update.AppUpdateManager
+import com.kuaimai.pda.update.CheckResult
+import com.kuaimai.pda.update.DownloadState
 import com.kuaimai.pda.util.PrefsKeys
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
@@ -16,7 +22,8 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val prefs: SharedPreferences
+    private val prefs: SharedPreferences,
+    private val appUpdateManager: AppUpdateManager,
 ) : ViewModel() {
 
     companion object {
@@ -44,6 +51,10 @@ class SettingsViewModel @Inject constructor(
     )
     val vibrationEnabled: StateFlow<Boolean> = _vibrationEnabled.asStateFlow()
 
+    /** 更新检查结果 */
+    private val _updateCheckResult = MutableStateFlow<UpdateCheckUiState>(UpdateCheckUiState.Idle)
+    val updateCheckResult: StateFlow<UpdateCheckUiState> = _updateCheckResult.asStateFlow()
+
     /**
      * 设置扫码方式
      */
@@ -67,4 +78,56 @@ class SettingsViewModel @Inject constructor(
         _vibrationEnabled.value = enabled
         prefs.edit().putBoolean(KEY_VIBRATION_ENABLED, enabled).apply()
     }
+
+    /**
+     * 手动检查更新
+     */
+    fun checkForUpdate() {
+        viewModelScope.launch {
+            _updateCheckResult.value = UpdateCheckUiState.Checking
+            when (val result = appUpdateManager.checkForUpdate()) {
+                is CheckResult.HasUpdate -> {
+                    _updateCheckResult.value = UpdateCheckUiState.HasUpdate(result.info)
+                }
+                is CheckResult.NoUpdate -> {
+                    _updateCheckResult.value = UpdateCheckUiState.NoUpdate
+                }
+                is CheckResult.CheckError -> {
+                    _updateCheckResult.value = UpdateCheckUiState.Error(result.message)
+                }
+            }
+        }
+    }
+
+    /**
+     * 开始下载更新，完成后自动安装
+     */
+    fun startDownload(info: AppVersionResponse) {
+        appUpdateManager.downloadApk(info)
+        viewModelScope.launch {
+            appUpdateManager.downloadState.collect { state ->
+                when (state) {
+                    is DownloadState.Completed -> {
+                        appUpdateManager.installApk(state.file)
+                    }
+                    else -> {}
+                }
+            }
+        }
+    }
+
+    /**
+     * 关闭更新检查弹窗，重置状态
+     */
+    fun dismissUpdateCheck() {
+        _updateCheckResult.value = UpdateCheckUiState.Idle
+    }
+}
+
+sealed class UpdateCheckUiState {
+    data object Idle : UpdateCheckUiState()
+    data object Checking : UpdateCheckUiState()
+    data class HasUpdate(val info: AppVersionResponse) : UpdateCheckUiState()
+    data object NoUpdate : UpdateCheckUiState()
+    data class Error(val message: String) : UpdateCheckUiState()
 }

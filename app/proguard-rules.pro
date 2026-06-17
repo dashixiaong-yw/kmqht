@@ -2,6 +2,10 @@
 -keep class dagger.hilt.** { *; }
 -keep class javax.inject.** { *; }
 -keep class * extends dagger.hilt.android.internal.managers.ViewComponentManager$FragmentContextWrapper { *; }
+-keep class * extends dagger.hilt.internal.GeneratedComponent { *; }
+-keep class * extends dagger.hilt.internal.GeneratedComponentManager { *; }
+-keep class * extends dagger.hilt.android.internal.lifecycle.DefaultViewModelFactories { *; }
+-keep class com.kuaimai.pda.** { *; }
 
 # Retrofit
 -keepattributes Signature, InnerClasses, EnclosingMethod
