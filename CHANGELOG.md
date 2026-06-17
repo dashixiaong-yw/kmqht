@@ -1,5 +1,15 @@
 # 快麦取货通 - 变更日志
 
+## 1.18 (2026-06-17)
+
+### 修复
+- P1: 修复PickDetailViewModel.getImageUrls()使用编译时常量——改用运行时从encryptedPrefs读取，确保部署后库区图/箱图URL正确拼接服务器地址
+- P2: OkHttp日志拦截器降级为HEADERS级别——BODY级别在Logcat中泄露登录密码和Token等敏感信息
+- P3: ImageRepository空catch块补充日志——添加Log.w用于排查问题
+- P3: AuthRepository session刷新失败日志从Log.w提升至Log.e
+- P3: PickListViewModel.loadAreas() catch块补充日志
+- 清理未使用的导入：PickDetailScreen(DangerBg)、PickItemRow(Arrangement/MaterialTheme/BorderGray)
+
 ## 1.17 (2026-06-17)
 
 ### 修复

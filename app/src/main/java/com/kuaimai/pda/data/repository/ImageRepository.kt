@@ -1,5 +1,7 @@
 package com.kuaimai.pda.data.repository
 
+import android.util.Log
+
 import com.kuaimai.pda.data.api.ImageUploadService
 import com.kuaimai.pda.data.db.dao.ProductImageDao
 import com.kuaimai.pda.data.db.entity.ProductImageEntity
@@ -90,6 +92,7 @@ class ImageRepositoryImpl @Inject constructor(
                 productImageDao.insert(entity)
             }
         } catch (e: Exception) {
+            Log.w("ImageRepository", "同步后端图片列表失败: ${e.message}")
         }
     }
 }

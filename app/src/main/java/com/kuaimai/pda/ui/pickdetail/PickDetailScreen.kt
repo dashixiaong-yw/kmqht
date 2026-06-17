@@ -69,7 +69,6 @@ import com.kuaimai.pda.data.db.entity.PickItemEntity
 import com.kuaimai.pda.scanner.ScanFeedbackType
 import com.kuaimai.pda.ui.components.PickItemRow
 import com.kuaimai.pda.ui.theme.BrandBlue
-import com.kuaimai.pda.ui.theme.DangerBg
 import com.kuaimai.pda.ui.theme.DangerText
 import com.kuaimai.pda.ui.theme.PrimaryLightBg
 import com.kuaimai.pda.ui.theme.PrimaryLightText

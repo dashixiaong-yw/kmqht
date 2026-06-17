@@ -2,6 +2,7 @@ package com.kuaimai.pda.ui.picklist
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.util.Log
 import com.kuaimai.pda.data.api.AreaApiService
 import com.kuaimai.pda.data.api.OrderApiService
 import com.kuaimai.pda.data.api.dto.CreateOrderRequest
@@ -78,7 +79,7 @@ class PickListViewModel @Inject constructor(
                 val response = areaApiService.getAreas(token)
                 _areas.value = response.data.map { it.name }
             } catch (e: Exception) {
-                // 使用默认拣货区
+                Log.w("PickListViewModel", "加载拣货区失败: ${e.message}")
                 _areas.value = listOf("A区", "B区", "C区", "D区")
             }
         }

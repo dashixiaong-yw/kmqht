@@ -57,7 +57,7 @@ class AuthRepositoryImpl @Inject constructor(
                 false
             }
         } catch (e: Exception) {
-            Log.w("AuthRepository", "刷新session失败: ${e.message}")
+            Log.e("AuthRepository", "刷新session失败: ${e.message}")
             _tokenRefreshFailed.emit(Unit)
             false
         }
