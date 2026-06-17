@@ -1,5 +1,6 @@
 package com.kuaimai.pda.ui.pickdetail
 
+import android.content.SharedPreferences
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,6 +13,7 @@ import com.kuaimai.pda.data.repository.PickOrderRepository
 import com.kuaimai.pda.data.repository.UserRepository
 import com.kuaimai.pda.scanner.ScanFeedbackType
 import com.kuaimai.pda.scanner.ScannerManager
+import com.kuaimai.pda.util.PrefsKeys
 import com.kuaimai.pda.util.TimeUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -36,7 +38,8 @@ class PickDetailViewModel @Inject constructor(
     private val orderApiService: OrderApiService,
     val scannerManager: ScannerManager,
     private val imageRepository: ImageRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    @Named("encrypted") private val prefs: SharedPreferences
 ) : ViewModel() {
 
     /** 取货单ID */
@@ -371,7 +374,7 @@ class PickDetailViewModel @Inject constructor(
         return try {
             val areaImage = imageRepository.getImageBySkuAndType(skuOuterId, "area")
             val boxImage = imageRepository.getImageBySkuAndType(skuOuterId, "box")
-            val serverUrl = com.kuaimai.pda.util.AppConstants.DEFAULT_SERVER_URL
+            val serverUrl = prefs.getString(PrefsKeys.KEY_SERVER_URL, "") ?: ""
             Pair(areaImage?.let { "$serverUrl${it.imageUrl}" }, boxImage?.let { "$serverUrl${it.imageUrl}" })
         } catch (e: Exception) {
             Pair(null, null)
