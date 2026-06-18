@@ -1,5 +1,19 @@
 # 快麦取货通 - 变更日志
 
+## 1.35 (2026-06-18)
+
+### 修复
+- P0: 删除KuaimaiApiService.querySupplierList死代码
+- P0: 删除ItemUpdateRequest.suppliers死代码
+- P0: SupplierListResponse简化(移除未使用包装类)
+- P0: SupplierDto保留为本地模型(ProductViewModel使用)
+- P1: syncSupplierUpdate不传skuRemark防覆盖现有备注
+- P1: cache.py重试加asyncio.sleep(1)延迟退避
+- P2: _config_lock移到config.py(kuaimai_config_lock)解决循环依赖
+- P2: kuaimai_api.py移除threading import
+- P2: sku_cache.cached_at加索引防全表扫描
+- P2: _refresh_kuaimai_session注释更新(7天→24小时)
+
 ## 1.34 (2026-06-18)
 
 ### 修复

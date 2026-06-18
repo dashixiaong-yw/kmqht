@@ -1,5 +1,6 @@
 """SKU缓存服务 - 查询缓存与快麦API"""
 
+import asyncio
 import logging
 import sqlite3
 from typing import Any, Dict, Optional
@@ -34,9 +35,9 @@ async def get_sku_info(sku_outer_id: str) -> Optional[Dict[str, Any]]:
     logger.info(f"SKU缓存未命中，查询快麦API: {sku_outer_id}")
     try:
         sku_data = await get_sku_by_outer_id(sku_outer_id)
-        # 重试1次
         if not sku_data:
-            logger.info(f"SKU查询首次失败，重试: {sku_outer_id}")
+            logger.info(f"SKU查询首次失败，1秒后重试: {sku_outer_id}")
+            await asyncio.sleep(1)
             sku_data = await get_sku_by_outer_id(sku_outer_id)
     except Exception as e:
         logger.error(f"查询快麦API失败: {e}")

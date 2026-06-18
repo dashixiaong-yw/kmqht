@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import asyncio
+import threading
 from datetime import timedelta
 from pathlib import Path
 from typing import Optional
@@ -112,8 +113,7 @@ def load_kuaimai_config() -> None:
     try:
         with open(config_path, "r", encoding="utf-8") as f:
             data: dict = json.load(f)
-        from app.services.kuaimai_api import _config_lock
-        with _config_lock:
+        with kuaimai_config_lock:
             kuaimai_creds.app_key = data.get("app_key", "")
             kuaimai_creds.app_secret = data.get("app_secret", "")
             kuaimai_creds.session = data.get("session", "")
@@ -134,8 +134,7 @@ def save_kuaimai_config() -> None:
                 data = json.load(f)
 
         # 更新字段
-        from app.services.kuaimai_api import _config_lock
-        with _config_lock:
+        with kuaimai_config_lock:
             data["app_key"] = kuaimai_creds.app_key
             data["app_secret"] = kuaimai_creds.app_secret
             data["updated_at"] = kuaimai_creds.updated_at

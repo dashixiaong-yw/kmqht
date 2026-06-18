@@ -348,7 +348,7 @@ def _cleanup_orphan_images() -> None:
 
 
 def _refresh_kuaimai_session() -> None:
-    """定时刷新快麦session（每7天执行一次）"""
+    """定时刷新快麦session（每24小时执行一次）"""
     import asyncio
     from app.services.kuaimai_api import refresh_session
 

@@ -3,12 +3,11 @@
 import hashlib
 import json
 import logging
-import threading
 from typing import Any, Dict, Optional
 
 import httpx
 
-from app.config import KUAIMAI_API_BASE, kuaimai_creds, save_kuaimai_config
+from app.config import KUAIMAI_API_BASE, kuaimai_config_lock, kuaimai_creds, save_kuaimai_config
 from app.utils.time_utils import beijing_now, format_beijing
 
 logger = logging.getLogger(__name__)
@@ -37,7 +36,7 @@ def _sign(params: Dict[str, Any], app_secret: str) -> str:
 
 def _build_common_params(method: str) -> Dict[str, Any]:
     """构建公共请求参数（参数名与快麦开放平台官方文档一致）"""
-    with _config_lock:
+    with kuaimai_config_lock:
         return {
             "appKey": kuaimai_creds.app_key,
             "method": method,
@@ -69,7 +68,7 @@ async def _call_api(method: str, extra_params: Optional[Dict[str, Any]] = None) 
             params[key] = json.dumps(params[key], ensure_ascii=False)
 
     # 在锁内快照凭证用于签名
-    with _config_lock:
+    with kuaimai_config_lock:
         secret_snapshot = kuaimai_creds.app_secret
 
     # 生成签名
@@ -165,7 +164,7 @@ async def get_supplier_list() -> Optional[list]:
         params = _build_common_params("supplier.list.query")
         params["pageNo"] = "1"
         params["pageSize"] = "200"
-        with _config_lock:
+        with kuaimai_config_lock:
             secret_snapshot = kuaimai_creds.app_secret
         params["sign"] = _sign(params, secret_snapshot)
         async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
@@ -197,7 +196,7 @@ async def refresh_session() -> bool:
 
     try:
         # 在锁内快照凭证
-        with _config_lock:
+        with kuaimai_config_lock:
             refresh_token = kuaimai_creds.refresh_token
             secret_snapshot = kuaimai_creds.app_secret
 

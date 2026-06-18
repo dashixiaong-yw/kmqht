@@ -231,7 +231,7 @@ class OrderSyncWorker(
             title = ".",
             skus = listOf(SkuUpdateDto(
                 skuId = skuId, skuOuterId = skuOuterId,
-                skuPropertiesName = skuPropertiesName, skuRemark = ".",
+                skuPropertiesName = skuPropertiesName,
                 skuSuppliers = skuSuppliers
             ))
         )

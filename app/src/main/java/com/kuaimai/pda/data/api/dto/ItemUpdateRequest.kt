@@ -11,8 +11,7 @@ data class ItemUpdateRequest(
     @SerializedName("method") val method: String = "",
     @SerializedName("outerId") val outerId: String = "",
     @SerializedName("title") val title: String = "",
-    @SerializedName("skus") val skus: List<SkuUpdateDto> = emptyList(),
-    val suppliers: List<SupplierUpdateDto> = emptyList()
+    @SerializedName("skus") val skus: List<SkuUpdateDto> = emptyList()
 )
 
 /** SKU备注更新（V2: id + outerId + propertiesName + remark + suppliers） */

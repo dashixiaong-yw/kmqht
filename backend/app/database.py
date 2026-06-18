@@ -129,6 +129,7 @@ def init_db() -> None:
             cached_at DATETIME NOT NULL
         )
     """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_sku_cache_cached_at ON sku_cache(cached_at)")
 
     # 创建崩溃日志表
     cursor.execute("""
