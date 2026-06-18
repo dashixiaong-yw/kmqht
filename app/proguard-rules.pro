@@ -17,9 +17,14 @@
 # ---- WorkManager Worker ----
 -keep class com.kuaimai.pda.data.OrderSyncWorker { *; }
 
+# ---- Room Entity 类（不混淆字段名） ----
+-keep class com.kuaimai.pda.data.db.entity.** { *; }
+
 # ---- Sealed/Enum 类（R8全模式需要） ----
 -keep class com.kuaimai.pda.update.CheckResult { *; }
 -keep class com.kuaimai.pda.update.DownloadState { *; }
+-keep class com.kuaimai.pda.update.CheckResult$* { *; }
+-keep class com.kuaimai.pda.update.DownloadState$* { *; }
 -keep enum com.kuaimai.pda.scanner.ScanFeedbackType { *; }
 -keep enum com.kuaimai.pda.util.NetworkMonitor$Status { *; }
 -keep class com.kuaimai.pda.ui.settings.UpdateCheckUiState { *; }

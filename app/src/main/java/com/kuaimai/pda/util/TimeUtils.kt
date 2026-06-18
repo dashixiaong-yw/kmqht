@@ -7,6 +7,7 @@ import java.util.TimeZone
 /**
  * 时间工具类
  * 所有时间使用北京时间（UTC+8），时间戳使用Long类型
+ * SimpleDateFormat线程安全：通过ThreadLocal包装，每个线程独立实例
  */
 object TimeUtils {
 
@@ -20,19 +21,25 @@ object TimeUtils {
 
     private val beijingZone: TimeZone = TimeZone.getTimeZone(BEIJING_ZONE_ID)
 
-    /** 日期时间格式（使用Locale.CHINA避免ConstantLocale警告） */
-    private val dateTimeFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.CHINA).apply {
-        timeZone = beijingZone
+    /** 日期时间格式（使用ThreadLocal保证线程安全） */
+    private val dateTimeFormat = ThreadLocal.withInitial {
+        SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.CHINA).apply {
+            timeZone = beijingZone
+        }
     }
 
     /** 日期格式 */
-    private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.CHINA).apply {
-        timeZone = beijingZone
+    private val dateFormat = ThreadLocal.withInitial {
+        SimpleDateFormat("yyyy-MM-dd", Locale.CHINA).apply {
+            timeZone = beijingZone
+        }
     }
 
     /** 时间格式 */
-    private val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.CHINA).apply {
-        timeZone = beijingZone
+    private val timeFormat = ThreadLocal.withInitial {
+        SimpleDateFormat("HH:mm:ss", Locale.CHINA).apply {
+            timeZone = beijingZone
+        }
     }
 
     /**
@@ -42,7 +49,7 @@ object TimeUtils {
      */
     fun formatTimestamp(timestamp: Long): String {
         if (timestamp <= 0) return ""
-        return dateTimeFormat.format(timestamp)
+        return dateTimeFormat.get().format(timestamp)
     }
 
     /**
@@ -52,7 +59,7 @@ object TimeUtils {
      */
     fun formatDate(timestamp: Long): String {
         if (timestamp <= 0) return ""
-        return dateFormat.format(timestamp)
+        return dateFormat.get().format(timestamp)
     }
 
     /**
@@ -62,12 +69,11 @@ object TimeUtils {
      */
     fun formatTime(timestamp: Long): String {
         if (timestamp <= 0) return ""
-        return timeFormat.format(timestamp)
+        return timeFormat.get().format(timestamp)
     }
 
     /**
      * 获取当前北京时间戳
-     * @return 毫秒级时间戳（epoch毫秒，无时区概念，显示时通过formatTimestamp转为北京时间）
      */
     fun now(): Long {
         return System.currentTimeMillis()
@@ -81,7 +87,7 @@ object TimeUtils {
     fun parseBeijingTime(timeStr: String): Long {
         if (timeStr.isBlank()) return 0L
         return try {
-            dateTimeFormat.parse(timeStr)?.time ?: 0L
+            dateTimeFormat.get().parse(timeStr)?.time ?: 0L
         } catch (e: Exception) {
             0L
         }
@@ -89,8 +95,6 @@ object TimeUtils {
 
     /**
      * 解析北京时间字符串为毫秒时间戳（空值安全）
-     * @param timeStr 可空北京时间字符串
-     * @return 毫秒级时间戳，null或解析失败返回null
      */
     fun parseBeijingTimeOrNull(timeStr: String?): Long? {
         if (timeStr.isNullOrBlank()) return null
@@ -100,9 +104,6 @@ object TimeUtils {
 
     /**
      * 计算两个时间戳之间的分钟差
-     * @param start 开始时间戳
-     * @param end 结束时间戳
-     * @return 分钟差
      */
     fun diffMinutes(start: Long, end: Long): Long {
         return (end - start) / (60 * 1000)
@@ -110,8 +111,6 @@ object TimeUtils {
 
     /**
      * JSON字符串转义（防止双引号等特殊字符破坏JSON格式）
-     * @param value 原始字符串
-     * @return 转义后的字符串
      */
     fun escapeJson(value: String): String {
         return value

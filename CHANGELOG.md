@@ -1,8 +1,26 @@
 # 快麦取货通 - 变更日志
 
-## 1.26 (2026-06-18)
+## 1.27 (2026-06-18)
 
 ### 修复
+- CRASH: backend Dockerfile EXPOSE+CMD端口统一8900——修复端口映射+healthcheck无限重启
+- CRASH: backend/SERVER_PORT=8900——docker-compose 8900:8900/healthcheck localhost:8900
+- CRASH: TimeUtils.kt SimpleDateFormat→ThreadLocal——修复多线程并发ArrayIndexOutOfBoundsException
+- HIGH: proguard-rules.pro 添加Room Entity+sealed子类keep规则——修复R8混淆后"column not found"
+- HIGH: admin.py JS图片搜索改为camelCase——修复Pydantic v2字段名不匹配
+- HIGH: images.py image_url去前导/——修复admin后台图片URL双斜杠404
+- MEDIUM: kuaimai_api.py refresh_session加_config_lock写保护——修复并发读写竞争
+- MEDIUM: OrderSyncWorker.kt重试计数用DB最新值(current.retryCount)——修复重试计数被旧值覆盖
+- MEDIUM: AppUpdateManager.kt AtomicBoolean TOCTOU防护+finally重置——修复下载竞态
+
+### 修改
+- Dockerfile(backend+docker-deploy): EXPOSE 8900, CMD --port ${SERVER_PORT:-8900}
+- .env.docker.example(backend+docker-deploy): SERVER_PORT=8900
+- docker-compose.yml(backend+docker-deploy): 8900:8900 + healthcheck :8900
+- AppUpdateManager.kt: _isDownloading AtomicBoolean + try-finally重置
+- proguard-rules.pro: 移除\$错误转义 + 添加子类keep
+
+## 1.26 (2026-06-18)
 - HIGH: NetworkMonitor.register()从未被调用——网络状态指示器始终显示"已离线"
 - HIGH: HomeScreen未传递networkMonitor参数——首页不显示网络状态条（v1.25遗漏）
 - MEDIUM: NetworkMonitor Context注入缺少@ApplicationContext限定符——Hilt编译失败

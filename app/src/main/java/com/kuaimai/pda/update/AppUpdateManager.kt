@@ -49,6 +49,7 @@ class AppUpdateManager @Inject constructor(
         .readTimeout(120, TimeUnit.SECONDS)
         .build()
 
+    private val _isDownloading = AtomicBoolean(false)
     private val _downloadState = MutableStateFlow<DownloadState>(DownloadState.Idle)
     val downloadState: StateFlow<DownloadState> = _downloadState.asStateFlow()
 
@@ -77,48 +78,52 @@ class AppUpdateManager @Inject constructor(
         _downloadState.value = DownloadState.Idle
         Thread {
             try {
-                val dir = File(context.cacheDir, "update")
-                dir.mkdirs()
-                val apkFile = File(dir, "快麦取货通-${info.latestVersion}.apk")
-                if (apkFile.exists() && info.apkSize > 0 && apkFile.length() == info.apkSize) {
-                    _downloadState.value = DownloadState.Completed(apkFile)
-                    return@Thread
-                }
-                val request = Request.Builder().url(info.downloadUrl).build()
-                val response = client.newCall(request).execute()
-                if (!response.isSuccessful) {
-                    _downloadState.value = DownloadState.Failed("下载失败: HTTP ${response.code}")
-                    return@Thread
-                }
-                val body = response.body ?: run {
-                    _downloadState.value = DownloadState.Failed("响应体为空")
-                    return@Thread
-                }
-                val totalBytes = body.contentLength()
-                var downloadedBytes = 0L
-                val buffer = ByteArray(8192)
-                FileOutputStream(apkFile).use { output ->
-                    body.byteStream().use { input ->
-                        var bytesRead: Int
-                        while (input.read(buffer).also { bytesRead = it } != -1) {
-                            output.write(buffer, 0, bytesRead)
-                            downloadedBytes += bytesRead
-                            if (totalBytes > 0) {
-                                val progress = downloadedBytes.toFloat() / totalBytes
-                                _downloadState.value = DownloadState.Downloading(progress, downloadedBytes, totalBytes)
+                try {
+                    val dir = File(context.cacheDir, "update")
+                    dir.mkdirs()
+                    val apkFile = File(dir, "快麦取货通-${info.latestVersion}.apk")
+                    if (apkFile.exists() && info.apkSize > 0 && apkFile.length() == info.apkSize) {
+                        _downloadState.value = DownloadState.Completed(apkFile)
+                        return@Thread
+                    }
+                    val request = Request.Builder().url(info.downloadUrl).build()
+                    val response = client.newCall(request).execute()
+                    if (!response.isSuccessful) {
+                        _downloadState.value = DownloadState.Failed("下载失败: HTTP ${response.code}")
+                        return@Thread
+                    }
+                    val body = response.body ?: run {
+                        _downloadState.value = DownloadState.Failed("响应体为空")
+                        return@Thread
+                    }
+                    val totalBytes = body.contentLength()
+                    var downloadedBytes = 0L
+                    val buffer = ByteArray(8192)
+                    FileOutputStream(apkFile).use { output ->
+                        body.byteStream().use { input ->
+                            var bytesRead: Int
+                            while (input.read(buffer).also { bytesRead = it } != -1) {
+                                output.write(buffer, 0, bytesRead)
+                                downloadedBytes += bytesRead
+                                if (totalBytes > 0) {
+                                    val progress = downloadedBytes.toFloat() / totalBytes
+                                    _downloadState.value = DownloadState.Downloading(progress, downloadedBytes, totalBytes)
+                                }
                             }
                         }
                     }
+                    if (info.apkSize > 0 && apkFile.length() != info.apkSize) {
+                        apkFile.delete()
+                        _downloadState.value = DownloadState.Failed("文件大小不匹配")
+                        return@Thread
+                    }
+                    _downloadState.value = DownloadState.Completed(apkFile)
+                } catch (e: IOException) {
+                    Log.e("AppUpdateManager", "下载APK失败", e)
+                    _downloadState.value = DownloadState.Failed("下载失败: ${e.message}")
                 }
-                if (info.apkSize > 0 && apkFile.length() != info.apkSize) {
-                    apkFile.delete()
-                    _downloadState.value = DownloadState.Failed("文件大小不匹配")
-                    return@Thread
-                }
-                _downloadState.value = DownloadState.Completed(apkFile)
-            } catch (e: IOException) {
-                Log.e("AppUpdateManager", "下载APK失败", e)
-                _downloadState.value = DownloadState.Failed("下载失败: ${e.message}")
+            } finally {
+                _isDownloading.set(false)
             }
         }.start()
     }

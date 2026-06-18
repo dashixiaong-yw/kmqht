@@ -199,15 +199,16 @@ async def refresh_session() -> bool:
 
         # 更新凭证（刷新后token值不变，但更新updated_at记录刷新时间）
         now = beijing_now()
-        kuaimai_creds.updated_at = format_beijing(now)
+        with _config_lock:
+            kuaimai_creds.updated_at = format_beijing(now)
 
-        # 如果响应中返回了新的token，也更新（防御性处理）
-        new_access_token = session_data.get("accessToken", "")
-        new_refresh_token = session_data.get("refreshToken", "")
-        if new_access_token:
-            kuaimai_creds.session = new_access_token
-        if new_refresh_token:
-            kuaimai_creds.refresh_token = new_refresh_token
+            # 如果响应中返回了新的token，也更新（防御性处理）
+            new_access_token = session_data.get("accessToken", "")
+            new_refresh_token = session_data.get("refreshToken", "")
+            if new_access_token:
+                kuaimai_creds.session = new_access_token
+            if new_refresh_token:
+                kuaimai_creds.refresh_token = new_refresh_token
 
         # 持久化到文件
         save_kuaimai_config()

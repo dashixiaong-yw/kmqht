@@ -115,7 +115,7 @@ async def upload_image(
         cursor.execute("DELETE FROM product_images WHERE id = ?", (existing["id"],))
 
     # 构建URL
-    image_url = f"/images/{date_dir}/{file_name}"
+    image_url = f"images/{date_dir}/{file_name}"
     relative_file_path = f"{date_dir}/{file_name}"
 
     try:

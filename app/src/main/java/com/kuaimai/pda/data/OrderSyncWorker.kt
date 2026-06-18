@@ -87,16 +87,14 @@ class OrderSyncWorker(
                         Log.d(TAG, "操作同步成功: ${op.operationType} orderId=$orderId")
                     } else {
                         val current = pendingOperationDao.getById(op.id)
-                        if (current?.retryCount == -1) {
+                        if (current == null) continue
+                        if (current.retryCount == -1) {
                             Log.w(TAG, "操作已标记冲突: ${op.operationType} orderId=$orderId")
+                        } else if (current.retryCount >= MAX_RETRY) {
+                            Log.e(TAG, "操作同步失败超过${MAX_RETRY}次，标记冲突: ${op.operationType}")
+                            pendingOperationDao.updateRetryCount(op.id, -1)
                         } else {
-                            val newRetryCount = op.retryCount + 1
-                            if (newRetryCount >= MAX_RETRY) {
-                                Log.e(TAG, "操作同步失败超过${MAX_RETRY}次，标记冲突: ${op.operationType}")
-                                pendingOperationDao.updateRetryCount(op.id, -1)
-                            } else {
-                                pendingOperationDao.updateRetryCount(op.id, newRetryCount)
-                            }
+                            pendingOperationDao.updateRetryCount(op.id, current.retryCount + 1)
                         }
                         hasFailure = true
                     }
