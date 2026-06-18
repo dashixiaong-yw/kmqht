@@ -133,12 +133,12 @@ class PickOrderRepositoryImpl @Inject constructor(
     }
 
     override suspend fun enqueueCompleteAll(orderId: Long, now: Long) {
-        pickOrderDao.updateStatus(orderId, 1, now)
         enqueueOperation(
             operationType = "complete_all",
             orderId = orderId,
             targetId = 0L
         )
+        pickOrderDao.updateStatus(orderId, 1, now)
     }
 
     override suspend fun completeAllItemsDirect(orderId: Long, completedAt: Long) {

@@ -131,7 +131,7 @@ async def upload_image(
             os.remove(file_path)
         raise HTTPException(status_code=500, detail="保存图片记录失败")
 
-    # 删除旧图片文件
+    # 删除旧图片文件（DB记录已在L120删除，此处只清理文件）
     if existing:
         old_file_path = os.path.join(IMAGE_DIR, existing["file_path"])
         try:
@@ -139,8 +139,6 @@ async def upload_image(
                 os.remove(old_file_path)
         except IOError as e:
             logger.warning(f"删除旧图片文件失败: {e}")
-        cursor.execute("DELETE FROM product_images WHERE id = ?", (existing["id"],))
-        db.commit()
 
     try:
         cursor.execute(

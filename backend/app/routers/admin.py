@@ -519,7 +519,7 @@ async function loadUsers() {{
       <td><span class="badge ${{u.isActive ? 'badge-green' : 'badge-red'}}">${{u.isActive ? '启用' : '禁用'}}</span></td>
       <td>${{u.createdAt || '-'}}</td>
       <td>
-        <button class="btn btn-primary btn-sm" onclick='editUser("${{encodeURIComponent(JSON.stringify(u))}}")'>编辑</button>
+        <button class="btn btn-primary btn-sm" onclick='editUser("${{encodeURIComponent(JSON.stringify(u)).replaceAll("'", "&#39;")}}")'>编辑</button>
         <button class="btn btn-danger btn-sm" onclick='confirmDeleteUser(${{u.id}},"${{escapeHtml(u.username)}}")'>删除</button>
       </td>
     </tr>`).join('');

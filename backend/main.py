@@ -208,7 +208,7 @@ def _check_order_timeout() -> None:
     try:
         db = get_db()
         cursor = db.cursor()
-        now = beijing_now().strftime("%Y-%m-%d %H:%M:%S")
+        now = format_beijing(beijing_now())
 
         # 将超时的进行中取货单标记为已完成
         cursor.execute(
@@ -363,12 +363,7 @@ def _refresh_kuaimai_session() -> None:
             logger.error(f"定时刷新快麦session异常: {e}")
 
     try:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            loop.run_until_complete(_do_refresh())
-        finally:
-            loop.close()
+        asyncio.run(_do_refresh())
     except Exception as e:
         logger.error(f"刷新session失败: {e}")
 

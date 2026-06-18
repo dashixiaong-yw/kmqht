@@ -15,7 +15,8 @@ from app.database import get_db
 logger = logging.getLogger(__name__)
 
 # 不需要认证的路径前缀（/images/匹配静态文件目录，/api/images/仍需认证）
-SKIP_AUTH_PREFIXES = ("/images/", "/health", "/docs", "/redoc", "/openapi.json", "/admin", "/setup", "/api/app-version", "/apk/")
+# /admin 精确匹配管理后台页面，避免误配 /admin-api 等路径
+SKIP_AUTH_PREFIXES = ("/images/", "/health", "/docs", "/redoc", "/openapi.json", "/setup", "/api/app-version", "/apk/")
 
 # 全部有效权限代码
 VALID_PERMISSIONS = {"settings", "update_supplier", "update_remark", "manage_area_image", "manage_box_image"}
@@ -25,6 +26,10 @@ class ApiKeyMiddleware(BaseHTTPMiddleware):
     """API Key认证中间件"""
 
     async def dispatch(self, request: Request, call_next):
+        # 管理后台页面精确匹配（不需要API Key）
+        if request.url.path == "/admin" or request.url.path.startswith("/setup"):
+            return await call_next(request)
+
         # 跳过不需要认证的路径
         for prefix in SKIP_AUTH_PREFIXES:
             if request.url.path.startswith(prefix):

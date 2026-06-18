@@ -227,7 +227,7 @@ def complete_item(order_id: int, item_id: int, user: dict = Depends(get_current_
     cursor.execute("SELECT status FROM pick_orders WHERE id = ?", (order_id,))
     order_row = cursor.fetchone()
     if order_row and order_row["status"] == 1:
-        raise HTTPException(status_code=400, detail="已完成的取货单不能删除明细")
+        raise HTTPException(status_code=400, detail="已完成的取货单不能完成明细")
 
     # 幂等：已完成的不再处理
     if item_row["status"] == 1:
@@ -287,11 +287,11 @@ def restore_item(order_id: int, item_id: int, user: dict = Depends(get_current_u
         )
         # 检查是否需要将取货单状态从已完成恢复为进行中
         cursor.execute(
-            "SELECT total_count, completed_count - 1 as new_completed FROM pick_orders WHERE id = ?",
+            "SELECT total_count, completed_count FROM pick_orders WHERE id = ?",
             (order_id,)
         )
         order_info = cursor.fetchone()
-        if order_info and order_info["new_completed"] < order_info["total_count"]:
+        if order_info and order_info["completed_count"] < order_info["total_count"]:
             cursor.execute(
                 "UPDATE pick_orders SET status = 0, completed_at = NULL WHERE id = ?",
                 (order_id,)
@@ -318,6 +318,10 @@ def complete_all_items(order_id: int, user: dict = Depends(get_current_user)) ->
     # 空取货单不允许完成
     if order_row["total_count"] == 0:
         raise HTTPException(status_code=400, detail="取货单无明细，无法完成")
+
+    # 幂等：已完成的不再处理
+    if order_row["status"] == 1:
+        return BaseResponse(message="取货单已完成")
 
     now = beijing_now()
     try:

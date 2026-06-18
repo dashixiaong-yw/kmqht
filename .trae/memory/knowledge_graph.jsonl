@@ -136,6 +136,11 @@
 {"type":"entity","name":"v1.41_第八次回溯审计发布","entityType":"VersionRelease","observations":["版本号 1.41","2026-06-18 发布","修复 P0：orders.py completed_count +1 错误","修复 MEDIUM：config.py SERVER_PORT 默认端口不一致","附：第八次全量回溯审计结束"]}
 {"type":"entity","name":"审计_第八次全量回溯审计","entityType":"Audit","observations":["覆盖 v1.01~v1.40 约40次更新","4路并行搜索代理分别覆盖 Android 端12个文件、后端全模块、配置一致性、知识图谱","Android 端：全部12个关键文件修复已正确应用，无遗漏无回归","后端：发现 1 个 P0 逻辑 bug + 1 个配置缺陷","配置一致性：版本号一致，端口默认值不一致","知识图谱：134实体+73关系，完整"]}
 {"type":"entity","name":"审计_近40次更新回归检查","entityType":"Decision","observations":["并发4路搜索代理并行审计","Android端全部12个关键文件已确认修复正确应用","后端发现orders.py P0 completed_count计算错误","后端发现config.py端口默认值不一致","知识图谱完整性确认，设计决策已全部记录"]}
+{"type":"entity","name":"v1.43_第九次全面审计修复发布","entityType":"VersionRelease","observations":["版本号 1.43","2026-06-18 发布","P0: SettingsViewModel Flow collector泄漏 + enqueueCompleteAll操作顺序","P1: admin XSS + orders 错误提示+双重递减 + images 冗余DELETE + config 空字符串 + auth 精确匹配 + main strftime+asyncio + areas 竞态 + users 内存泄漏","P2: complete_all_items 幂等检查","第九次全面审计发现38个缺陷，修复13个"]}
+{"type":"entity","name":"BUG-P0_FlowCollectorLeak","entityType":"BugFix","observations":["P0-2: SettingsViewModel.startDownload 每次调用创建新的collect协程但不保存Job引用","旧collector未取消，多次下载造成StateFlow竞态+APK重复下载","修复: 添加downloadJob字段，启动前cancel旧Job","文件: app/../settings/SettingsViewModel.kt"]}
+{"type":"entity","name":"BUG-P0_EnqueueCompleteAllOrder","entityType":"BugFix","observations":["P0-3: enqueueCompleteAll 先更新本地DB状态再写入离线队列","如果Room写队列异常，本地已完成但操作丢失","修复: 先enqueueOperation入队，后pickOrderDao.updateStatus","文件: app/../repository/PickOrderRepository.kt"]}
+{"type":"entity","name":"BUG-P1_AdminXssOnclick","entityType":"BugFix","observations":["P1-1: admin.py L522 onclick中encodeURIComponent不编码单引号","用户名的'可提前闭合HTML属性导致XSS注入","修复: .replaceAll(\"'\", \"&#39;\")","文件: backend/app/routers/admin.py"]}
+{"type":"entity","name":"BUG-P1_CompleteItemErrorMessage","entityType":"BugFix","observations":["P1-2: complete_item 错误提示","不能删除明细"]}
 {"type":"relation","from":"F1_取货单管理","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F2_扫码待办","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F3_取货单自动完成","to":"快麦取货通项目","relationType":"属于"}
@@ -216,3 +221,13 @@
 {"type":"relation","from":"快麦取货通项目","to":"v1.41_第八次回溯审计发布","relationType":"has_version"}
 {"type":"relation","from":"BUG-P0_CompletedCountPlus1","to":"快麦取货通项目","relationType":"belongs_to"}
 {"type":"relation","from":"BUG-CONFIG_ServerPortDefault","to":"快麦取货通项目","relationType":"belongs_to"}
+{"type":"relation","from":"v1.43_第九次全面审计修复发布","to":"BUG-P0_FlowCollectorLeak","relationType":"fixes"}
+{"type":"relation","from":"v1.43_第九次全面审计修复发布","to":"BUG-P0_EnqueueCompleteAllOrder","relationType":"fixes"}
+{"type":"relation","from":"v1.43_第九次全面审计修复发布","to":"BUG-P1_AdminXssOnclick","relationType":"fixes"}
+{"type":"relation","from":"v1.43_第九次全面审计修复发布","to":"BUG-P1_CompleteItemErrorMessage","relationType":"fixes"}
+{"type":"relation","from":"v1.43_第九次全面审计修复发布","to":"BUG-P1_RestoreDoubleDecrement","relationType":"fixes"}
+{"type":"relation","from":"v1.43_第九次全面审计修复发布","to":"BUG-P1_ImagesRedundantDelete","relationType":"fixes"}
+{"type":"relation","from":"v1.43_第九次全面审计修复发布","to":"BUG-P1_ConfigEmptyString","relationType":"fixes"}
+{"type":"relation","from":"v1.43_第九次全面审计修复发布","to":"BUG-P1_AuthAdminPrefix","relationType":"fixes"}
+{"type":"relation","from":"快麦取货通项目","to":"v1.43_第九次全面审计修复发布","relationType":"has_version"}
+{"type":"relation","from":"v1.43_第九次全面审计修复发布","to":"审计_第九次全面审计","relationType":"includes"}

@@ -333,10 +333,15 @@ def _record_login_fail(username: str) -> None:
     import time
 
     with _login_lock:
-        # 清理已过期的锁定记录
-        expired = [u for u, t in _LOGIN_LOCK_UNTIL.items() if t < time.time()]
+        now = time.time()
+        # 清理所有已过期的锁定记录和未达标阈值的失败计数（防止内存泄漏）
+        expired = [u for u, t in _LOGIN_LOCK_UNTIL.items() if t < now]
         for u in expired:
             _LOGIN_LOCK_UNTIL.pop(u, None)
+            _LOGIN_FAIL_COUNTS.pop(u, None)
+        # 清理超过30分钟未登录重试的失败计数
+        stale = [u for u in list(_LOGIN_FAIL_COUNTS.keys()) if u not in _LOGIN_LOCK_UNTIL]
+        for u in stale:
             _LOGIN_FAIL_COUNTS.pop(u, None)
 
         count = _LOGIN_FAIL_COUNTS.get(username, 0) + 1

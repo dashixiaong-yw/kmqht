@@ -1,6 +1,7 @@
 """拣货区路由 - 拣货区CRUD"""
 
 import logging
+import sqlite3
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -52,18 +53,21 @@ def create_area(req: AreaRequest, user: dict = Depends(check_permission("setting
             (req.name, format_beijing(now))
         )
         db.commit()
-
-        cursor.execute("SELECT * FROM pick_areas WHERE name = ?", (req.name,))
-        row = cursor.fetchone()
-        return AreaResponse(
-            id=row["id"],
-            name=row["name"],
-            createdAt=row["created_at"],
-        )
+    except sqlite3.IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=f"拣货区'{req.name}'已存在")
     except Exception as e:
         db.rollback()
         logger.error(f"创建拣货区失败: {e}")
         raise HTTPException(status_code=500, detail="创建拣货区失败，请稍后重试")
+
+    cursor.execute("SELECT * FROM pick_areas WHERE name = ?", (req.name,))
+    row = cursor.fetchone()
+    return AreaResponse(
+        id=row["id"],
+        name=row["name"],
+        createdAt=row["created_at"],
+    )
 
 
 @router.delete("/{area_id}", response_model=BaseResponse)

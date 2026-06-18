@@ -9,6 +9,7 @@ import com.kuaimai.pda.update.CheckResult
 import com.kuaimai.pda.update.DownloadState
 import com.kuaimai.pda.util.PrefsKeys
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,6 +35,7 @@ class SettingsViewModel @Inject constructor(
     }
 
     private var isDownloadingUpdate = false
+    private var downloadJob: Job? = null
 
     /** 扫码方式 (0=PDA硬件, 1=相机, 2=手动) */
     private val _scanMethod = MutableStateFlow(
@@ -107,7 +109,8 @@ class SettingsViewModel @Inject constructor(
     fun startDownload(info: AppVersionResponse) {
         if (isDownloadingUpdate) return
         isDownloadingUpdate = true
-        viewModelScope.launch {
+        downloadJob?.cancel()
+        downloadJob = viewModelScope.launch {
             appUpdateManager.downloadState.collect { state ->
                 when (state) {
                     is DownloadState.Completed -> {

@@ -1,5 +1,27 @@
 # 快麦取货通 - 变更日志
 
+## 1.43 (2026-06-18)
+
+### 修复
+- P0: SettingsViewModel startDownload 添加 downloadJob 取消旧协程 — 修复 Flow collector 泄漏导致APK重复下载
+- P0: PickOrderRepository.enqueueCompleteAll 先入队后更新状态 — 修复离线全量完成操作丢失
+- P1: admin.py XSS — onclick 参数中单引号 `'` 替换为 `&#39;` 防注入
+- P1: orders.py complete_item 错误提示"不能删除明细"→"不能完成明细"
+- P1: orders.py restore_item 去掉双重 `completed_count - 1` 递减
+- P1: images.py 删除冗余 DELETE 语句和多余 db.commit()
+- P1: config.py `int(os.getenv("SERVER_PORT") or "8900")` — 防空字符串导致 ValueError
+- P1: auth.py SKIP_AUTH_PREFIXES 移除 `/admin` 前缀宽泛匹配，改为精确匹配避免 `/admin-api` 绕过
+- P1: main.py `beijing_now().strftime()` → `format_beijing(beijing_now())` — 统一时间格式化
+- P1: main.py `asyncio.new_event_loop()` → `asyncio.run()` — 简化事件循环管理
+- P1: areas.py 添加 `sqlite3.IntegrityError` 捕获 — 修复并发创建同名拣货区竞态
+- P1: users.py `_LOGIN_FAIL_COUNTS` 添加过期清理 — 防止长时间运行内存泄漏
+- P2: orders.py complete_all_items 添加已完成幂等检查
+
+### 审计
+- 第九次全面审计：5路并行代理覆盖 Android 50+文件 + Backend 20+文件 + 27端点契约 + 25 BugFix落地验证
+- 累计发现 38 个缺陷，修复 13 个（P0×2 + P1×10 + P2×1）
+- 前后端接口契约零差异，知识图谱设计一致性全部通过
+
 ## 1.42 (2026-06-18)
 
 ### 修复
