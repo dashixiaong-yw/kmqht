@@ -8,6 +8,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kuaimai.pda.data.api.KuaimaiApiService
+import com.kuaimai.pda.data.api.SystemApiService
+import com.kuaimai.pda.data.api.dto.KuaimaiSupplierItem
 import com.kuaimai.pda.data.api.dto.SupplierDto
 import com.kuaimai.pda.data.db.dao.PickItemDao
 import com.kuaimai.pda.data.db.dao.ProductImageDao
@@ -73,6 +75,7 @@ class ProductViewModel @Inject constructor(
     private val pickOrderRepository: PickOrderRepository,
     private val imageRepository: ImageRepository,
     private val apiService: KuaimaiApiService,
+    private val systemApiService: SystemApiService,
     @Named("encrypted") private val prefs: SharedPreferences,
     @ApplicationContext private val appContext: Context
 ) : ViewModel() {
@@ -270,13 +273,11 @@ class ProductViewModel @Inject constructor(
     private fun loadSuppliers() {
         viewModelScope.launch {
             try {
-                val sysItemId = currentItem?.sysItemId ?: 0L
-                val params = mutableMapOf("method" to "item.supplier.list.get")
-                if (sysItemId > 0) {
-                    params["sysItemIds"] = sysItemId.toString()
+                val token = prefs.getString(PrefsKeys.KEY_USER_TOKEN, "") ?: ""
+                val response = systemApiService.getKuaimaiSuppliers(token)
+                _suppliers.value = response.suppliers.map { item ->
+                    SupplierDto(supplierName = item.name, supplierCode = item.code, supplierId = item.id)
                 }
-                val result = apiService.querySupplierList(params)
-                _suppliers.value = result.suppliers
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     error = "加载供应商列表失败: ${e.message}"

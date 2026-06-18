@@ -28,3 +28,15 @@ data class KuaimaiCredentialsResponse(
     val appSecret: String = "",
     val session: String = ""
 )
+
+/** 快麦供应商项（后端 /api/kuaimai/suppliers 响应） */
+data class KuaimaiSupplierItem(
+    val code: String = "",
+    val name: String = "",
+    val id: Long = 0
+)
+
+/** 快麦供应商列表响应 */
+data class KuaimaiSuppliersResponse(
+    val suppliers: List<KuaimaiSupplierItem> = emptyList()
+)

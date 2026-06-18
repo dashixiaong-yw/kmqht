@@ -157,6 +157,31 @@ async def get_sku_by_outer_id(sku_outer_id: str) -> Optional[Dict[str, Any]]:
         return None
 
 
+async def get_supplier_list() -> Optional[list]:
+    """获取快麦供应商列表（含编码，走采购模块 supplier.list.query）"""
+    if not kuaimai_creds.is_valid():
+        raise ValueError("快麦凭证未配置")
+    try:
+        params = _build_common_params("supplier.list.query")
+        params["pageNo"] = "1"
+        params["pageSize"] = "200"
+        with _config_lock:
+            secret_snapshot = kuaimai_creds.app_secret
+        params["sign"] = _sign(params, secret_snapshot)
+        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+            files = {key: (None, str(value)) for key, value in params.items()}
+            response = await client.post(KUAIMAI_API_BASE, files=files)
+            response.raise_for_status()
+            result: Dict[str, Any] = response.json()
+        if "error_response" in result:
+            logger.error(f"快麦供应商列表API错误: {result['error_response']}")
+            return None
+        return result.get("list", [])
+    except Exception as e:
+        logger.error(f"获取供应商列表失败: {e}")
+        return None
+
+
 # ==================== 会话刷新 ====================
 
 async def refresh_session() -> bool:

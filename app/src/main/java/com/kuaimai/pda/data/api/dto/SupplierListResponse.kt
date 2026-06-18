@@ -11,5 +11,6 @@ data class SupplierListResponse(
 
 data class SupplierDto(
     val supplierName: String = "",
-    val supplierCode: String = ""
+    val supplierCode: String = "",
+    val supplierId: Long = 0
 )

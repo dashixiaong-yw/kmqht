@@ -18,6 +18,8 @@ from app.models import (
     KuaimaiCredentialsResponse,
     KuaimaiRefreshResponse,
     KuaimaiSessionStatusResponse,
+    KuaimaiSupplierItem,
+    KuaimaiSuppliersResponse,
 )
 from app.utils.time_utils import beijing_now, format_beijing
 
@@ -115,6 +117,22 @@ def get_kuaimai_session_status(user: dict = Depends(check_permission("settings")
         updatedAt=kuaimai_creds.updated_at,
         hasRefreshToken=kuaimai_creds.has_refresh_token(),
     )
+
+
+@router.get("/api/kuaimai/suppliers", response_model=KuaimaiSuppliersResponse)
+async def get_kuaimai_suppliers(user: dict = Depends(check_permission("settings"))) -> KuaimaiSuppliersResponse:
+    """获取快麦供应商列表（含编码，采购权限）"""
+    from app.services.kuaimai_api import get_supplier_list
+
+    try:
+        items = await get_supplier_list()
+        if items is None:
+            return KuaimaiSuppliersResponse(suppliers=[])
+        suppliers = [KuaimaiSupplierItem(code=s.get("code", ""), name=s.get("name", ""), id=s.get("id", 0)) for s in items]
+        return KuaimaiSuppliersResponse(suppliers=suppliers)
+    except Exception as e:
+        logger.error(f"获取供应商列表失败: {e}")
+        return KuaimaiSuppliersResponse(suppliers=[])
 
 
 @router.post("/api/kuaimai/refresh-session", response_model=KuaimaiRefreshResponse)

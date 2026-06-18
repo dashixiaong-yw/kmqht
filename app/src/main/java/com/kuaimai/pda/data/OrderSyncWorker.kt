@@ -214,17 +214,27 @@ class OrderSyncWorker(
     }
 
     private suspend fun syncSupplierUpdate(op: PendingOperationEntity): Boolean {
-        val kmApi = apiService ?: return false
         val supplierName = extractPayloadValue(op.payload, "supplier_name") ?: return false
         val supplierCode = extractPayloadValue(op.payload, "supplier_code") ?: return false
         val itemId = extractPayloadValue(op.payload, "sys_item_id")?.toLongOrNull() ?: return false
+        val skuOuterId = extractPayloadValue(op.payload, "sku_outer_id") ?: return false
+        val skuId = extractPayloadValue(op.payload, "sys_sku_id")?.toLongOrNull() ?: return false
+        val skuPropertiesName = extractPayloadValue(op.payload, "properties_name") ?: ""
+        val outerId = skuOuterId.substringBefore("-")
+        val skuSuppliers = listOf(SupplierUpdateDto(supplierCode = supplierCode, supplierName = supplierName))
         val request = ItemUpdateRequest(
             id = itemId,
             method = "erp.item.general.addorupdate",
+            outerId = outerId,
             title = ".",
-            suppliers = listOf(SupplierUpdateDto(supplierCode = supplierCode, supplierName = supplierName))
+            skus = listOf(SkuUpdateDto(
+                skuId = skuId, skuOuterId = skuOuterId,
+                skuPropertiesName = skuPropertiesName, skuRemark = ".",
+                skuSuppliers = skuSuppliers
+            ))
         )
-        kmApi.updateItemSupplier(request)
+        val kmApi = apiService ?: return false
+        kmApi.updateItemRemark(request)
         return true
     }
 

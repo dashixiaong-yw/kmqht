@@ -238,3 +238,15 @@ class KuaimaiCredentialsResponse(BaseModel):
     appKey: str = ""
     appSecret: str = ""
     session: str = ""
+
+
+class KuaimaiSupplierItem(BaseModel):
+    """快麦供应商项（采购模块 supplier.list.query）"""
+    code: str = ""
+    name: str = ""
+    id: int = 0
+
+
+class KuaimaiSuppliersResponse(BaseModel):
+    """快麦供应商列表响应"""
+    suppliers: List[KuaimaiSupplierItem] = []

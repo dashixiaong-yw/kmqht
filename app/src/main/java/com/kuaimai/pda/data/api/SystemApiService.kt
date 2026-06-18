@@ -4,6 +4,7 @@ import com.kuaimai.pda.data.api.dto.AppVersionResponse
 import com.kuaimai.pda.data.api.dto.KuaimaiCredentialsResponse
 import com.kuaimai.pda.data.api.dto.KuaimaiRefreshResponse
 import com.kuaimai.pda.data.api.dto.KuaimaiSessionStatusResponse
+import com.kuaimai.pda.data.api.dto.KuaimaiSuppliersResponse
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
@@ -31,6 +32,12 @@ interface SystemApiService {
     suspend fun getKuaimaiCredentials(
         @Header("X-User-Token") token: String
     ): KuaimaiCredentialsResponse
+
+    /** 获取快麦供应商列表（含编码） */
+    @GET("api/kuaimai/suppliers")
+    suspend fun getKuaimaiSuppliers(
+        @Header("X-User-Token") token: String
+    ): KuaimaiSuppliersResponse
 
     /** 获取已分发的最新应用版本（无需 token，匿名访问） */
     @GET("api/app-version")
