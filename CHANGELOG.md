@@ -1,5 +1,11 @@
 # 快麦取货通 - 变更日志
 
+## 1.45 (2026-06-18)
+
+### 修改
+- database.py: 默认admin用户创建时 is_active=0（禁用），不再允许 admin/admin123 登录
+- users.py: 移除 mustChangePassword 默认密码检查，与默认admin禁用逻辑对齐
+
 ## 1.44 (2026-06-18)
 
 ### 修复

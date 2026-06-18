@@ -141,6 +141,8 @@
 {"type":"entity","name":"BUG-P0_EnqueueCompleteAllOrder","entityType":"BugFix","observations":["P0-3: enqueueCompleteAll 先更新本地DB状态再写入离线队列","如果Room写队列异常，本地已完成但操作丢失","修复: 先enqueueOperation入队，后pickOrderDao.updateStatus","文件: app/../repository/PickOrderRepository.kt"]}
 {"type":"entity","name":"BUG-P1_AdminXssOnclick","entityType":"BugFix","observations":["P1-1: admin.py L522 onclick中encodeURIComponent不编码单引号","用户名的'可提前闭合HTML属性导致XSS注入","修复: .replaceAll(\"'\", \"&#39;\")","文件: backend/app/routers/admin.py"]}
 {"type":"entity","name":"BUG-P1_CompleteItemErrorMessage","entityType":"BugFix","observations":["P1-2: complete_item 错误提示","不能删除明细"]}
+{"type":"entity","name":"v1.45_禁用默认admin账户","entityType":"VersionRelease","observations":["版本号 1.45","2026-06-18 发布","database.py: 默认admin用户创建时 is_active=0（禁用）","users.py: 移除 mustChangePassword 默认密码检查","管理后台已完全使用API Key认证，user/password登录体系不再需要默认账户"]}
+{"type":"entity","name":"BUG-DefaultAdminDisabled","entityType":"BugFix","observations":["默认admin/admin123账号在首次部署时自动创建并启用","管理后台已改用API Key登录，此账号不再需要且存在安全风险","修复: _init_default_admin is_active=1→0","users.py: 移除 admin123 硬编码密码比对","文件: backend/app/database.py, backend/app/routers/users.py"]}
 {"type":"relation","from":"F1_取货单管理","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F2_扫码待办","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F3_取货单自动完成","to":"快麦取货通项目","relationType":"属于"}
@@ -231,3 +233,5 @@
 {"type":"relation","from":"v1.43_第九次全面审计修复发布","to":"BUG-P1_AuthAdminPrefix","relationType":"fixes"}
 {"type":"relation","from":"快麦取货通项目","to":"v1.43_第九次全面审计修复发布","relationType":"has_version"}
 {"type":"relation","from":"v1.43_第九次全面审计修复发布","to":"审计_第九次全面审计","relationType":"includes"}
+{"type":"relation","from":"v1.45_禁用默认admin账户","to":"BUG-DefaultAdminDisabled","relationType":"fixes"}
+{"type":"relation","from":"快麦取货通项目","to":"v1.45_禁用默认admin账户","relationType":"has_version"}
