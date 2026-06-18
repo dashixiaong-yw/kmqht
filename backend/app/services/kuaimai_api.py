@@ -187,7 +187,7 @@ async def get_supplier_list() -> Optional[list]:
         if "error_response" in result:
             logger.error(f"快麦供应商列表API错误: {result['error_response']}")
             return None
-        return result.get("list", [])
+        return result.get("supplier_list_query_response", {}).get("list", [])
     except Exception as e:
         logger.error(f"获取供应商列表失败: {e}")
         return None

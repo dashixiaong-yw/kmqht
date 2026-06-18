@@ -503,7 +503,7 @@ private fun ImageUploadGrid(
                 ImageUploadSlot(
                     label = "库区图",
                     imageUrl = areaImageUrl,
-                    onClick = if (canManageAreaImage) onUploadArea else {{}},
+                    onClick = if (canManageAreaImage) onUploadArea else ({} as () -> Unit),
                     onLongClick = if (canManageAreaImage && areaImageUrl != null) onDeleteArea else null,
                     modifier = Modifier.weight(1f)
                 )

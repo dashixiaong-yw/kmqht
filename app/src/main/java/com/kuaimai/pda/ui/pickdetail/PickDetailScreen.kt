@@ -102,7 +102,6 @@ fun PickDetailScreen(
     val suppliers by viewModel.suppliers.collectAsState()
     val currentSupplier by viewModel.currentSupplier.collectAsState()
     val continuousScanMode by viewModel.continuousScanMode.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val duplicateScan by viewModel.duplicateScan.collectAsState()
 

@@ -26,7 +26,7 @@ router = APIRouter(tags=["管理后台"])
 def admin_page(request: Request) -> HTMLResponse:
     """管理后台页面"""
     # 优先用环境变量 SERVER_URL（兼容反向代理），否则从请求 Host 自动获取
-    base_url = SERVER_URL if SERVER_URL else str(request.base_url).rstrip("/")
+    base_url = escape(SERVER_URL if SERVER_URL else str(request.base_url).rstrip("/"))
     return HTMLResponse(content=_build_admin_html(base_url))
 
 
@@ -610,7 +610,7 @@ async function loadAreas() {{
       return;
     }}
     tbody.innerHTML = areas.map(a => `<tr>
-      <td>${{a.id}}</td><td>${{escapeHtml(a.name)}}</td><td>${{a.created_at || '-'}}</td>
+      <td>${{a.id}}</td><td>${{escapeHtml(a.name)}}</td><td>${{a.createdAt || '-'}}</td>
       <td><button class="btn btn-danger btn-sm" onclick="confirmDeleteArea(${{a.id}},'${{escapeHtml(a.name)}}')">删除</button></td>
     </tr>`).join('');
   }} catch(e) {{

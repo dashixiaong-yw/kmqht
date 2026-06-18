@@ -8,7 +8,7 @@ import com.kuaimai.pda.data.db.entity.ProductImageEntity
 import com.kuaimai.pda.util.ImageCompressor
 import com.kuaimai.pda.util.TimeUtils
 import kotlinx.coroutines.flow.Flow
-import org.json.JSONArray
+import org.json.JSONObject
 import java.io.File
 import javax.inject.Inject
 
@@ -76,7 +76,7 @@ class ImageRepositoryImpl @Inject constructor(
     override suspend fun syncImagesFromBackend(skuOuterId: String) {
         try {
             val responseBody = uploadService.fetchImages(skuOuterId)
-            val jsonArray = JSONArray(responseBody)
+            val jsonArray = JSONObject(responseBody).getJSONArray("data")
             if (jsonArray.length() == 0) return
             val now = TimeUtils.now()
             for (i in 0 until jsonArray.length()) {

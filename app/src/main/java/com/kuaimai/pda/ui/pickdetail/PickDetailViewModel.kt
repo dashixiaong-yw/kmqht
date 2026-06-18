@@ -373,8 +373,8 @@ class PickDetailViewModel @Inject constructor(
             val areaImage = imageRepository.getImageBySkuAndType(skuOuterId, "area")
             val boxImage = imageRepository.getImageBySkuAndType(skuOuterId, "box")
             val serverUrl = prefs.getString(PrefsKeys.KEY_SERVER_URL, "")?.trim() ?: ""
-            val areaUrl = areaImage?.let { url -> if (serverUrl.isNotEmpty()) "$serverUrl${url.imageUrl}" else url.imageUrl }
-            val boxUrl = boxImage?.let { url -> if (serverUrl.isNotEmpty()) "$serverUrl${url.imageUrl}" else url.imageUrl }
+            val areaUrl = areaImage?.let { url -> if (serverUrl.isNotEmpty()) "${serverUrl.trimEnd('/')}${url.imageUrl}" else url.imageUrl }
+            val boxUrl = boxImage?.let { url -> if (serverUrl.isNotEmpty()) "${serverUrl.trimEnd('/')}${url.imageUrl}" else url.imageUrl }
             Pair(areaUrl, boxUrl)
         } catch (e: Exception) {
             Log.w("PickDetailViewModel", "获取图片URL失败: ${e.message}")

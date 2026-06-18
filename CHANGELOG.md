@@ -1,5 +1,18 @@
 # 快麦取货通 - 变更日志
 
+## 1.39 (2026-06-18)
+
+### 修复
+- CRASH: kuaimai_api.py 加回`import threading` — 修复_v1.37引入_client_lock导致后端启动NameError(P0阻断)
+- HIGH: admin.py `escape(base_url)` 实际生效 — 修复Host头XSS(无需认证)
+- MEDIUM: ProductScreen area图`{{}}`→`({} as () -> Unit)` — 修复与box图不一致
+- MEDIUM: kuaimai_api.py get_supplier_list解包wrapper_key — 修复供应商列表功能
+- MEDIUM: admin.py 拣货区`a.created_at`→`createdAt` — 修复创建时间永显示"-"
+- MEDIUM: ImageRepository JSONObject解析 — 修复syncImagesFromBackend JSON结构错误
+- MEDIUM: PickDetailViewModel getImageUrls加trimEnd('/') — 修复双斜杠URL图片加载
+- LOW: HomeScreen移除未用Arrangement import
+- LOW: PickDetailScreen移除未用isLoading收集
+
 ## 1.38 (2026-06-18)
 
 ### 修复
