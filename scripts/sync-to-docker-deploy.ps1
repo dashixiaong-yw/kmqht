@@ -210,6 +210,29 @@ else {
     }
 }
 
+# Post-sync: validate BUILD_VERSION matches app version
+$gradleVersionFile = Join-Path (Join-Path $ProjectRoot "app") "build.gradle.kts"
+$dcBuildFile = Join-Path $BackendDir "docker-compose.yml"
+if ((Test-Path $gradleVersionFile) -and (Test-Path $dcBuildFile)) {
+    $appVersion = (Select-String -Path $gradleVersionFile -Pattern 'versionName\s*=\s*"([^"]+)"' | ForEach-Object { $_.Matches.Groups[1].Value })
+    $dockerBuildVersion = (Select-String -Path $dcBuildFile -Pattern 'BUILD_VERSION:\s*(v[\d\.]+)' | ForEach-Object { $_.Matches.Groups[1].Value })
+    if ($appVersion -and $dockerBuildVersion) {
+        $expectedBuildVersion = "v$appVersion"
+        if ($dockerBuildVersion -ne $expectedBuildVersion) {
+            Write-Host ""
+            Write-Host "WARN: BUILD_VERSION mismatch!"
+            Write-Host "  app/build.gradle.kts versionName: $appVersion"
+            Write-Host "  backend/docker-compose.yml BUILD_VERSION: $dockerBuildVersion"
+            Write-Host "  Expected: $expectedBuildVersion"
+            Write-Host "  Fix: update BUILD_VERSION in backend/docker-compose.yml"
+            Write-Host ""
+        }
+        else {
+            Write-Host "OK: BUILD_VERSION ($dockerBuildVersion) matches app version"
+        }
+    }
+}
+
 # Post-sync: validate docker-compose port matches SERVER_PORT in .env
 $dcPath = Join-Path $DockerDeployRoot "docker-compose.yml"
 $envPath = Join-Path $DockerDeployRoot ".env.docker.example"

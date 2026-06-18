@@ -29,11 +29,10 @@
 | 2 | 开发 | 修改代码 | 在 `app/` 目录修改，**支持批量完成多个任务后再进入收尾** |
 | 3 | 开发 | 验证代码 | `./gradlew lint` 必须通过；**失败则回到Step 2修复** |
 | 4 | 开发 | 构建APK | `./gradlew assembleRelease`（签名+混淆）构建成功；**失败则回到Step 2修复** |
-| 5 | 收尾 | 更新版本号 | **⚠️ 进入收尾后禁止再修改代码**；**先读取5处当前版本号取最大值，再+1递增**，更新5处并验证一致 |
-| 6 | 收尾 | 更新Docker构建版本 | 更新 `backend/docker-compose.yml` 中的 `BUILD_VERSION` 为 `v最新版本号`（同步脚本会自动生成 `.yaml`） |
-| 7 | 收尾 | **更新知识图谱** | 将本次所有变更的设计决策同步到知识图谱 |
-| 8 | 收尾 | 同步到docker-deploy | 运行 `.\scripts\sync-to-docker-deploy.ps1 -Force` 同步后端部署文件 |
-| 9 | 收尾 | Git 提交推送 | `git add .` → `git commit -m "v版本号: 变更描述"` → `git push` |
+| 5 | 收尾 | 更新版本号（含Docker BUILD_VERSION） | **⚠️ 进入收尾后禁止再修改代码**；**先读取6处当前版本号取最大值，再+1递增**，更新6处并验证一致 |
+| 6 | 收尾 | **更新知识图谱** | 将本次所有变更的设计决策同步到知识图谱 |
+| 7 | 收尾 | 同步到docker-deploy | 运行 `.\scripts\sync-to-docker-deploy.ps1 -Force` 同步后端部署文件 |
+| 8 | 收尾 | Git 提交推送 | `git add .` → `git commit -m "v版本号: 变更描述"` → `git push` |
 
 > **知识图谱操作说明**：
 > - **查询时**：优先用 `search_nodes` 按关键词搜索，或用 `read_graph` 读取全量图谱；已知节点名时用 `open_nodes(names=[...])`
@@ -69,17 +68,18 @@
 
 **递增示例**：1.1 → 1.2 → ... → 1.99 → 2.1 → ...
 
-**多会话防冲突规则**：更新版本号时，必须先读取5处当前版本号（build.gradle.kts + CHANGELOG.md + gradle.properties + docker-compose.yml BUILD_VERSION + docker-compose.yaml BUILD_VERSION），取最大值后再+1递增。禁止基于记忆中的版本号直接递增，必须以文件实际内容为准。
+**多会话防冲突规则**：更新版本号时，必须先读取6处当前版本号（build.gradle.kts + CHANGELOG.md + gradle.properties + backend/docker-compose.yml BUILD_VERSION + docker-deploy/docker-compose.yml BUILD_VERSION + docker-deploy/docker-compose.yaml BUILD_VERSION），取最大值后再+1递增。禁止基于记忆中的版本号直接递增，必须以文件实际内容为准。
 
-**5处必须一致**：
+**6处必须一致**（仅需手动更新 build.gradle.kts + CHANGELOG.md + gradle.properties + backend/docker-compose.yml 共4处，其余2处由同步脚本自动生成）：
 
-| 位置 | 格式 | 示例 |
-|------|------|------|
-| [app/build.gradle.kts](file:///d:/trea项目/快麦取货通/app/build.gradle.kts) | versionName | `versionName = "1.10"` |
-| [CHANGELOG.md](file:///d:/trea项目/快麦取货通/CHANGELOG.md) | 文件顶部追加新版本 | `## 1.10 (2026-06-15)` |
-| [gradle.properties](file:///d:/trea项目/快麦取货通/gradle.properties) | 备注更新版本号 | `# Version: 1.10` |
-| [backend/docker-compose.yml](file:///d:/trea项目/快麦取货通/backend/docker-compose.yml) | build.args.BUILD_VERSION | `BUILD_VERSION: v1.10` |
-| [docker-deploy/docker-compose.yaml](file:///d:/trea项目/快麦取货通/docker-deploy/docker-compose.yaml) | build.args.BUILD_VERSION | `BUILD_VERSION: v1.10`（同步脚本自动生成） |
+| 位置 | 格式 | 示例 | 更新方式 |
+|------|------|------|:--------:|
+| [app/build.gradle.kts](file:///d:/trea项目/快麦取货通/app/build.gradle.kts) | versionName | `versionName = "1.10"` | 手动 |
+| [CHANGELOG.md](file:///d:/trea项目/快麦取货通/CHANGELOG.md) | 文件顶部追加新版本 | `## 1.10 (2026-06-15)` | 手动 |
+| [gradle.properties](file:///d:/trea项目/快麦取货通/gradle.properties) | 备注更新版本号 | `# Version: 1.10` | 手动 |
+| [backend/docker-compose.yml](file:///d:/trea项目/快麦取货通/backend/docker-compose.yml) | build.args.BUILD_VERSION | `BUILD_VERSION: v1.10` | 手动 |
+| [docker-deploy/docker-compose.yml](file:///d:/trea项目/快麦取货通/docker-deploy/docker-compose.yml) | build.args.BUILD_VERSION | `BUILD_VERSION: v1.10` | 同步脚本从 backend 复制 |
+| [docker-deploy/docker-compose.yaml](file:///d:/trea项目/快麦取货通/docker-deploy/docker-compose.yaml) | build.args.BUILD_VERSION | `BUILD_VERSION: v1.10` | 同步脚本从 backend 复制 |
 
 **CHANGELOG 格式**：
 
@@ -237,8 +237,7 @@ mcp_kuaimai-memory_search_nodes(query="取货单")
 
 **收尾阶段**：
 
-- [ ] 5处版本号一致（build.gradle.kts + CHANGELOG.md + gradle.properties + docker-compose.yml + docker-compose.yaml BUILD_VERSION）
-- [ ] Docker BUILD_VERSION 已更新（仅需更新 `backend/docker-compose.yml`，同步脚本自动生成 `.yaml`）
+- [ ] 6处版本号一致（build.gradle.kts + CHANGELOG.md + gradle.properties + backend/docker-compose.yml + docker-deploy/docker-compose.yml + docker-deploy/docker-compose.yaml BUILD_VERSION）
 - [ ] 已更新知识图谱（本次所有变更的设计决策已同步）
 - [ ] 已同步到docker-deploy（运行 `.\scripts\sync-to-docker-deploy.ps1 -Force`）
 - [ ] Git commit 消息符合格式 `v版本号: 变更描述`
