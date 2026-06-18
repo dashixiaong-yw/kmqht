@@ -1,4 +1,5 @@
 FROM python:3.12-alpine
+ARG BUILD_VERSION
 WORKDIR /app
 
 ENV TZ=Asia/Shanghai

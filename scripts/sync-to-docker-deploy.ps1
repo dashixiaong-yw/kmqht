@@ -188,14 +188,12 @@ $configFiles = @(
     @{ Name = "kuaimai.example.json"; Src = (Join-Path $BackendDir "kuaimai.example.json"); Dst = (Join-Path $DockerDeployRoot "kuaimai.example.json") }
     @{ Name = "kuaimai.json"; Src = (Join-Path $BackendDir "kuaimai.json"); Dst = (Join-Path $DockerDeployRoot "kuaimai.json") }
     @{ Name = "docker-compose.yml"; Src = (Join-Path $BackendDir "docker-compose.yml"); Dst = (Join-Path $DockerDeployRoot "docker-compose.yml") }
+    @{ Name = "docker-compose.yaml"; Src = (Join-Path $BackendDir "docker-compose.yml"); Dst = (Join-Path $DockerDeployRoot "docker-compose.yaml") }
 )
 
 foreach ($cfg in $configFiles) {
     Sync-File -SourceFile $cfg.Src -TargetFile $cfg.Dst -Label $cfg.Name
 }
-
-# Note: docker-compose.yaml is NOT generated here to avoid config drift.
-# Only docker-compose.yml is maintained.
 
 Write-Host ""
 Write-Host "========================================="

@@ -60,8 +60,19 @@ class ApiKeyMiddleware(BaseHTTPMiddleware):
 def get_current_user(request: Request) -> dict:
     """
     从X-User-Token头解析当前用户
+    或从X-API-Key头验证管理员身份（管理后台用）
     返回 {"user_id": int, "username": str, "permissions": List[str]}
     """
+    # 支持API Key认证（管理后台使用）
+    api_key = request.headers.get("X-API-Key", "")
+    if api_key and API_KEY and hmac.compare_digest(api_key, API_KEY):
+        return {
+            "user_id": 0,
+            "username": "admin",
+            "permissions": list(VALID_PERMISSIONS)
+        }
+
+    # 原有User Token认证
     token = request.headers.get("X-User-Token", "")
     if not token:
         raise HTTPException(status_code=401, detail="未登录，请先登录")
