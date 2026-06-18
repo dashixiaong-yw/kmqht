@@ -19,6 +19,9 @@ logger = logging.getLogger(__name__)
 # API 认证密钥
 API_KEY: str = os.getenv("API_KEY", "")
 
+# 凭证访问锁（kuaimai_api.py也引用此锁）
+kuaimai_config_lock = threading.Lock()
+
 # 服务器端口
 SERVER_PORT: int = int(os.getenv("SERVER_PORT", "8000"))
 

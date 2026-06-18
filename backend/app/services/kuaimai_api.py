@@ -15,8 +15,15 @@ logger = logging.getLogger(__name__)
 # HTTP客户端超时配置
 _TIMEOUT = 30.0
 
-# 全局凭证访问锁（多线程安全）
-_config_lock = threading.Lock()
+# 模块级httpx客户端（连接池复用）
+_client: Optional[httpx.AsyncClient] = None
+
+
+def _get_client() -> httpx.AsyncClient:
+    global _client
+    if _client is None:
+        _client = httpx.AsyncClient(timeout=_TIMEOUT)
+    return _client
 
 
 def _sign(params: Dict[str, Any], app_secret: str) -> str:
@@ -167,11 +174,12 @@ async def get_supplier_list() -> Optional[list]:
         with kuaimai_config_lock:
             secret_snapshot = kuaimai_creds.app_secret
         params["sign"] = _sign(params, secret_snapshot)
-        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
-            files = {key: (None, str(value)) for key, value in params.items()}
-            response = await client.post(KUAIMAI_API_BASE, files=files)
-            response.raise_for_status()
-            result: Dict[str, Any] = response.json()
+
+        client = _get_client()
+        files = {key: (None, str(value)) for key, value in params.items()}
+        response = await client.post(KUAIMAI_API_BASE, files=files)
+        response.raise_for_status()
+        result: Dict[str, Any] = response.json()
         if "error_response" in result:
             logger.error(f"快麦供应商列表API错误: {result['error_response']}")
             return None
@@ -204,13 +212,11 @@ async def refresh_session() -> bool:
         params = _build_common_params("open.token.refresh")
         params["refreshToken"] = refresh_token
         params["sign"] = _sign(params, secret_snapshot)
-
-        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
-            # 使用multipart/form-data格式（与快麦官方open.token.refresh文档一致）
-            files = {key: (None, str(value)) for key, value in params.items()}
-            response = await client.post(KUAIMAI_API_BASE, files=files)
-            response.raise_for_status()
-            result: Dict[str, Any] = response.json()
+        client = _get_client()
+        files = {key: (None, str(value)) for key, value in params.items()}
+        response = await client.post(KUAIMAI_API_BASE, files=files)
+        response.raise_for_status()
+        result: Dict[str, Any] = response.json()
 
         # 检查错误响应
         if "error_response" in result:
@@ -232,7 +238,7 @@ async def refresh_session() -> bool:
 
         # 更新凭证（刷新后token值不变，但更新updated_at记录刷新时间）
         now = beijing_now()
-        with _config_lock:
+        with kuaimai_config_lock:
             kuaimai_creds.updated_at = format_beijing(now)
 
             # 如果响应中返回了新的token，也更新（防御性处理）

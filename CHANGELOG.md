@@ -1,5 +1,17 @@
 # 快麦取货通 - 变更日志
 
+## 1.36 (2026-06-18)
+
+### 修复
+- CRASH: config.py kuaimai_config_lock未定义——补充定义 + kuaimai_api.py删除旧锁_config_lock (P0)
+- CRASH: kuaimai_api.py threading导入残留——已移除 (P0)
+- HIGH: refresh_session用_config_lock不同锁→kuaimai_config_lock统一 (P0)
+- HIGH: system.py跨模块导入私有_config_lock→kuaimai_config_lock (P0)
+- HIGH: get_supplier_list()响应解析缺wrapper_key解包→supplier_list_query_response (P1)
+- HIGH: hasSupplier整数比较不兼容字符串→str()兼容 (P1)
+- MEDIUM: _call_api()错误信息丢失code/zh_desc→完整记录 (P1)
+- MEDIUM: httpx.AsyncClient每次创建→模块级_get_client()连接池复用 (P2)
+
 ## 1.35 (2026-06-18)
 
 ### 修复

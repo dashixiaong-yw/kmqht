@@ -180,8 +180,8 @@ def update_kuaimai_credentials(
     from app.config import save_kuaimai_config
 
     try:
-        from app.services.kuaimai_api import _config_lock
-        with _config_lock:
+        from app.config import kuaimai_config_lock
+        with kuaimai_config_lock:
             kuaimai_creds.app_key = req.app_key
             kuaimai_creds.app_secret = req.app_secret
             kuaimai_creds.session = req.session
