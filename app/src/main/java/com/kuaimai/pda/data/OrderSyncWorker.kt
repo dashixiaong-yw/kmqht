@@ -13,7 +13,6 @@ import com.kuaimai.pda.data.api.dto.SkuUpdateDto
 import com.kuaimai.pda.data.api.dto.SupplierUpdateDto
 import com.kuaimai.pda.data.db.dao.PendingOperationDao
 import com.kuaimai.pda.data.db.entity.PendingOperationEntity
-import com.kuaimai.pda.data.repository.AuthRepository
 import com.kuaimai.pda.data.repository.UserRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -237,7 +236,11 @@ class OrderSyncWorker(
             title = ".",
             skus = listOf(SkuUpdateDto(skuId = skuId, skuOuterId = skuOuterId, skuRemark = remark, skuPropertiesName = propertiesName))
         )
-        kmApi.updateItemRemark(request)
+        val response = kmApi.updateItemRemark(request)
+        if (!response.success) {
+            Log.w(TAG, "快麦备注更新失败: code=${response.code} msg=${response.msg}")
+            return false
+        }
         return true
     }
 
@@ -262,7 +265,11 @@ class OrderSyncWorker(
             ))
         )
         val kmApi = apiService ?: return false
-        kmApi.updateItemSupplier(request)
+        val response = kmApi.updateItemSupplier(request)
+        if (!response.success) {
+            Log.w(TAG, "快麦供应商更新失败: code=${response.code} msg=${response.msg}")
+            return false
+        }
         return true
     }
 

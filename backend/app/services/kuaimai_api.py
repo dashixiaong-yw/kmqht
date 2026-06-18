@@ -17,12 +17,15 @@ _TIMEOUT = 30.0
 
 # 模块级httpx客户端（连接池复用）
 _client: Optional[httpx.AsyncClient] = None
+_client_lock = threading.Lock()
 
 
 def _get_client() -> httpx.AsyncClient:
     global _client
     if _client is None:
-        _client = httpx.AsyncClient(timeout=_TIMEOUT)
+        with _client_lock:
+            if _client is None:
+                _client = httpx.AsyncClient(timeout=_TIMEOUT)
     return _client
 
 

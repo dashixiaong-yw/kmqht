@@ -231,6 +231,8 @@ fun ProductScreen(
                         text = error,
                         color = WarningYellow,
                         style = MaterialTheme.typography.bodySmall,
+                        maxLines = 4,
+                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(12.dp)
                     )
                 }
@@ -246,6 +248,8 @@ fun ProductScreen(
                         text = message,
                         color = MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.bodySmall,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(12.dp)
                     )
                 }

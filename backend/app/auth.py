@@ -28,6 +28,9 @@ class ApiKeyMiddleware(BaseHTTPMiddleware):
         # 跳过不需要认证的路径
         for prefix in SKIP_AUTH_PREFIXES:
             if request.url.path.startswith(prefix):
+                # /api/app-version 精确匹配（避免 upload/publish 绕过API Key）
+                if prefix == "/api/app-version" and request.url.path != "/api/app-version":
+                    break
                 return await call_next(request)
 
         # 检查X-API-Key请求头

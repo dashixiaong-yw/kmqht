@@ -3,6 +3,17 @@
 ## 1.38 (2026-06-18)
 
 ### 修复
+- HIGH: admin.py `escape(base_url)` +导入 — 修复Host头XSS注入(无需认证)
+- MEDIUM: kuaimai_api.py `_get_client()`双检锁+threading import — 修复并发AsyncClient泄漏
+- MEDIUM: images.py 先写文件后删旧记录 — 修复替换上传DB记录丢失
+- MEDIUM: OrderSyncWorker check response.success — 修复快麦API业务错误静默删pending_operation
+- MEDIUM: auth.py SKIP_AUTH_PREFIXES精确匹配 — 修复upload/publish绕过API Key
+- LOW: ProductScreen error/message添加maxLines溢出保护
+- LOW: OrderSyncWorker移除未用AuthRepository import
+
+## 1.37 (2026-06-18)
+
+### 修复
 - CRASH: v1.37 backend修复未实际应用——_call_api()仍用async with新建连接→改用_get_client()连接池(P0)
 - CRASH: v1.37 ValueError缺code/zh_desc→完整记录(P0)
 - CRASH: v1.37 get_supplier_list缺wrapper_key解包→支持supplier_list_query_response(P0)
