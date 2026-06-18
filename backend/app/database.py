@@ -187,7 +187,7 @@ def init_db() -> None:
 
 
 def _init_default_admin(cursor: sqlite3.Cursor) -> None:
-    """初始化默认管理员用户 admin/admin123"""
+    """初始化默认管理员用户（默认禁用，仅作数据库占位）"""
     # 延迟导入避免循环依赖
     from app.routers.users import _hash_password
 
@@ -197,7 +197,7 @@ def _init_default_admin(cursor: sqlite3.Cursor) -> None:
     now = format_beijing(beijing_now())
 
     cursor.execute(
-        "INSERT INTO users (username, password_hash, is_active, created_at) VALUES (?, ?, 1, ?)",
+        "INSERT INTO users (username, password_hash, is_active, created_at) VALUES (?, ?, 0, ?)",
         ("admin", password_hash, now)
     )
     admin_id = cursor.lastrowid
@@ -209,4 +209,4 @@ def _init_default_admin(cursor: sqlite3.Cursor) -> None:
             "INSERT INTO user_permissions (user_id, permission) VALUES (?, ?)",
             (admin_id, perm)
         )
-    logger.info("默认管理员用户已创建: admin")
+    logger.info("默认管理员用户已创建并禁用: admin")

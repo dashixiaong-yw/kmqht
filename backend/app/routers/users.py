@@ -105,15 +105,12 @@ def login(req: LoginRequest) -> LoginResponse:
 
     logger.info(f"用户登录成功: {req.username}")
 
-    # 检查是否使用默认密码（需强制修改）
-    must_change = _verify_password("admin123", stored_hash)
-
     return LoginResponse(
         token=token,
         userId=user_id,
         username=req.username,
         permissions=permissions,
-        mustChangePassword=must_change
+        mustChangePassword=False
     )
 
 
