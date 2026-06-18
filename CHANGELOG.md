@@ -1,5 +1,18 @@
 # 快麦取货通 - 变更日志
 
+## 1.33 (2026-06-18)
+
+### 修复
+- HIGH: admin.js body.is_active→body.isActive — 修复用户启用/禁用功能不生效
+- HIGH: APK上传先read到内存再删旧文件 — 修复OTA中断风险
+- HIGH: save_kuaimai_config原子写入(then replace) — 修复凭证写入中断丢失
+- MEDIUM: images.py先INSERT DB再写文件 — 修复孤儿清理竞态误删
+- MEDIUM: _cleanup_orphan_images每文件独立try-except — 修复单文件失败中断清理
+- MEDIUM: _cleanup_orphan_images删除空目录 — 修复空目录积累
+- MEDIUM: Dockerfile pip install后apk del rust cargo — 减小镜像~200MB
+- MEDIUM: scripts/ sync脚本增加kuaimai.json说明注释
+- LOW: OrderSyncWorker移除未使用的PickItemDao import
+
 ## 1.32 (2026-06-18)
 
 ### 修复

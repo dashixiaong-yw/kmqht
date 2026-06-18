@@ -11,7 +11,6 @@ import com.kuaimai.pda.data.api.dto.AddOrderItemRequest
 import com.kuaimai.pda.data.api.dto.ItemUpdateRequest
 import com.kuaimai.pda.data.api.dto.SkuUpdateDto
 import com.kuaimai.pda.data.api.dto.SupplierUpdateDto
-import com.kuaimai.pda.data.db.dao.PickItemDao
 import com.kuaimai.pda.data.db.dao.PendingOperationDao
 import com.kuaimai.pda.data.db.entity.PendingOperationEntity
 import com.kuaimai.pda.data.repository.AuthRepository

@@ -223,6 +223,9 @@ if (Test-Path -LiteralPath $yamlSource) {
     }
 }
 
+# Note: docker-deploy/kuaimai.json ignored by Docker (uses data/kuaimai.json)
+# To avoid confusion, manually delete the root copy.
+
 Write-Host ""
 Write-Host "========================================="
 Write-Host "SUMMARY"

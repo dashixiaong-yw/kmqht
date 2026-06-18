@@ -142,8 +142,11 @@ def save_kuaimai_config() -> None:
             data["session"] = kuaimai_creds.session
             data["refresh_token"] = kuaimai_creds.refresh_token
 
-        with open(config_path, "w", encoding="utf-8") as f:
+        # 原子写入：先写临时文件，再替换原文件（防止写入中断导致JSON损坏）
+        tmp_path = config_path.with_suffix(".json.tmp")
+        with open(tmp_path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
+        tmp_path.replace(config_path)
         logger.info("快麦凭证已保存到文件")
     except (json.JSONDecodeError, IOError) as e:
         logger.error(f"保存快麦凭证失败: {e}")

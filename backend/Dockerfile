@@ -8,7 +8,8 @@ RUN apk add --no-cache curl tzdata rust cargo && \
 
 COPY requirements.txt .
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install -r requirements.txt
+    pip install -r requirements.txt && \
+    apk del rust cargo
 
 COPY . .
 

@@ -48,6 +48,14 @@ def upload_app_version(
     if mime and "octet-stream" not in mime and "java-archive" not in mime and "vnd.android" not in mime:
         raise HTTPException(status_code=400, detail="文件类型不合法")
     os.makedirs(APK_DIR, exist_ok=True)
+    # 先读取新文件到内存，再处理旧文件（防止读取失败导致旧文件丢失）
+    try:
+        content = file.file.read()
+        if len(content) > 100 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="APK 文件过大（最大100MB）")
+    except Exception as e:
+        logger.error(f"读取APK文件失败: {e}")
+        raise HTTPException(status_code=400, detail="读取APK文件失败")
     # 删除旧 APK 文件
     if os.path.exists(APK_DIR):
         for old_file in os.listdir(APK_DIR):
@@ -57,9 +65,6 @@ def upload_app_version(
     apk_filename = f"快麦取货通-{latestVersion}.apk"
     apk_path = os.path.join(APK_DIR, apk_filename)
     try:
-        content = file.file.read()
-        if len(content) > 100 * 1024 * 1024:
-            raise HTTPException(status_code=400, detail="APK 文件过大（最大100MB）")
         with open(apk_path, "wb") as f:
             f.write(content)
     except Exception as e:
@@ -565,7 +570,7 @@ async function saveUser() {{
       // 编辑
       const body = {{ permissions }};
       if (password) body.password = password;
-      body.is_active = isActive;
+      body.isActive = isActive;
       await api('/api/users/' + userId, {{ method: 'PUT', body }});
     }} else {{
       // 新增

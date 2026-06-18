@@ -93,20 +93,41 @@ async def upload_image(
     file_name = file_name.replace("/", "_").replace("\\", "_").replace("..", "_")
     file_path = os.path.join(save_dir, file_name)
 
+    # 构建URL
+    image_url = f"images/{date_dir}/{file_name}"
+    relative_file_path = f"{date_dir}/{file_name}"
+
+    # 先插入DB记录（防止孤儿清理线程竞态：文件写入前DB已有记录）
+    try:
+        cursor.execute(
+            """INSERT INTO product_images (sku_outer_id, image_type, image_url, file_path, created_at)
+               VALUES (?, ?, ?, ?, ?)""",
+            (skuOuterId, imageType, image_url, relative_file_path, format_beijing(now))
+        )
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        logger.error(f"保存图片记录失败: {e}")
+        raise HTTPException(status_code=500, detail="保存图片记录失败")
+
+    # 再写入文件
     try:
         content = await file.read()
         if len(content) == 0:
             raise HTTPException(status_code=400, detail="上传文件为空")
-        # 检查文件大小
         if len(content) > _MAX_FILE_SIZE:
             raise HTTPException(status_code=400, detail=f"文件大小超过限制（最大2MB），当前{len(content) // 1024}KB")
         with open(file_path, "wb") as f:
             f.write(content)
-    except IOError as e:
-        logger.error(f"保存图片失败: {e}")
-        raise HTTPException(status_code=500, detail="保存图片失败，请稍后重试")
+    except Exception as e:
+        logger.error(f"保存图片文件失败: {e}")
+        cursor.execute("DELETE FROM product_images WHERE sku_outer_id = ? AND image_type = ?", (skuOuterId, imageType))
+        db.commit()
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        raise HTTPException(status_code=500, detail="保存图片失败")
 
-    # 新文件保存成功，删除旧图片文件和记录
+    # 删除旧图片文件和记录
     if existing:
         old_file_path = os.path.join(IMAGE_DIR, existing["file_path"])
         try:
@@ -115,19 +136,9 @@ async def upload_image(
         except IOError as e:
             logger.warning(f"删除旧图片文件失败: {e}")
         cursor.execute("DELETE FROM product_images WHERE id = ?", (existing["id"],))
-
-    # 构建URL
-    image_url = f"images/{date_dir}/{file_name}"
-    relative_file_path = f"{date_dir}/{file_name}"
-
-    try:
-        cursor.execute(
-            """INSERT INTO product_images (sku_outer_id, image_type, image_url, file_path, created_at)
-               VALUES (?, ?, ?, ?, ?)""",
-            (skuOuterId, imageType, image_url, relative_file_path, format_beijing(now))
-        )
         db.commit()
 
+    try:
         cursor.execute(
             "SELECT * FROM product_images WHERE sku_outer_id = ? AND image_type = ?",
             (skuOuterId, imageType)
@@ -135,12 +146,8 @@ async def upload_image(
         row = cursor.fetchone()
         return _row_to_image_response(row)
     except Exception as e:
-        db.rollback()
-        # 删除已保存的文件
-        if os.path.exists(file_path):
-            os.remove(file_path)
-        logger.error(f"保存图片记录失败: {e}")
-        raise HTTPException(status_code=500, detail="保存图片记录失败，请稍后重试")
+        logger.error(f"查询刚插入的图片记录失败: {e}")
+        raise HTTPException(status_code=500, detail="查询图片记录失败")
 
 
 @router.get("/images/{sku_outer_id}", response_model=ImageListResponse)

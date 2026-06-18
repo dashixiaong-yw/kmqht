@@ -316,19 +316,30 @@ def _cleanup_orphan_images() -> None:
         cutoff_time = (beijing_now() - timedelta(days=7)).timestamp()
         deleted_count = 0
 
-        for root, dirs, files in _os.walk(IMAGE_DIR):
+        for root, dirs, files in _os.walk(IMAGE_DIR, topdown=False):
             for filename in files:
                 full_path = _os.path.join(root, filename)
                 relative_path = _os.path.relpath(full_path, IMAGE_DIR).replace("\\", "/")
 
-                # 跳过7天内的文件（安全期）
-                if _os.path.getmtime(full_path) > cutoff_time:
+                try:
+                    # 跳过7天内的文件（安全期）
+                    if _os.path.getmtime(full_path) > cutoff_time:
+                        continue
+
+                    # 不在数据库中的文件视为孤立文件
+                    if relative_path not in db_paths:
+                        _os.remove(full_path)
+                        deleted_count += 1
+                except (FileNotFoundError, PermissionError, OSError) as e:
+                    logger.warning(f"清理孤立图片时跳过文件 {relative_path}: {e}")
                     continue
 
-                # 不在数据库中的文件视为孤立文件
-                if relative_path not in db_paths:
-                    _os.remove(full_path)
-                    deleted_count += 1
+            # 删除空目录
+            try:
+                if root != IMAGE_DIR and not _os.listdir(root):
+                    _os.rmdir(root)
+            except (FileNotFoundError, PermissionError, OSError):
+                pass
 
         if deleted_count > 0:
             logger.info(f"已清理{deleted_count}个孤立图片文件")
