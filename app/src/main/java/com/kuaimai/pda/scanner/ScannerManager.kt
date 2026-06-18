@@ -78,7 +78,8 @@ class ScannerManager @Inject constructor() {
             context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
         }
 
-        // 初始化声音池
+        // 初始化声音池（先释放旧实例避免泄漏）
+        soundPool?.release()
         soundPool = SoundPool.Builder().setMaxStreams(2).build()
         successSoundId = loadSoundUri(context, android.provider.Settings.System.DEFAULT_NOTIFICATION_URI)
         errorSoundId = loadSoundUri(context, android.provider.Settings.System.DEFAULT_ALARM_ALERT_URI)

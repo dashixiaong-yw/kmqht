@@ -3,6 +3,7 @@
 import logging
 import os
 from datetime import timedelta
+from typing import Optional
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
@@ -102,6 +103,15 @@ async def startup_event() -> None:
         logger.info(f"APK 静态文件目录已挂载: {APK_DIR}")
 
     logger.info("快麦取货通后端服务启动完成")
+
+
+@app.on_event("shutdown")
+async def shutdown_event() -> None:
+    """应用关闭：停止定时任务和配置监控"""
+    logger.info("快麦取货通后端服务关闭中...")
+    _stop_scheduler()
+    stop_config_watcher()
+    logger.info("快麦取货通后端服务已关闭")
 
 
 # ==================== 定时任务 ====================

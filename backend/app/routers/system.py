@@ -162,11 +162,13 @@ def update_kuaimai_credentials(
     from app.config import save_kuaimai_config
 
     try:
-        kuaimai_creds.app_key = req.app_key
-        kuaimai_creds.app_secret = req.app_secret
-        kuaimai_creds.session = req.session
-        kuaimai_creds.refresh_token = req.refresh_token
-        kuaimai_creds.updated_at = format_beijing(beijing_now())
+        from app.services.kuaimai_api import _config_lock
+        with _config_lock:
+            kuaimai_creds.app_key = req.app_key
+            kuaimai_creds.app_secret = req.app_secret
+            kuaimai_creds.session = req.session
+            kuaimai_creds.refresh_token = req.refresh_token
+            kuaimai_creds.updated_at = format_beijing(beijing_now())
         save_kuaimai_config()
         logger.info(f"快麦凭证已由用户 {user.get('username', '?')} 手动更新")
         return BaseResponse(message="凭证更新成功")

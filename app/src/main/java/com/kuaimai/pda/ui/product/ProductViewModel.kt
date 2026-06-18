@@ -166,8 +166,12 @@ class ProductViewModel @Inject constructor(
                     val areaImage = images.find { it.imageType == "area" }
                     val boxImage = images.find { it.imageType == "box" }
                     _uiState.value = _uiState.value.copy(
-                        areaImageUrl = areaImage?.let { "$serverUrl${it.imageUrl}" },
-                        boxImageUrl = boxImage?.let { "$serverUrl${it.imageUrl}" }
+                        areaImageUrl = areaImage?.let { url ->
+                            if (serverUrl.isNotEmpty()) "$serverUrl${url.imageUrl}" else url.imageUrl
+                        },
+                        boxImageUrl = boxImage?.let { url ->
+                            if (serverUrl.isNotEmpty()) "$serverUrl${url.imageUrl}" else url.imageUrl
+                        }
                     )
                 }
             } catch (e: Exception) {

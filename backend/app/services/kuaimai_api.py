@@ -68,8 +68,12 @@ async def _call_api(method: str, extra_params: Optional[Dict[str, Any]] = None) 
         if not isinstance(params[key], str):
             params[key] = json.dumps(params[key], ensure_ascii=False)
 
+    # 在锁内快照凭证用于签名
+    with _config_lock:
+        secret_snapshot = kuaimai_creds.app_secret
+
     # 生成签名
-    params["sign"] = _sign(params, kuaimai_creds.app_secret)
+    params["sign"] = _sign(params, secret_snapshot)
 
     try:
         async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
@@ -167,10 +171,15 @@ async def refresh_session() -> bool:
         return False
 
     try:
+        # 在锁内快照凭证
+        with _config_lock:
+            refresh_token = kuaimai_creds.refresh_token
+            secret_snapshot = kuaimai_creds.app_secret
+
         # 构建请求参数（与_call_api一致但不走通用响应解析）
         params = _build_common_params("open.token.refresh")
-        params["refreshToken"] = kuaimai_creds.refresh_token
-        params["sign"] = _sign(params, kuaimai_creds.app_secret)
+        params["refreshToken"] = refresh_token
+        params["sign"] = _sign(params, secret_snapshot)
 
         async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
             # 使用multipart/form-data格式（与快麦官方open.token.refresh文档一致）

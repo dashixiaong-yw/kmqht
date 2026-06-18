@@ -675,8 +675,6 @@ private fun uriToFile(uri: Uri, context: Context): java.io.File? {
         } catch (e: Exception) {
             tempFile.delete()
             null
-        } finally {
-            inputStream.close()
         }
     } catch (e: Exception) {
         null

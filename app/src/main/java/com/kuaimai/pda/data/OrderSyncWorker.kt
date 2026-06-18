@@ -49,28 +49,33 @@ class OrderSyncWorker(
         private const val MAX_RETRY = 3
     }
 
-    private val pendingOperationDao: PendingOperationDao by lazy {
+    private val pendingOperationDao: PendingOperationDao? by lazy {
         com.kuaimai.pda.App.OrderSyncWorkerDeps.pendingOperationDao
     }
-    private val apiService: KuaimaiApiService by lazy {
+    private val apiService: KuaimaiApiService? by lazy {
         com.kuaimai.pda.App.OrderSyncWorkerDeps.apiService
     }
-    private val orderApiService: OrderApiService by lazy {
+    private val orderApiService: OrderApiService? by lazy {
         com.kuaimai.pda.App.OrderSyncWorkerDeps.orderApiService
     }
-    private val authRepository: AuthRepository by lazy {
+    private val authRepository: AuthRepository? by lazy {
         com.kuaimai.pda.App.OrderSyncWorkerDeps.authRepository
     }
-    private val imageUploadService: ImageUploadService by lazy {
+    private val imageUploadService: ImageUploadService? by lazy {
         com.kuaimai.pda.App.OrderSyncWorkerDeps.imageUploadService
     }
-    private val userRepository: UserRepository by lazy {
+    private val userRepository: UserRepository? by lazy {
         com.kuaimai.pda.App.OrderSyncWorkerDeps.userRepository
     }
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
-            val operations = pendingOperationDao.getAllPending()
+            val dao = pendingOperationDao ?: run {
+                Log.e(TAG, "依赖未初始化")
+                return@withContext Result.failure()
+            }
+
+            val operations = dao.getAllPending()
             if (operations.isEmpty()) {
                 Log.d(TAG, "无待同步操作")
                 return@withContext Result.success()
@@ -81,20 +86,20 @@ class OrderSyncWorker(
 
             for ((orderId, orderOps) in grouped) {
                 for (op in orderOps) {
-                    val success = syncOperation(op)
+                    val success = syncOperation(op, dao)
                     if (success) {
-                        pendingOperationDao.deleteById(op.id)
+                        dao.deleteById(op.id)
                         Log.d(TAG, "操作同步成功: ${op.operationType} orderId=$orderId")
                     } else {
-                        val current = pendingOperationDao.getById(op.id)
+                        val current = dao.getById(op.id)
                         if (current == null) continue
                         if (current.retryCount == -1) {
                             Log.w(TAG, "操作已标记冲突: ${op.operationType} orderId=$orderId")
                         } else if (current.retryCount >= MAX_RETRY) {
                             Log.e(TAG, "操作同步失败超过${MAX_RETRY}次，标记冲突: ${op.operationType}")
-                            pendingOperationDao.updateRetryCount(op.id, -1)
+                            dao.updateRetryCount(op.id, -1)
                         } else {
-                            pendingOperationDao.updateRetryCount(op.id, current.retryCount + 1)
+                            dao.updateRetryCount(op.id, current.retryCount + 1)
                         }
                         hasFailure = true
                     }
@@ -108,7 +113,7 @@ class OrderSyncWorker(
         }
     }
 
-    private suspend fun syncOperation(op: PendingOperationEntity): Boolean {
+    private suspend fun syncOperation(op: PendingOperationEntity, dao: PendingOperationDao): Boolean {
         return try {
             when (op.operationType) {
                 "complete_item" -> syncCompleteItem(op)
@@ -128,7 +133,7 @@ class OrderSyncWorker(
         } catch (e: retrofit2.HttpException) {
             if (e.code() in 400..499) {
                 Log.w(TAG, "客户端错误${e.code()}，标记冲突: ${op.operationType}")
-                pendingOperationDao.updateRetryCount(op.id, -1)
+                dao.updateRetryCount(op.id, -1)
                 false
             } else {
                 Log.e(TAG, "服务端错误${e.code()}，将重试: ${op.operationType}")
@@ -141,43 +146,56 @@ class OrderSyncWorker(
     }
 
     private suspend fun syncCompleteItem(op: PendingOperationEntity): Boolean {
-        val token = userRepository.getToken()
-        orderApiService.completeItem(token, op.orderId, op.targetId)
+        val userRepo = userRepository ?: return false
+        val api = orderApiService ?: return false
+        val token = userRepo.getToken()
+        api.completeItem(token, op.orderId, op.targetId)
         return true
     }
 
     private suspend fun syncRestoreItem(op: PendingOperationEntity): Boolean {
-        val token = userRepository.getToken()
-        orderApiService.restoreItem(token, op.orderId, op.targetId)
+        val userRepo = userRepository ?: return false
+        val api = orderApiService ?: return false
+        val token = userRepo.getToken()
+        api.restoreItem(token, op.orderId, op.targetId)
         return true
     }
 
     private suspend fun syncAddItem(op: PendingOperationEntity): Boolean {
+        val userRepo = userRepository ?: return false
+        val api = orderApiService ?: return false
         val skuOuterId = extractPayloadValue(op.payload, "sku_outer_id") ?: return false
-        val token = userRepository.getToken()
-        orderApiService.addItem(token, op.orderId, AddOrderItemRequest(skuOuterId = skuOuterId))
+        val token = userRepo.getToken()
+        api.addItem(token, op.orderId, AddOrderItemRequest(skuOuterId = skuOuterId))
         return true
     }
 
     private suspend fun syncCompleteAll(op: PendingOperationEntity): Boolean {
-        val token = userRepository.getToken()
-        orderApiService.completeAllItems(token, op.orderId)
+        val userRepo = userRepository ?: return false
+        val api = orderApiService ?: return false
+        val token = userRepo.getToken()
+        api.completeAllItems(token, op.orderId)
         return true
     }
 
     private suspend fun syncDeleteItem(op: PendingOperationEntity): Boolean {
-        val token = userRepository.getToken()
-        orderApiService.deleteItem(token, op.orderId, op.targetId)
+        val userRepo = userRepository ?: return false
+        val api = orderApiService ?: return false
+        val token = userRepo.getToken()
+        api.deleteItem(token, op.orderId, op.targetId)
         return true
     }
 
     private suspend fun syncDeleteOrder(op: PendingOperationEntity): Boolean {
-        val token = userRepository.getToken()
-        orderApiService.deleteOrder(token, op.orderId)
+        val userRepo = userRepository ?: return false
+        val api = orderApiService ?: return false
+        val token = userRepo.getToken()
+        api.deleteOrder(token, op.orderId)
         return true
     }
 
     private suspend fun syncRemarkUpdate(op: PendingOperationEntity): Boolean {
+        val kmApi = apiService ?: return false
         val remark = extractPayloadValue(op.payload, "remark") ?: return false
         val skuId = extractPayloadValue(op.payload, "sys_sku_id")?.toLongOrNull() ?: return false
         val itemId = extractPayloadValue(op.payload, "sys_item_id")?.toLongOrNull() ?: return false
@@ -191,11 +209,12 @@ class OrderSyncWorker(
             title = ".",
             skus = listOf(SkuUpdateDto(skuId = skuId, skuOuterId = skuOuterId, skuRemark = remark, skuPropertiesName = propertiesName))
         )
-        apiService.updateItemRemark(request)
+        kmApi.updateItemRemark(request)
         return true
     }
 
     private suspend fun syncSupplierUpdate(op: PendingOperationEntity): Boolean {
+        val kmApi = apiService ?: return false
         val supplierName = extractPayloadValue(op.payload, "supplier_name") ?: return false
         val supplierCode = extractPayloadValue(op.payload, "supplier_code") ?: return false
         val itemId = extractPayloadValue(op.payload, "sys_item_id")?.toLongOrNull() ?: return false
@@ -205,7 +224,7 @@ class OrderSyncWorker(
             title = ".",
             suppliers = listOf(SupplierUpdateDto(supplierCode = supplierCode, supplierName = supplierName))
         )
-        apiService.updateItemSupplier(request)
+        kmApi.updateItemSupplier(request)
         return true
     }
 
@@ -218,7 +237,8 @@ class OrderSyncWorker(
             Log.e(TAG, "图片文件不存在: $filePath")
             return false
         }
-        imageUploadService.uploadImage(imageFile, imageType, skuOuterId)
+        val uploader = imageUploadService ?: return false
+        val (remoteId, imageUrl) = uploader.uploadImage(imageFile, imageType, skuOuterId)
         imageFile.delete()
         return true
     }

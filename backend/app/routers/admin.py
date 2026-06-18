@@ -57,8 +57,11 @@ def upload_app_version(
     apk_filename = f"快麦取货通-{latestVersion}.apk"
     apk_path = os.path.join(APK_DIR, apk_filename)
     try:
+        content = file.file.read()
+        if len(content) > 100 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="APK 文件过大（最大100MB）")
         with open(apk_path, "wb") as f:
-            shutil.copyfileobj(file.file, f)
+            f.write(content)
     except Exception as e:
         logger.error(f"保存APK文件失败: {e}")
         raise HTTPException(status_code=500, detail="保存APK文件失败")
@@ -504,7 +507,7 @@ async function loadUsers() {{
     tbody.innerHTML = users.map(u => `<tr>
       <td>${{u.id}}</td>
       <td>${{escapeHtml(u.username)}}</td>
-      <td>${{(u.permissions || []).map(p => PERM_LABELS[p] || p).join('、') || '无'}}</td>
+      <td>${{(u.permissions || []).map(p => escapeHtml(PERM_LABELS[p] || p)).join('、') || '无'}}</td>
       <td><span class="badge ${{u.is_active ? 'badge-green' : 'badge-red'}}">${{u.is_active ? '启用' : '禁用'}}</span></td>
       <td>${{u.created_at || '-'}}</td>
       <td>
@@ -538,7 +541,7 @@ function editUser(encoded) {{
   document.getElementById('editPassword').value = '';
   document.getElementById('editPassword').placeholder = '新密码（留空不修改）';
   document.getElementById('activeGroup').style.display = 'block';
-  document.getElementById('editActive').checked = user.is_active;
+  document.getElementById('editActive').checked = user.isActive;
   document.querySelectorAll('#userModal .checkbox-group input').forEach(c => {{
     c.checked = (user.permissions || []).includes(c.value);
   }});

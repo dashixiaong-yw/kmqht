@@ -495,7 +495,10 @@ def _cleanup_sku_images(cursor: sqlite3.Cursor, sku_outer_id: str) -> None:
         )
         image_rows = cursor.fetchall()
         for img_row in image_rows:
-            file_full_path = os.path.join(IMAGE_DIR, img_row["file_path"])
+            file_full_path = os.path.normpath(os.path.join(IMAGE_DIR, img_row["file_path"]))
+            if not file_full_path.startswith(os.path.normpath(IMAGE_DIR)):
+                logger.warning(f"路径遍历攻击被阻止: {img_row['file_path']}")
+                continue
             try:
                 if os.path.exists(file_full_path):
                     os.remove(file_full_path)

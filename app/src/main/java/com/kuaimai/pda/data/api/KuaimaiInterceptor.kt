@@ -42,6 +42,11 @@ class KuaimaiInterceptor @Inject constructor(
         val appSecret = prefs.getString(PrefsKeys.KEY_APP_SECRET, "") ?: ""
         val accessToken = prefs.getString(PrefsKeys.KEY_SESSION, "") ?: ""
 
+        if (appKey.isBlank() || appSecret.isBlank() || accessToken.isBlank()) {
+            Log.e(TAG, "快麦凭证未配置完整，跳过签名")
+            return chain.proceed(originalRequest)
+        }
+
         // 从请求体中提取参数
         val bodyString = extractBodyString(originalRequest)
         val params = mutableMapOf<String, String>()

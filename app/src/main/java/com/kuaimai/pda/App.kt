@@ -38,12 +38,12 @@ class App : Application() {
      * OrderSyncWorker 的依赖容器（WorkManager 通过无参构造函数实例化 Worker）
      */
     object OrderSyncWorkerDeps {
-        lateinit var pendingOperationDao: PendingOperationDao
-        lateinit var apiService: KuaimaiApiService
-        lateinit var orderApiService: OrderApiService
-        lateinit var authRepository: AuthRepository
-        lateinit var imageUploadService: ImageUploadService
-        lateinit var userRepository: UserRepository
+        @Volatile var pendingOperationDao: PendingOperationDao? = null
+        @Volatile var apiService: KuaimaiApiService? = null
+        @Volatile var orderApiService: OrderApiService? = null
+        @Volatile var authRepository: AuthRepository? = null
+        @Volatile var imageUploadService: ImageUploadService? = null
+        @Volatile var userRepository: UserRepository? = null
     }
 
     @Inject lateinit var pendingOperationDao: PendingOperationDao

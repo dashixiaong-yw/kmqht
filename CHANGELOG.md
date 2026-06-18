@@ -1,5 +1,24 @@
 # 快麦取货通 - 变更日志
 
+## 1.32 (2026-06-18)
+
+### 修复
+- CRASH: main.py 添加 from typing import Optional — 修复容器重启时NameError
+- CRASH: main.py 添加 @app.on_event("shutdown") 调用 _stop_scheduler + stop_config_watcher
+- CRASH: OrderSyncWorker uploadImage返回值处理 — 修复remoteId始终0/误删后端资源
+- CRASH: ProductViewModel serverUrl isNotEmpty检查 — 修复相对路径URL加载失败
+- HIGH: system.py kuaimai_creds写入加_config_lock — 修复并发签名不一致
+- HIGH: orders.py _cleanup_sku_images 路径穿越防护 — 修复越界删文件风险
+- HIGH: ImageRepository syncImagesFromBackend 增量合并 — 修复全量替换误删本地图片
+- HIGH: KuaimaiInterceptor 凭证空值检查+日志 — 修复凭证缺失静默失败
+- MEDIUM: kuaimai_api.py _call_api+refresh_session 凭证锁内快照 — 修复并发签名
+- MEDIUM: admin.py APK上传 100MB大小限制 — 防止磁盘DOS攻击
+- MEDIUM: admin.py JS字段名 camelCase统一 — 修复用户状态/创建时间错乱
+- MEDIUM: OrderSyncWorkerDeps nullable → @Volatile — 修复WorkManager提前初始化崩溃
+- MEDIUM: ProductScreen uriToFile 移除finally重复close — 修复异常覆盖返回值
+- MEDIUM: ScannerManager register前soundPool?.release() — 修复native资源泄漏
+- MEDIUM: admin.py 权限回退渲染加escapeHtml — 低概率XSS修复
+
 ## 1.31 (2026-06-18)
 
 ### 修复
