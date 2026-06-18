@@ -1,5 +1,18 @@
 # 快麦取货通 - 变更日志
 
+## 1.34 (2026-06-18)
+
+### 修复
+- CRASH: images.py INSERT前先DELETE旧记录 — 修复v1.33引入的替换上传永远500
+- HIGH: admin.js u.is_active→isActive第二处 — 修复用户状态仍全显示禁用
+- MEDIUM: OrderSyncWorker syncImageUpload持久化ProductImage记录 — 修复离线图片上传后本地不可见
+- MEDIUM: _save_version_info原子写入(.tmp→replace) — 防版本信息写入中断丢失
+- LOW: _upload_counts清理空用户条目 — 防内存泄漏
+- LOW: PickItemRow移除未用Arrangement import
+- LOW: PickDetailViewModel移除未用Log import
+- LOW: SettingsScreen权限文本加maxLines/overflow
+- LOW: SettingsScreen添加TextOverflow import
+
 ## 1.33 (2026-06-18)
 
 ### 修复
