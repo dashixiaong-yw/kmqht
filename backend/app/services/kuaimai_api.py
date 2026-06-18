@@ -147,7 +147,7 @@ async def get_sku_by_outer_id(sku_outer_id: str) -> Optional[Dict[str, Any]]:
         }
 
         # Step2: 如有供应商，查供应商信息
-        if sku_data.get("hasSupplier") == 1:
+        if sku_data.get("hasSupplier") == 1 or str(sku_data.get("hasSupplier", "0")) == "1":
             supplier_result = await _call_api(
                 "item.supplier.list.get",
                 {"sysSkuIds": str(mapped["sys_sku_id"])}

@@ -7,7 +7,6 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.kuaimai.pda.data.api.KuaimaiApiService
 import com.kuaimai.pda.data.api.SystemApiService
 import com.kuaimai.pda.data.api.dto.KuaimaiSupplierItem
 import com.kuaimai.pda.data.api.dto.SupplierDto
@@ -74,7 +73,6 @@ class ProductViewModel @Inject constructor(
     private val productImageDao: ProductImageDao,
     private val pickOrderRepository: PickOrderRepository,
     private val imageRepository: ImageRepository,
-    private val apiService: KuaimaiApiService,
     private val systemApiService: SystemApiService,
     @Named("encrypted") private val prefs: SharedPreferences,
     @ApplicationContext private val appContext: Context
@@ -170,7 +168,7 @@ class ProductViewModel @Inject constructor(
                     val boxImage = images.find { it.imageType == "box" }
                     _uiState.value = _uiState.value.copy(
                         areaImageUrl = areaImage?.let { url ->
-                            if (serverUrl.isNotEmpty()) "$serverUrl${url.imageUrl}" else url.imageUrl
+                            if (serverUrl.isNotEmpty()) "${serverUrl.trimEnd('/')}${url.imageUrl}" else url.imageUrl
                         },
                         boxImageUrl = boxImage?.let { url ->
                             if (serverUrl.isNotEmpty()) "$serverUrl${url.imageUrl}" else url.imageUrl
@@ -355,7 +353,7 @@ class ProductViewModel @Inject constructor(
                 imageRepository.saveImage(entity)
 
                 val serverUrl = prefs.getString(PrefsKeys.KEY_SERVER_URL, DEFAULT_SERVER_URL) ?: DEFAULT_SERVER_URL
-                val fullUrl = "$serverUrl$imageUrl"
+                val fullUrl = if (serverUrl.isNotEmpty()) "${serverUrl.trimEnd('/')}$imageUrl" else imageUrl
                 _uiState.value = if (imageType == "area") {
                     _uiState.value.copy(areaImageUrl = fullUrl)
                 } else {

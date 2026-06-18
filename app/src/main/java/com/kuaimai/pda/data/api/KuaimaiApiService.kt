@@ -1,6 +1,7 @@
 package com.kuaimai.pda.data.api
 
 import com.kuaimai.pda.data.api.dto.ItemUpdateRequest
+import com.kuaimai.pda.data.api.dto.ItemUpdateResponse
 import retrofit2.http.Body
 import retrofit2.http.POST
 
@@ -14,11 +15,11 @@ interface KuaimaiApiService {
     @POST("router")
     suspend fun updateItemRemark(
         @Body params: ItemUpdateRequest
-    ): Map<String, Any>
+    ): ItemUpdateResponse
 
     /** 商品供应商更新 erp.item.general.addorupdate (supplier) */
     @POST("router")
     suspend fun updateItemSupplier(
         @Body params: ItemUpdateRequest
-    ): Map<String, Any>
+    ): ItemUpdateResponse
 }

@@ -147,16 +147,26 @@ class OrderSyncWorker(
         val userRepo = userRepository ?: return false
         val api = orderApiService ?: return false
         val token = userRepo.getToken()
-        api.completeItem(token, op.orderId, op.targetId)
-        return true
+        return try {
+            api.completeItem(token, op.orderId, op.targetId)
+            true
+        } catch (e: Exception) {
+            Log.w(TAG, "completeItem同步失败: ${e.message}")
+            false
+        }
     }
 
     private suspend fun syncRestoreItem(op: PendingOperationEntity): Boolean {
         val userRepo = userRepository ?: return false
         val api = orderApiService ?: return false
         val token = userRepo.getToken()
-        api.restoreItem(token, op.orderId, op.targetId)
-        return true
+        return try {
+            api.restoreItem(token, op.orderId, op.targetId)
+            true
+        } catch (e: Exception) {
+            Log.w(TAG, "restoreItem同步失败: ${e.message}")
+            false
+        }
     }
 
     private suspend fun syncAddItem(op: PendingOperationEntity): Boolean {
@@ -164,32 +174,52 @@ class OrderSyncWorker(
         val api = orderApiService ?: return false
         val skuOuterId = extractPayloadValue(op.payload, "sku_outer_id") ?: return false
         val token = userRepo.getToken()
-        api.addItem(token, op.orderId, AddOrderItemRequest(skuOuterId = skuOuterId))
-        return true
+        return try {
+            api.addItem(token, op.orderId, AddOrderItemRequest(skuOuterId = skuOuterId))
+            true
+        } catch (e: Exception) {
+            Log.w(TAG, "addItem同步失败: ${e.message}")
+            false
+        }
     }
 
     private suspend fun syncCompleteAll(op: PendingOperationEntity): Boolean {
         val userRepo = userRepository ?: return false
         val api = orderApiService ?: return false
         val token = userRepo.getToken()
-        api.completeAllItems(token, op.orderId)
-        return true
+        return try {
+            api.completeAllItems(token, op.orderId)
+            true
+        } catch (e: Exception) {
+            Log.w(TAG, "completeAll同步失败: ${e.message}")
+            false
+        }
     }
 
     private suspend fun syncDeleteItem(op: PendingOperationEntity): Boolean {
         val userRepo = userRepository ?: return false
         val api = orderApiService ?: return false
         val token = userRepo.getToken()
-        api.deleteItem(token, op.orderId, op.targetId)
-        return true
+        return try {
+            api.deleteItem(token, op.orderId, op.targetId)
+            true
+        } catch (e: Exception) {
+            Log.w(TAG, "deleteItem同步失败: ${e.message}")
+            false
+        }
     }
 
     private suspend fun syncDeleteOrder(op: PendingOperationEntity): Boolean {
         val userRepo = userRepository ?: return false
         val api = orderApiService ?: return false
         val token = userRepo.getToken()
-        api.deleteOrder(token, op.orderId)
-        return true
+        return try {
+            api.deleteOrder(token, op.orderId)
+            true
+        } catch (e: Exception) {
+            Log.w(TAG, "deleteOrder同步失败: ${e.message}")
+            false
+        }
     }
 
     private suspend fun syncRemarkUpdate(op: PendingOperationEntity): Boolean {

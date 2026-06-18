@@ -1,5 +1,18 @@
 # 快麦取货通 - 变更日志
 
+## 1.37 (2026-06-18)
+
+### 修复
+- CRASH: _call_api() 仍用 async with 创建新连接 → 改用 _get_client() 连接池 (P0)
+- CRASH: OrderSyncWorker 6个sync方法忽略API响应→包装try-catch (P0)
+- HIGH: KuaimaiApiService 返回 Map<String,Any>→ItemUpdateResponse DTO (P0)
+- HIGH: hasSupplier ==1 未加 str()兼容→或 str()=="1" (P1)
+- HIGH: get_supplier_list()未加wrapper_key解包→支持supplier_list_query_response (P1)
+- HIGH: _call_api() ValueError 丢失code/zh_desc→完整记录 (P1)
+- HIGH: ProductViewModel 注入未使用的KuaimaiApiService→移除 (P1)
+- MEDIUM: 图片URL拼接未处理斜杠→加.trimEnd('/') (P1)
+- MEDIUM: ProductScreen L512 无需转型告警→清理 (P2)
+
 ## 1.36 (2026-06-18)
 
 ### 修复
