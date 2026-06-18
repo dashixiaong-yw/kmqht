@@ -14,6 +14,7 @@ import com.kuaimai.pda.data.repository.PickOrderRepository
 import com.kuaimai.pda.data.repository.UserRepository
 import com.kuaimai.pda.scanner.ScanFeedbackType
 import com.kuaimai.pda.scanner.ScannerManager
+import com.kuaimai.pda.util.AppConstants
 import com.kuaimai.pda.util.PrefsKeys
 import com.kuaimai.pda.util.TimeUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -372,7 +373,7 @@ class PickDetailViewModel @Inject constructor(
         return try {
             val areaImage = imageRepository.getImageBySkuAndType(skuOuterId, "area")
             val boxImage = imageRepository.getImageBySkuAndType(skuOuterId, "box")
-            val serverUrl = prefs.getString(PrefsKeys.KEY_SERVER_URL, "")?.trim() ?: ""
+            val serverUrl = prefs.getString(PrefsKeys.KEY_SERVER_URL, AppConstants.DEFAULT_SERVER_URL)?.trim() ?: AppConstants.DEFAULT_SERVER_URL
             val areaUrl = areaImage?.let { url -> if (serverUrl.isNotEmpty()) "${serverUrl.trimEnd('/')}${url.imageUrl}" else url.imageUrl }
             val boxUrl = boxImage?.let { url -> if (serverUrl.isNotEmpty()) "${serverUrl.trimEnd('/')}${url.imageUrl}" else url.imageUrl }
             Pair(areaUrl, boxUrl)

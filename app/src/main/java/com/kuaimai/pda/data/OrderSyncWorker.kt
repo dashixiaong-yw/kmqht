@@ -245,6 +245,7 @@ class OrderSyncWorker(
     }
 
     private suspend fun syncSupplierUpdate(op: PendingOperationEntity): Boolean {
+        val kmApi = apiService ?: return false
         val supplierName = extractPayloadValue(op.payload, "supplier_name") ?: return false
         val supplierCode = extractPayloadValue(op.payload, "supplier_code") ?: return false
         val itemId = extractPayloadValue(op.payload, "sys_item_id")?.toLongOrNull() ?: return false
@@ -264,7 +265,6 @@ class OrderSyncWorker(
                 skuSuppliers = skuSuppliers
             ))
         )
-        val kmApi = apiService ?: return false
         val response = kmApi.updateItemSupplier(request)
         if (!response.success) {
             Log.w(TAG, "快麦供应商更新失败: code=${response.code} msg=${response.msg}")

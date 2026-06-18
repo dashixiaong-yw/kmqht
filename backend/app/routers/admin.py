@@ -737,9 +737,18 @@ async function loadApk() {{
           <pre style="background:#f8fafc;padding:8px;border-radius:4px;font-size:13px;white-space:pre-wrap">${{escapeHtml(r.updateNotes || '无')}}</pre>
           ${{publishedInfo}}
           ${{publishBtn}}
+          <div id="apkQrCode"></div>
         </div>
       `;
       uploadSection.style.display = 'block';
+      // 已分发时加载下载二维码
+      if (r.publishedAt && r.downloadUrl) {{
+        api('/api/app-version/qrcode').then(qrResp => {{
+          if (qrResp.qrcode) {{
+            document.getElementById('apkQrCode').innerHTML = '<img src="data:image/png;base64,' + qrResp.qrcode + '" style="width:160px;height:160px;margin-top:12px" /><p style="font-size:12px;color:#666;margin-top:4px">PDA 扫码下载 APK</p>';
+          }}
+        }}).catch(e => console.warn('加载下载二维码失败', e));
+      }}
     }} else {{
       container.innerHTML = '<div class="empty">暂无版本信息</div>';
       uploadSection.style.display = 'block';

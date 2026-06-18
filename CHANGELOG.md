@@ -1,5 +1,12 @@
 # 快麦取货通 - 变更日志
 
+## 1.42 (2026-06-18)
+
+### 修复
+- P1: ItemUpdateRequest.SkuUpdateDto.skuRemark默认空字符串被Gson序列化→改为String?=null防覆盖已有备注
+- P2: OrderSyncWorker.syncSupplierUpdate apiService空检查延后→移至方法体最前面
+- P2: PickDetailViewModel.getImageUrls默认URL硬编码""→引用AppConstants.DEFAULT_SERVER_URL
+
 ## 1.41 (2026-06-18)
 
 ### 修复
