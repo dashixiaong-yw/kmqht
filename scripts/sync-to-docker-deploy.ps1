@@ -237,6 +237,22 @@ else {
         Write-Host "  Errors: $errorCount files"
     }
 }
+
+# Post-sync: validate docker-compose port matches SERVER_PORT in .env
+$dcPath = Join-Path $DockerDeployRoot "docker-compose.yml"
+$envPath = Join-Path $DockerDeployRoot ".env.docker.example"
+if ((Test-Path $dcPath) -and (Test-Path $envPath)) {
+    $portFromEnv = (Select-String -Path $envPath -Pattern "^SERVER_PORT=(\d+)" | ForEach-Object { $_.Matches.Groups[1].Value })
+    if ($portFromEnv) {
+        $expectedMapping = "`"8900:$portFromEnv`""
+        $dcContent = Get-Content $dcPath -Raw
+        if ($dcContent -notmatch $expectedMapping) {
+            Write-Host "WARN: docker-compose port mapping may not match SERVER_PORT=$portFromEnv"
+            Write-Host "  Expected mapping: $expectedMapping"
+            Write-Host "  Run: sed to fix or manually edit docker-compose.yml"
+        }
+    }
+}
 Write-Host "========================================="
 Write-Host ""
 

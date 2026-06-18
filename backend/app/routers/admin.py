@@ -695,7 +695,7 @@ async function searchImages() {{
     }}
     container.innerHTML = images.map(img => `
       <div style="display:inline-block;margin:8px;text-align:center">
-        <img src="${{API_BASE}}/images/${{img.filePath || img.imageUrl}}"
+        <img src="${{API_BASE}}/images/${{img.filePath}}"
              style="max-width:200px;max-height:200px;border-radius:8px;border:1px solid #e5e7eb"
              onerror="this.src='';this.alt='图片加载失败'" />
         <p style="font-size:12px;color:#666;margin-top:4px">${{img.imageType === 'area' ? '库区图' : '箱规图'}}</p>

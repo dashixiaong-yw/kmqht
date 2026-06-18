@@ -80,7 +80,7 @@ fun PickItemRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(72.dp)
+                .height(80.dp)
                 .padding(horizontal = 12.dp, vertical = 10.dp)
                 .alpha(contentAlpha),
             verticalAlignment = Alignment.CenterVertically

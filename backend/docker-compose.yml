@@ -6,7 +6,7 @@ services:
     container_name: kuaimai-pda-server
     restart: unless-stopped
     ports:
-      - "8900:8000"
+      - "8900:8900"
     env_file:
       - .env.docker.example
     volumes:

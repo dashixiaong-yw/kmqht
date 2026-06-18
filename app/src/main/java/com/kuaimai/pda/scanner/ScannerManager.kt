@@ -14,6 +14,7 @@ import android.content.IntentFilter
 import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -33,7 +34,7 @@ enum class ScanFeedbackType {
 class ScannerManager @Inject constructor() {
 
     private val _scanResult = MutableStateFlow("")
-    val scanResult: StateFlow<String> = _scanResult
+    val scanResult: StateFlow<String> = _scanResult.asStateFlow()
 
     private var receiver: BroadcastReceiver? = null
     private var isRegistered: Boolean = false

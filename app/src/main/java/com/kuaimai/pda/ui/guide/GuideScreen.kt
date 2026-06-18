@@ -275,7 +275,7 @@ private fun StepComplete(onFinish: () -> Unit) {
     Text(
         text = "配置已保存，立即生效",
         style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.error
+        color = MaterialTheme.colorScheme.primary
     )
     Spacer(modifier = Modifier.height(8.dp))
     Text(

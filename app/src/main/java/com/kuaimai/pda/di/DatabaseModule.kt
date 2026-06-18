@@ -45,25 +45,25 @@ object DatabaseModule {
     }
 
     /** 取货单DAO */
-    @Provides
+    @Provides @Singleton
     fun providePickOrderDao(db: AppDatabase): PickOrderDao {
         return db.pickOrderDao()
     }
 
     /** 取货明细DAO */
-    @Provides
+    @Provides @Singleton
     fun providePickItemDao(db: AppDatabase): PickItemDao {
         return db.pickItemDao()
     }
 
     /** 商品图片DAO */
-    @Provides
+    @Provides @Singleton
     fun provideProductImageDao(db: AppDatabase): ProductImageDao {
         return db.productImageDao()
     }
 
     /** 待操作队列DAO */
-    @Provides
+    @Provides @Singleton
     fun providePendingOperationDao(db: AppDatabase): PendingOperationDao {
         return db.pendingOperationDao()
     }

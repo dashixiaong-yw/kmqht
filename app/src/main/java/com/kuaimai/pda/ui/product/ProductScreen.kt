@@ -645,11 +645,17 @@ private fun uriToFile(uri: Uri, context: Context): java.io.File? {
     return try {
         val inputStream = context.contentResolver.openInputStream(uri) ?: return null
         val tempFile = java.io.File.createTempFile("upload_", ".jpg", context.cacheDir)
-        tempFile.outputStream().use { output ->
-            inputStream.use { it.copyTo(output) }
+        try {
+            tempFile.outputStream().use { output ->
+                inputStream.use { it.copyTo(output) }
+            }
+            tempFile
+        } catch (e: Exception) {
+            tempFile.delete()
+            null
+        } finally {
+            inputStream.close()
         }
-        // 标记临时文件：在协程完成后或异常时清理
-        tempFile
     } catch (e: Exception) {
         null
     }

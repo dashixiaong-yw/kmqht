@@ -172,4 +172,4 @@ def update_kuaimai_credentials(
 @router.get("/setup", response_class=RedirectResponse)
 def setup_page() -> RedirectResponse:
     """扫码配置页面已合并到管理后台"""
-    return RedirectResponse(url="/admin")
+    return RedirectResponse(url="/admin", status_code=302)

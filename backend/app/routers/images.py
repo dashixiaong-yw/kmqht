@@ -42,6 +42,8 @@ def _check_upload_rate(user_id: int) -> None:
             _upload_counts[user_id] = []
         # 清理过期记录
         _upload_counts[user_id] = [t for t in _upload_counts[user_id] if now - t < _UPLOAD_RATE_WINDOW]
+        if not _upload_counts[user_id]:
+            del _upload_counts[user_id]
         if len(_upload_counts[user_id]) >= _UPLOAD_RATE_LIMIT:
             raise HTTPException(status_code=429, detail="上传过于频繁，请稍后重试")
         _upload_counts[user_id].append(now)
@@ -95,6 +97,8 @@ async def upload_image(
 
     try:
         content = await file.read()
+        if len(content) == 0:
+            raise HTTPException(status_code=400, detail="上传文件为空")
         # 检查文件大小
         if len(content) > _MAX_FILE_SIZE:
             raise HTTPException(status_code=400, detail=f"文件大小超过限制（最大2MB），当前{len(content) // 1024}KB")

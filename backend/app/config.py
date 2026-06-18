@@ -138,9 +138,7 @@ def save_kuaimai_config() -> None:
             data["app_key"] = kuaimai_creds.app_key
             data["app_secret"] = kuaimai_creds.app_secret
             data["updated_at"] = kuaimai_creds.updated_at
-        if kuaimai_creds.session:
             data["session"] = kuaimai_creds.session
-        if kuaimai_creds.refresh_token:
             data["refresh_token"] = kuaimai_creds.refresh_token
 
         with open(config_path, "w", encoding="utf-8") as f:

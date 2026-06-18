@@ -26,7 +26,6 @@ import okio.buffer
  */
 class ImageUploadService @Inject constructor(
     private val client: OkHttpClient,
-    private val prefs: SharedPreferences,
     @Named("encrypted") private val encryptedPrefs: SharedPreferences
 ) {
 

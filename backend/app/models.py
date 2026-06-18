@@ -154,6 +154,7 @@ class HealthResponse(BaseModel):
     """健康检查响应"""
     status: str = "ok"
     database: str = "ok"
+    totalOrders: int = 0
 
 
 # ==================== 用户与权限模型 ====================

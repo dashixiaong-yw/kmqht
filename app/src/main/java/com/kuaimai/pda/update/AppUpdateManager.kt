@@ -74,7 +74,7 @@ class AppUpdateManager @Inject constructor(
     }
 
     fun downloadApk(info: AppVersionResponse) {
-        if (_downloadState.value is DownloadState.Downloading) return
+        if (!_isDownloading.compareAndSet(false, true)) return
         _downloadState.value = DownloadState.Idle
         Thread {
             try {

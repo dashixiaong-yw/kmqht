@@ -1,5 +1,29 @@
 # 快麦取货通 - 变更日志
 
+## 1.28 (2026-06-18)
+
+### 修复
+- CRASH: backend + docker-deploy docker-compose.yml端口映射8900:8900（上次被同步脚本回滚）
+- CRASH: AppUpdateManager _isDownloading.compareAndSet修复TOCTOU竞态
+- HIGH: config.py session/refresh_token移入_config_lock写保护
+- HIGH: admin.py img.filePath移除imageUrl后备→清除双斜杠风险
+- HIGH: ProductScreen.kt uriToFile try-finally删除临时文件
+- MEDIUM: DatabaseModule.kt 4个DAO添加@Singleton注解
+- MEDIUM: ScannerManager.kt scanResult→asStateFlow() + SoundPool释放旧实例
+- MEDIUM: ImageUploadService.kt 移除无用prefs参数
+- MEDIUM: system.py + models.py health检查添加totalOrders字段
+- MEDIUM: images.py _upload_counts删除空列表key + 空文件上传检查
+- MEDIUM: users.py _record_login_fail清理过期锁定记录
+- LOW: PickDetailScreen.kt Spacer padding→width（修复间距翻倍）
+- LOW: PickItemRow.kt height 72→80dp（修复按钮4dp裁剪）
+- LOW: GuideScreen.kt "配置已保存"颜色error→primary
+- LOW: images.py 空文件上传检查 + system.py 307→302重定向
+
+### 修改
+- sync-to-docker-deploy.ps1: 新增docker-compose端口验证（防止再次被覆盖）
+- config.py: save_kuaimai_config session/rf移入锁块
+- users.py: _record_login_fail添加过期清理
+
 ## 1.27 (2026-06-18)
 
 ### 修复
