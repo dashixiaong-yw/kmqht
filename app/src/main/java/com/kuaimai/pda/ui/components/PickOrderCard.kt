@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kuaimai.pda.data.db.entity.PickOrderEntity
@@ -74,7 +75,9 @@ fun PickOrderCard(
                     text = order.orderNo,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = TextPrimary
+                    color = TextPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
 
                 // 状态徽章

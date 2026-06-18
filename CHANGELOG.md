@@ -1,5 +1,20 @@
 # 快麦取货通 - 变更日志
 
+## 1.31 (2026-06-18)
+
+### 修复
+- CRASH: config.py import asyncio模块级—修复_watcher_task NameError
+- CRASH: main.py scheduler→_scheduler全变量统一—修复7处NameError
+- CRASH: ImageCompressor.kt recycle前缓存宽高—修复recycle后访问Bitmap崩溃
+- CRASH: PickListScreen.kt CompletedOrdersList加innerPadding—修复内容被TopAppBar遮挡
+- HIGH: CameraScanScreen.kt BarcodeScanner加DisposableEffect释放+移除重复close
+- MEDIUM: ProductScreen.kt / PickOrderCard / FilterChip 添加TextOverflow溢出处理
+- MEDIUM: GuideScreen.kt qrScanError成功解析后重置
+- LOW: PickItemRow.kt clickable移到clip之前—修复ripple溢出
+- LOW: HomeScreen.kt 移除未使用的Color import
+- LOW: PickDetailScreen.kt LazyColumn移除冗余fillMaxSize
+- LOW: ImageUploadSection.kt 删除死代码组件
+
 ## 1.30 (2026-06-18)
 
 ### 修复

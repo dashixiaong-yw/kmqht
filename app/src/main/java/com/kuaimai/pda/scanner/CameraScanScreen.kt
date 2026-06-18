@@ -202,7 +202,4 @@ private fun processImageProxy(
         .addOnCompleteListener {
             imageProxy.close()
         }
-        .addOnFailureListener {
-            imageProxy.close()
-        }
 }

@@ -71,13 +71,16 @@ object ImageCompressor {
             fos.flush()
         } finally {
             fos.close()
-            scaledBitmap.recycle()
         }
+
+        val finalWidth = scaledBitmap.width
+        val finalHeight = scaledBitmap.height
+        scaledBitmap.recycle()
 
         Log.d(
             TAG,
             "图片压缩完成: ${sourceFile.length() / 1024}KB → ${compressedFile.length() / 1024}KB, " +
-                    "${originalWidth}x${originalHeight} → ${scaledBitmap.width}x${scaledBitmap.height}"
+                    "${originalWidth}x${originalHeight} → ${finalWidth}x${finalHeight}"
         )
 
         return compressedFile

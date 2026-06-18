@@ -88,10 +88,10 @@ fun PickItemRow(
             // 左侧：52dp规格图（带底部"规格图"标注）
             Box(
                 modifier = Modifier
+                    .clickable { onImageClick() }
                     .size(width = 52.dp, height = 52.dp)
                     .clip(RoundedCornerShape(6.dp))
-                    .background(SurfaceGray)
-                    .clickable { onImageClick() },
+                    .background(SurfaceGray),
                 contentAlignment = Alignment.Center
             ) {
                 if (item.picPath.isNotEmpty()) {

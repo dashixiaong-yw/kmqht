@@ -63,6 +63,7 @@ fun GuideScreen(
                 showCameraScan = false
                 val result = SetupQrParser.parse(barcode)
                 if (result != null) {
+                    qrScanError = false
                     serverUrl = result.serverUrl
                     if (result.apiKey.isNotEmpty()) {
                         apiKey = result.apiKey

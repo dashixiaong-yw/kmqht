@@ -64,6 +64,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -304,7 +305,7 @@ fun PickDetailScreen(
                         FilterChip(
                             selected = currentSupplier == supplier,
                             onClick = { viewModel.setSupplierFilter(supplier) },
-                            label = { Text(supplier, fontSize = 13.sp) },
+                            label = { Text(supplier, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = PrimaryLightBg,
                                 selectedLabelColor = PrimaryLightText

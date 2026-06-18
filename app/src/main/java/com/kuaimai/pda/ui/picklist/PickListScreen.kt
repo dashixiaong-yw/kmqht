@@ -100,11 +100,13 @@ fun PickListScreen(
     ) { innerPadding ->
         if (showCompletedList) {
             // 已完成列表
-            CompletedOrdersList(
-                orders = completedOrders,
-                onBack = { viewModel.hideCompletedList() },
-                onOrderClick = { onNavigateToDetail(it.id) }
-            )
+            Column(modifier = Modifier.padding(innerPadding)) {
+                CompletedOrdersList(
+                    orders = completedOrders,
+                    onBack = { viewModel.hideCompletedList() },
+                    onOrderClick = { onNavigateToDetail(it.id) }
+                )
+            }
         } else {
             // 进行中列表
             Column(

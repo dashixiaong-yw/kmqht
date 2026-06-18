@@ -115,7 +115,7 @@ def _start_scheduler() -> None:
     _scheduler = BackgroundScheduler(timezone="Asia/Shanghai")
 
     # 每1分钟检查取货单超时（12小时超时）
-    scheduler.add_job(
+    _scheduler.add_job(
         _check_order_timeout,
         "interval",
         minutes=1,
@@ -124,7 +124,7 @@ def _start_scheduler() -> None:
     )
 
     # 每天凌晨3:00清理已完成的取货单（30天前）
-    scheduler.add_job(
+    _scheduler.add_job(
         _cleanup_completed_orders,
         "cron",
         hour=3,
@@ -134,7 +134,7 @@ def _start_scheduler() -> None:
     )
 
     # 每小时清理SKU缓存（24小时前）
-    scheduler.add_job(
+    _scheduler.add_job(
         _cleanup_sku_cache,
         "interval",
         hours=1,
@@ -143,7 +143,7 @@ def _start_scheduler() -> None:
     )
 
     # 每天凌晨4:00清理崩溃日志（30天前）
-    scheduler.add_job(
+    _scheduler.add_job(
         _cleanup_crash_logs,
         "cron",
         hour=4,
@@ -153,7 +153,7 @@ def _start_scheduler() -> None:
     )
 
     # 每天凌晨3:30清理孤立图片（7天安全期）
-    scheduler.add_job(
+    _scheduler.add_job(
         _cleanup_orphan_images,
         "cron",
         hour=3,
@@ -163,25 +163,24 @@ def _start_scheduler() -> None:
     )
 
     # 每7天自动刷新快麦session（30天有效期，7天刷新留足余量）
-    scheduler.add_job(
+    _scheduler.add_job(
         _refresh_kuaimai_session,
         "interval",
         days=7,
-        id="kuaimai_session_refresh",
+        id="refresh_kuaimai_session",
         replace_existing=True,
     )
 
     # 每24小时检查session过期警告（仅日志提醒，不自动刷新）
-    scheduler.add_job(
+    _scheduler.add_job(
         check_session_warning,
         "interval",
         hours=24,
-        id="session_expiry_warning",
+        id="session_warning_check",
         replace_existing=True,
     )
 
-    scheduler.start()
-    _scheduler = scheduler
+    _scheduler.start()
     logger.info("定时任务调度器已启动")
 
 
