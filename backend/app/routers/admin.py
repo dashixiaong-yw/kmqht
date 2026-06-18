@@ -107,9 +107,11 @@ def _load_version_info() -> dict:
 
 
 def _save_version_info(info: dict) -> None:
-    """写入版本信息 JSON"""
-    with open(APK_VERSION_FILE, "w", encoding="utf-8") as f:
+    """写入版本信息 JSON（原子写入）"""
+    tmp_path = APK_VERSION_FILE + ".tmp"
+    with open(tmp_path, "w", encoding="utf-8") as f:
         json.dump(info, f, ensure_ascii=False, indent=2)
+    os.replace(tmp_path, APK_VERSION_FILE)
 
 
 def _build_admin_html(base_url: str) -> str:

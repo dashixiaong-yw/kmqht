@@ -42,6 +42,9 @@ def _check_upload_rate(user_id: int) -> None:
             _upload_counts[user_id] = []
         # 清理过期记录，保留窗口内的记录
         _upload_counts[user_id] = [t for t in _upload_counts[user_id] if now - t < _UPLOAD_RATE_WINDOW]
+        if not _upload_counts[user_id]:
+            del _upload_counts[user_id]
+            return
         if len(_upload_counts[user_id]) >= _UPLOAD_RATE_LIMIT:
             raise HTTPException(status_code=429, detail="上传过于频繁，请稍后重试")
         _upload_counts[user_id].append(now)
@@ -97,7 +100,10 @@ async def upload_image(
     image_url = f"images/{date_dir}/{file_name}"
     relative_file_path = f"{date_dir}/{file_name}"
 
-    # 先插入DB记录（防止孤儿清理线程竞态：文件写入前DB已有记录）
+    # 先INSERT DB记录（旧记录已在existing中，先删除再插入）
+    if existing:
+        cursor.execute("DELETE FROM product_images WHERE id = ?", (existing["id"],))
+        db.commit()
     try:
         cursor.execute(
             """INSERT INTO product_images (sku_outer_id, image_type, image_url, file_path, created_at)

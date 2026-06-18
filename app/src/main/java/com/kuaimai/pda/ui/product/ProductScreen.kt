@@ -507,7 +507,7 @@ private fun ImageUploadGrid(
                 ImageUploadSlot(
                     label = "装箱图",
                     imageUrl = boxImageUrl,
-                    onClick = if (canManageBoxImage) onUploadBox else {{}},
+                    onClick = if (canManageBoxImage) onUploadBox else ({} as () -> Unit),
                     onLongClick = if (canManageBoxImage && boxImageUrl != null) onDeleteBox else null,
                     modifier = Modifier.weight(1f)
                 )

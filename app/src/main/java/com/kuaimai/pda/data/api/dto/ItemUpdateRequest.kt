@@ -7,11 +7,11 @@ import com.google.gson.annotations.SerializedName
  * 用于备注更新和供应商更新
  */
 data class ItemUpdateRequest(
-    val id: Long = 0,
-    val method: String = "",
-    val outerId: String = "",
-    val title: String = "",
-    val skus: List<SkuUpdateDto> = emptyList(),
+    @SerializedName("id") val id: Long = 0,
+    @SerializedName("method") val method: String = "",
+    @SerializedName("outerId") val outerId: String = "",
+    @SerializedName("title") val title: String = "",
+    @SerializedName("skus") val skus: List<SkuUpdateDto> = emptyList(),
     val suppliers: List<SupplierUpdateDto> = emptyList()
 )
 

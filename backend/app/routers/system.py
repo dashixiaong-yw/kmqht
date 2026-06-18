@@ -127,12 +127,12 @@ async def get_kuaimai_suppliers(user: dict = Depends(check_permission("settings"
     try:
         items = await get_supplier_list()
         if items is None:
-            return KuaimaiSuppliersResponse(suppliers=[])
+            raise HTTPException(status_code=502, detail="快麦供应商列表获取失败")
         suppliers = [KuaimaiSupplierItem(code=s.get("code", ""), name=s.get("name", ""), id=s.get("id", 0)) for s in items]
         return KuaimaiSuppliersResponse(suppliers=suppliers)
     except Exception as e:
         logger.error(f"获取供应商列表失败: {e}")
-        return KuaimaiSuppliersResponse(suppliers=[])
+        raise HTTPException(status_code=502, detail=f"获取供应商列表失败: {e}")
 
 
 @router.post("/api/kuaimai/refresh-session", response_model=KuaimaiRefreshResponse)

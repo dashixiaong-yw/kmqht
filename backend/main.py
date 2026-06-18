@@ -172,11 +172,11 @@ def _start_scheduler() -> None:
         replace_existing=True,
     )
 
-    # 每7天自动刷新快麦session（30天有效期，7天刷新留足余量）
+    # 每24小时自动刷新快麦session（30天有效期，24小时刷新留足余量）
     _scheduler.add_job(
         _refresh_kuaimai_session,
         "interval",
-        days=7,
+        hours=24,
         id="refresh_kuaimai_session",
         replace_existing=True,
     )

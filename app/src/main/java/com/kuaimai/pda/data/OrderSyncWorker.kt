@@ -66,6 +66,9 @@ class OrderSyncWorker(
     private val userRepository: UserRepository? by lazy {
         com.kuaimai.pda.App.OrderSyncWorkerDeps.userRepository
     }
+    private val productImageDao: com.kuaimai.pda.data.db.dao.ProductImageDao? by lazy {
+        com.kuaimai.pda.App.OrderSyncWorkerDeps.productImageDao
+    }
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
@@ -233,7 +236,7 @@ class OrderSyncWorker(
             ))
         )
         val kmApi = apiService ?: return false
-        kmApi.updateItemRemark(request)
+        kmApi.updateItemSupplier(request)
         return true
     }
 
@@ -247,9 +250,20 @@ class OrderSyncWorker(
             return false
         }
         val uploader = imageUploadService ?: return false
-        val (remoteId, imageUrl) = uploader.uploadImage(imageFile, imageType, skuOuterId)
-        imageFile.delete()
-        return true
+        val imageDao = productImageDao ?: return false
+        return try {
+            val (remoteId, imageUrl) = uploader.uploadImage(imageFile, imageType, skuOuterId)
+            imageDao.insert(com.kuaimai.pda.data.db.entity.ProductImageEntity(
+                skuOuterId = skuOuterId,
+                imageType = imageType,
+                imageUrl = imageUrl,
+                remoteId = remoteId,
+                createdAt = com.kuaimai.pda.util.TimeUtils.now()
+            ))
+            true
+        } finally {
+            imageFile.delete()
+        }
     }
 
     private fun extractPayloadValue(payload: String, key: String): String? {

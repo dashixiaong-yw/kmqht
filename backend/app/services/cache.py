@@ -34,6 +34,10 @@ async def get_sku_info(sku_outer_id: str) -> Optional[Dict[str, Any]]:
     logger.info(f"SKU缓存未命中，查询快麦API: {sku_outer_id}")
     try:
         sku_data = await get_sku_by_outer_id(sku_outer_id)
+        # 重试1次
+        if not sku_data:
+            logger.info(f"SKU查询首次失败，重试: {sku_outer_id}")
+            sku_data = await get_sku_by_outer_id(sku_outer_id)
     except Exception as e:
         logger.error(f"查询快麦API失败: {e}")
         return None
