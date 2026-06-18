@@ -1,73 +1,84 @@
-# 快麦API上线前最终审查与修复计划（v2）
+# v1.35 终极全量扫描 — 剩余Bug与修复计划
 
-## 概述
-双代理审计了后端(7个文件)和Android端(8个文件)的快麦API交互代码，汇总上线前需要修复的全部问题。
-
----
-
-## 第一部分：Android端问题（共9个）
-
-### 🔴 P0 — 必须修复
-
-| # | 问题 | 文件 | 修复方案 |
-|:-:|------|------|---------|
-| A1 | `querySupplierList` + `SupplierListResponse` + `SupplierDto` 死代码 | [KuaimaiApiService.kt](file:///d:/trea项目/快麦取货通/app/src/main/java/com/kuaimai/pda/data/api/KuaimaiApiService.kt) L16-L18, [SupplierListResponse.kt](file:///d:/trea项目/快麦取货通/app/src/main/java/com/kuaimai/pda/data/api/dto/SupplierListResponse.kt) 全文 | 删除 `querySupplierList` 方法 + 删除 `SupplierListResponse.kt` |
-| A2 | `SupplierDto` 无 `@SerializedName` | [SupplierListResponse.kt](file:///d:/trea项目/快麦取货通/app/src/main/java/com/kuaimai/pda/data/api/dto/SupplierListResponse.kt) | 补充 `@SerializedName("supplierName")` 等 |
-| A3 | `ItemUpdateRequest.suppliers` 顶层字段死代码 + 缺 `@SerializedName` | [ItemUpdateRequest.kt](file:///d:/trea项目/快麦取货通/app/src/main/java/com/kuaimai/pda/data/api/dto/ItemUpdateRequest.kt) L15 | 删除该字段 |
-
-### 🟡 P1 — 建议修复
-
-| # | 问题 | 文件 | 修复方案 |
-|:-:|------|------|---------|
-| A4 | `syncSupplierUpdate` 用 `skuRemark = "."` 可能覆盖现有备注 | [OrderSyncWorker.kt](file:///d:/trea项目/快麦取货通/app/src/main/java/com/kuaimai/pda/data/OrderSyncWorker.kt) L234 | 改为不传 `skuRemark` |
-| A5 | 离线队列始终入队不尝试在线调用 | [PickOrderRepository.kt](file:///d:/trea项目/快麦取货通/app/src/main/java/com/kuaimai/pda/data/repository/PickOrderRepository.kt) L149-L177 | 检查网络状态，在线时直接调用API |
-
-### 🟢 P2 — 后续优化
-
-| # | 问题 | 文件 |
-|:-:|------|------|
-| A6 | 空供应商列表无限"加载中" | [SupplierSelectDialog.kt](file:///d:/trea项目/快麦取货通/app/src/main/java/com/kuaimai/pda/ui/product/SupplierSelectDialog.kt) L89-L100 |
-| A7 | payload字段缺失时无具体日志 | [OrderSyncWorker.kt](file:///d:/trea项目/快麦取货通/app/src/main/java/com/kuaimai/pda/data/OrderSyncWorker.kt) L199-L241 |
-| A8 | `skuPropertiesName` 序列化名需核对 | [ItemUpdateRequest.kt](file:///d:/trea项目/快麦取货通/app/src/main/java/com/kuaimai/pda/data/api/dto/ItemUpdateRequest.kt) L23 |
-| A9 | `supplierName` 序列化为 `itemTitle` | [ItemUpdateRequest.kt](file:///d:/trea项目/快麦取货通/app/src/main/java/com/kuaimai/pda/data/api/dto/ItemUpdateRequest.kt) L28-L31 |
+> 四路并行扫描：Compose UI + Android核心层 + 后端/部署 + 安全/数据流/并发
+> 基准版本：v1.35 (61a8a8d)
+> 扫描时间：2026-06-18
 
 ---
 
-## 第二部分：后端问题（共12个）
+## ✅ v1.35已验证修复（8/8通过）
 
-### 🔴 P0 — 必须修复
-
-| # | 问题 | 文件 | 修复方案 |
-|:-:|------|------|---------|
-| B1 | `get_supplier_list()` 不走通用 `_call_api`，响应解析缺少 wrapper_key 处理 | [kuaimai_api.py](file:///d:/trea项目/快麦取货通/backend/app/services/kuaimai_api.py) L160-L182 | 复用 `_call_api.get("list", [])` |
-| B2 | `refresh_session()` 不走通用 `_call_api` | [kuaimai_api.py](file:///d:/trea项目/快麦取货通/backend/app/services/kuaimai_api.py) L187-L252 | 复用 `_call_api` |
-| B3 | `get_supplier_list()` 异常被静默吞掉 | [kuaimai_api.py](file:///d:/trea项目/快麦取货通/backend/app/services/kuaimai_api.py) L176-L182 | 修复响应解析 |
-
-### 🟡 P1 — 建议修复
-
-| # | 问题 | 文件 | 修复方案 |
-|:-:|------|------|---------|
-| B4 | `_call_api` vs `get_supplier_list`/`refresh_session` 使用不同 Content-Type | [kuaimai_api.py](file:///d:/trea项目/快麦取货通/backend/app/services/kuaimai_api.py) | 已确认V2 API用data=params，supplier需files=multipart，是快麦要求 |
-| B5 | cache.py 重试无延迟退避 | [cache.py](file:///d:/trea项目/快麦取货通/backend/app/services/cache.py) L38-L40 | 加 `asyncio.sleep(1)` |
-| B6 | config.py 与 kuaimai_api.py 循环依赖 | [config.py](file:///d:/trea项目/快麦取货通/backend/app/config.py) L115 | 将 `_config_lock` 移到 config.py |
-| B7 | `_refresh_kuaimai_session` 注释与实际不一致 | [main.py](file:///d:/trea项目/快麦取货通/backend/main.py) L350 | 更新注释 |
-| B8 | sku_cache.cached_at 无索引 | [database.py](file:///d:/trea项目/快麦取货通/backend/app/database.py) L118-L131 | 加索引 |
+| 修复项 | 状态 |
+|:-------|:----:|
+| querySupplierList/SupplierListResponse 死代码删除 | ✅ |
+| ItemUpdateRequest suppliers 死代码移除 | ✅ |
+| syncSupplierUpdate 不传skuRemark | ✅ |
+| cache.py asyncio.sleep(1) 重试退避 | ✅ |
+| _config_lock 移到config.py（解决循环依赖） | ✅ |
+| kuaimai_api.py 移除threading import | ✅ |
+| sku_cache cached_at 索引 | ✅ |
 
 ---
 
-## 第三部分：修复步骤
+## 🔴 CRASH — 0项
 
-### Step 1: 全量API回归测试（验证当前状态）
-```bash
-cd d:\trea项目\快麦取货通
-python test_kuaimai_full.py
-```
+## 🟠 HIGH — 1项
 
-### Step 2: 修复后端关键问题（B1/B2/B6/B7/B8）
-### Step 3: 修复Android关键问题（A1/A2/A3/A4）
-### Step 4: 修复后端中等问题（B5）
-### Step 5: Android构建验证
-```bash
-./gradlew assembleRelease
-```
-### Step 6: sync + Git
+| # | 文件 | 行 | 问题 | 来源 |
+|:-:|:-----|:--:|:------|:----:|
+| **1** | `admin.py` | L518-L519 | **用户管理表格 `u.is_active`/`u.created_at` 仍为snake_case** — v1.32修复了L508-L509，v1.34修复了L568，但**L518-L519是另一处完全相同的模板**。所有用户状态显示为"禁用"，创建时间显示为"-" | 安全+数据流 |
+
+## 🟡 MEDIUM — 5项
+
+| # | 文件 | 行 | 问题 | 来源 |
+|:-:|:-----|:--:|:------|:----:|
+| **2** | `images.py` | L44-L50 | **_check_upload_rate v1.34引入空列表return BUG** — 所有记录过期后`del`+`return`，不记录本次上传，速率限制实际永不生效 | 后端+安全 |
+| **3** | `images.py` | L104-L134 | **替换上传写文件失败时新旧DB记录全部丢失** — DELETE旧→INSERT新→写文件失败→DELETE新，DB记录全消失 | 安全 |
+| **4** | `OrderSyncWorker.kt` | L258-L267 | **syncImageUpload finally删文件导致重试永久失效** — 失败时finally删除文件，重试时文件不存在直接return false | Android核心 |
+| **5** | `images.py` | L44-L50 | **上传速率计数器空列表return导致每次上传被跳过**（同BUG#2） | 后端 |
+| **6** | `docker-deploy/` | — | **两份docker-compose.yml/.yaml文件** — 同步脚本复制两份，修改不同步则配置漂移 | 后端 |
+
+## 🔵 LOW — 8项
+
+| # | 文件 | 行 | 问题 |
+|:-:|:-----|:--:|:------|
+| 7 | `PickItemRow.kt` | L20 | 未使用的 `MaterialTheme` import |
+| 8 | `HomeScreen.kt` | L19 | 未使用的 `Inventory` icon import |
+| 9 | `PickDetailScreen.kt` | L31-L32 | 未使用的 `DropdownMenu`/`DropdownMenuItem` import |
+| 10 | `PickDetailScreen.kt` | L64 | 未使用的 `LocalView` import |
+| 11 | `ProductScreen.kt` | L392-L397 | 供应商名称无maxLines（20sp Bold长文本溢出） |
+| 12 | `SupplierSelectDialog.kt` | L157-L161 | 供应商名称无maxLines |
+| 13 | `HomeScreen.kt` | L208-L215 | sessionWarningText无maxLines |
+| 14 | `OrderSyncWorker.kt` | L17,L60-L62 | 未用PickOrderRepository import + authRepository变量 |
+
+---
+
+## 修复优先级
+
+### 🚨 P0 — 0项
+
+### ⚠️ P1 — 3项（功能+安全严重）
+
+| # | 修改内容 | 文件 | 估算 |
+|:-:|----------|:-----|:----:|
+| 1 | admin.js L518 `u.is_active`→`u.isActive`, L519 `u.created_at`→`u.createdAt` | `admin.py` | 2行 |
+| 2 | images.py `_check_upload_rate` 移除空列表提前return，确保每次追加时间戳 | `images.py` | 3行 |
+| 3 | OrderSyncWorker syncImageUpload 移出finally，失败时不删文件 | `OrderSyncWorker.kt` | 4行 |
+
+### 📝 P2 — 6项（安全加固+代码清理）
+
+| # | 修改内容 | 文件 | 估算 |
+|:-:|----------|:-----|:----:|
+| 4 | images.py 替换上传事务保护（先INSERT后删旧，写文件失败回滚） | `images.py` | 5行 |
+| 5 | UI 文件清理未用import(4处)+maxLines(3处) | 多个UI文件 | 10行 |
+| 6 | OrderSyncWorker 清理死代码+添加注释 | `OrderSyncWorker.kt` | 3行 |
+| 7 | docker-deploy 移除docker-compose.yaml | `sync.ps1` | 2行 |
+
+---
+
+## 验证步骤
+
+1. `.\gradlew :app:compileReleaseKotlin`（Step 3: lint）
+2. `.\gradlew assembleRelease`（Step 4: 构建）
+3. `.\scripts\sync-to-docker-deploy.ps1 -Force`（Step 7: 同步）
+4. `git add -A && git commit -m "v1.36: ..." && git push`（Step 8: 提交）

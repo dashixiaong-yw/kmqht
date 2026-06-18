@@ -3,6 +3,17 @@
 ## 1.36 (2026-06-18)
 
 ### 修复
+- HIGH: admin.js L518-L519 u.is_active→isActive/createdAt — 修复用户状态第三处snake_case遗漏
+- MEDIUM: images.py _check_upload_rate移除空列表提前return — 修复速率限制永不生效(v1.34回归)
+- MEDIUM: images.py 写文件失败回滚新DB记录 — 修复替换上传DB记录丢失
+- MEDIUM: OrderSyncWorker syncImageUpload失败不删文件 — 修复重试永久失效
+- MEDIUM: scripts/ 移除docker-compose.yaml复制 — 修复配置漂移
+- LOW: PickItemRow/HomeScreen/PickDetailScreen/OrderSyncWorker 清理未用import(5处)
+- LOW: ProductScreen/SupplierSelectDialog/HomeScreen 添加maxLines溢出保护(3处)
+
+## 1.35 (2026-06-18)
+
+### 修复
 - CRASH: config.py kuaimai_config_lock未定义——补充定义 + kuaimai_api.py删除旧锁_config_lock (P0)
 - CRASH: kuaimai_api.py threading导入残留——已移除 (P0)
 - HIGH: refresh_session用_config_lock不同锁→kuaimai_config_lock统一 (P0)

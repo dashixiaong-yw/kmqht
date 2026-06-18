@@ -14,7 +14,6 @@ import com.kuaimai.pda.data.api.dto.SupplierUpdateDto
 import com.kuaimai.pda.data.db.dao.PendingOperationDao
 import com.kuaimai.pda.data.db.entity.PendingOperationEntity
 import com.kuaimai.pda.data.repository.AuthRepository
-import com.kuaimai.pda.data.repository.PickOrderRepository
 import com.kuaimai.pda.data.repository.UserRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -56,9 +55,6 @@ class OrderSyncWorker(
     }
     private val orderApiService: OrderApiService? by lazy {
         com.kuaimai.pda.App.OrderSyncWorkerDeps.orderApiService
-    }
-    private val authRepository: AuthRepository? by lazy {
-        com.kuaimai.pda.App.OrderSyncWorkerDeps.authRepository
     }
     private val imageUploadService: ImageUploadService? by lazy {
         com.kuaimai.pda.App.OrderSyncWorkerDeps.imageUploadService
@@ -260,9 +256,11 @@ class OrderSyncWorker(
                 remoteId = remoteId,
                 createdAt = com.kuaimai.pda.util.TimeUtils.now()
             ))
-            true
-        } finally {
             imageFile.delete()
+            true
+        } catch (e: Exception) {
+            Log.w(TAG, "上传图片失败，保留文件以重试: ${e.message}")
+            false
         }
     }
 

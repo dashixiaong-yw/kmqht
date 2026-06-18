@@ -44,10 +44,9 @@ def _check_upload_rate(user_id: int) -> None:
         _upload_counts[user_id] = [t for t in _upload_counts[user_id] if now - t < _UPLOAD_RATE_WINDOW]
         if not _upload_counts[user_id]:
             del _upload_counts[user_id]
-            return
-        if len(_upload_counts[user_id]) >= _UPLOAD_RATE_LIMIT:
+        if len(_upload_counts.get(user_id, [])) >= _UPLOAD_RATE_LIMIT:
             raise HTTPException(status_code=429, detail="上传过于频繁，请稍后重试")
-        _upload_counts[user_id].append(now)
+        _upload_counts.setdefault(user_id, []).append(now)
 
 
 @router.post("/upload", response_model=ImageResponse)
@@ -100,7 +99,7 @@ async def upload_image(
     image_url = f"images/{date_dir}/{file_name}"
     relative_file_path = f"{date_dir}/{file_name}"
 
-    # 先INSERT DB记录（旧记录已在existing中，先删除再插入）
+    # 先INSERT DB记录（防止孤儿清理线程竞态）
     if existing:
         cursor.execute("DELETE FROM product_images WHERE id = ?", (existing["id"],))
         db.commit()
@@ -111,13 +110,8 @@ async def upload_image(
             (skuOuterId, imageType, image_url, relative_file_path, format_beijing(now))
         )
         db.commit()
-    except Exception as e:
-        db.rollback()
-        logger.error(f"保存图片记录失败: {e}")
-        raise HTTPException(status_code=500, detail="保存图片记录失败")
 
-    # 再写入文件
-    try:
+        # 再写入文件
         content = await file.read()
         if len(content) == 0:
             raise HTTPException(status_code=400, detail="上传文件为空")
@@ -126,7 +120,8 @@ async def upload_image(
         with open(file_path, "wb") as f:
             f.write(content)
     except Exception as e:
-        logger.error(f"保存图片文件失败: {e}")
+        logger.error(f"保存图片失败: {e}")
+        # 回滚：删除刚插入的记录
         cursor.execute("DELETE FROM product_images WHERE sku_outer_id = ? AND image_type = ?", (skuOuterId, imageType))
         db.commit()
         if os.path.exists(file_path):

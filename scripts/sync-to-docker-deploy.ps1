@@ -194,37 +194,8 @@ foreach ($cfg in $configFiles) {
     Sync-File -SourceFile $cfg.Src -TargetFile $cfg.Dst -Label $cfg.Name
 }
 
-# docker-compose.yml -> docker-compose.yaml
-$yamlSource = Join-Path $DockerDeployRoot "docker-compose.yml"
-$yamlTarget = Join-Path $DockerDeployRoot "docker-compose.yaml"
-if (Test-Path -LiteralPath $yamlSource) {
-    $shouldCopyYaml = $true
-    if (-not $DryRun) {
-        if ((Test-Path -LiteralPath $yamlTarget) -and -not $Force) {
-            $sourceHash = (Get-FileHash -LiteralPath $yamlSource -Algorithm MD5).Hash
-            $destHash = (Get-FileHash -LiteralPath $yamlTarget -Algorithm MD5).Hash
-            if ($sourceHash -eq $destHash) {
-                $shouldCopyYaml = $false
-            }
-        }
-    }
-
-    if ($DryRun) {
-        Write-Host "DRYRUN: Would copy: docker-compose.yml -> docker-compose.yaml"
-    }
-    elseif ($shouldCopyYaml) {
-        Copy-Item -LiteralPath $yamlSource -Destination $yamlTarget -Force
-        Write-Host "OK: docker-compose.yml -> docker-compose.yaml"
-        $totalFiles++
-        $syncCount++
-    }
-    else {
-        Write-Host "SKIP: docker-compose.yaml (no changes)"
-    }
-}
-
-# Note: docker-deploy/kuaimai.json ignored by Docker (uses data/kuaimai.json)
-# To avoid confusion, manually delete the root copy.
+# Note: docker-compose.yaml is NOT generated here to avoid config drift.
+# Only docker-compose.yml is maintained.
 
 Write-Host ""
 Write-Host "========================================="

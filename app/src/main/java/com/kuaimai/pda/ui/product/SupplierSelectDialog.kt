@@ -31,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kuaimai.pda.data.api.dto.SupplierDto
 import com.kuaimai.pda.ui.theme.SupplierRed
@@ -158,7 +159,9 @@ private fun SupplierItemRow(
                 style = MaterialTheme.typography.bodyLarge.copy(
                     fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                 ),
-                color = SupplierRed
+                color = SupplierRed,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             Text(
                 text = supplier.supplierCode,

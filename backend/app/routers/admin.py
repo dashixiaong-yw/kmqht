@@ -515,8 +515,8 @@ async function loadUsers() {{
       <td>${{u.id}}</td>
       <td>${{escapeHtml(u.username)}}</td>
       <td>${{(u.permissions || []).map(p => escapeHtml(PERM_LABELS[p] || p)).join('、') || '无'}}</td>
-      <td><span class="badge ${{u.is_active ? 'badge-green' : 'badge-red'}}">${{u.is_active ? '启用' : '禁用'}}</span></td>
-      <td>${{u.created_at || '-'}}</td>
+      <td><span class="badge ${{u.isActive ? 'badge-green' : 'badge-red'}}">${{u.isActive ? '启用' : '禁用'}}</span></td>
+      <td>${{u.createdAt || '-'}}</td>
       <td>
         <button class="btn btn-primary btn-sm" onclick='editUser("${{encodeURIComponent(JSON.stringify(u))}}")'>编辑</button>
         <button class="btn btn-danger btn-sm" onclick='confirmDeleteUser(${{u.id}},"${{escapeHtml(u.username)}}")'>删除</button>

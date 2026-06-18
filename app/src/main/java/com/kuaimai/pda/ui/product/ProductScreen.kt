@@ -393,7 +393,9 @@ private fun SkuInfoCard(
                         text = supplierName.ifBlank { "未设置供应商" },
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (supplierName.isNotBlank()) SupplierRed else TextSecondary
+                        color = if (supplierName.isNotBlank()) SupplierRed else TextSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     if (canChangeSupplier) {
