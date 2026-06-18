@@ -327,8 +327,7 @@ private fun ModuleCard(
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(0.dp),
+                .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // 左侧52dp蓝色图标框

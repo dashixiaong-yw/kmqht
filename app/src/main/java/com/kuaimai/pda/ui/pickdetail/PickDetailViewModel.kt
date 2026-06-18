@@ -56,7 +56,7 @@ class PickDetailViewModel @Inject constructor(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     /** 供应商列表（从明细中提取） */
-    private val _suppliers = MutableStateFlow<List<String>>(emptyList())
+    private val _suppliers = MutableStateFlow<List<String>>(listOf("全部"))
     val suppliers: StateFlow<List<String>> = _suppliers.asStateFlow()
 
     /** 当前供应商过滤 */

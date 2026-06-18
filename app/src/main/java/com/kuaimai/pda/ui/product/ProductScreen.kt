@@ -66,6 +66,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.layout.ContentScale
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.kuaimai.pda.data.repository.UserRepository
@@ -570,7 +571,8 @@ private fun ImageUploadSlot(
                     contentDescription = label,
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(4.dp)
+                        .padding(4.dp),
+                    contentScale = ContentScale.Crop
                 )
             } else {
                 // 空状态：虚线框+加号

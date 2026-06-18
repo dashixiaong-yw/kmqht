@@ -40,10 +40,8 @@ def _check_upload_rate(user_id: int) -> None:
         now = _time.time()
         if user_id not in _upload_counts:
             _upload_counts[user_id] = []
-        # 清理过期记录
+        # 清理过期记录，保留窗口内的记录
         _upload_counts[user_id] = [t for t in _upload_counts[user_id] if now - t < _UPLOAD_RATE_WINDOW]
-        if not _upload_counts[user_id]:
-            del _upload_counts[user_id]
         if len(_upload_counts[user_id]) >= _UPLOAD_RATE_LIMIT:
             raise HTTPException(status_code=429, detail="上传过于频繁，请稍后重试")
         _upload_counts[user_id].append(now)

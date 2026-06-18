@@ -227,6 +227,15 @@ fun AppNavigation(
                 TextButton(onClick = { showSessionExpiredDialog = false; SessionExpiredEvent.reset() }) {
                     Text("知道了")
                 }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showSessionExpiredDialog = false
+                    SessionExpiredEvent.reset()
+                    navController.navigate(Routes.SETTINGS)
+                }) {
+                    Text("前往设置")
+                }
             }
         )
     }

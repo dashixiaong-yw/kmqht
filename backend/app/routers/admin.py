@@ -474,7 +474,7 @@ async function loadDashboard() {{
     const areas = await api('/api/areas');
     const userCount = (users.data || []).length;
     const areaCount = (areas.data || []).length;
-    const orderCount = health.total_orders || 0;
+    const orderCount = health.totalOrders || 0;
     document.getElementById('statsGrid').innerHTML = `
       <div class="stat-item"><div class="value">${{userCount}}</div><div class="label">用户数</div></div>
       <div class="stat-item"><div class="value">${{areaCount}}</div><div class="label">拣货区</div></div>

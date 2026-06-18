@@ -39,10 +39,15 @@ def _load_version_info() -> dict:
 def health_check() -> HealthResponse:
     """健康检查"""
     db_status = "ok"
+    total_orders = 0
     try:
         db = get_db()
         cursor = db.cursor()
         cursor.execute("SELECT 1")
+        cursor.execute("SELECT COUNT(*) as cnt FROM pick_orders")
+        row = cursor.fetchone()
+        if row:
+            total_orders = row["cnt"]
     except Exception as e:
         logger.error(f"数据库健康检查失败: {e}")
         db_status = "error"
@@ -50,6 +55,7 @@ def health_check() -> HealthResponse:
     return HealthResponse(
         status="ok",
         database=db_status,
+        totalOrders=total_orders,
     )
 
 

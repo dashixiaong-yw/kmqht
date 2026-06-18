@@ -61,6 +61,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -241,6 +242,12 @@ fun PickDetailScreen(
                             if (scanInput.isNotBlank()) {
                                 viewModel.onBarcodeScanned(scanInput.trim())
                                 scanInput = ""
+                                val view = (context as? android.app.Activity)?.currentFocus
+                                if (view != null) {
+                                    val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as?
+                                        android.view.inputmethod.InputMethodManager
+                                    imm?.hideSoftInputFromWindow(view.windowToken, 0)
+                                }
                             }
                         }
                     ),

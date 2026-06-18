@@ -282,7 +282,7 @@ def restore_item(order_id: int, item_id: int, user: dict = Depends(get_current_u
             (item_id,)
         )
         cursor.execute(
-            "UPDATE pick_orders SET completed_count = completed_count - 1 WHERE id = ?",
+            "UPDATE pick_orders SET completed_count = completed_count - 1 WHERE id = ? AND completed_count > 0",
             (order_id,)
         )
         # 检查是否需要将取货单状态从已完成恢复为进行中
@@ -405,7 +405,7 @@ def delete_item(order_id: int, item_id: int, user: dict = Depends(get_current_us
         # 如果该明细已完成，需减少完成数
         if item_row["status"] == 1:
             cursor.execute(
-                "UPDATE pick_orders SET completed_count = completed_count - 1 WHERE id = ?",
+                "UPDATE pick_orders SET completed_count = completed_count - 1 WHERE id = ? AND completed_count > 0",
                 (order_id,)
             )
         cursor.execute(

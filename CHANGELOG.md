@@ -1,5 +1,17 @@
 # 快麦取货通 - 变更日志
 
+## 1.29 (2026-06-18)
+
+### 修复
+- CRASH: images.py _check_upload_rate del _upload_counts导致KeyError回归
+- CRASH: system.py health_check添加totalOrders查询+admin.js totalOrders字段名
+- HIGH: orders.py completed_count添加WHERE>0保护(2处)
+- MEDIUM: AppNavigation.kt 快麦session过期弹窗添加"前往设置"导航按钮
+- MEDIUM: ProductScreen.kt AsyncImage添加contentScale=Crop
+- MEDIUM: PickDetailViewModel.kt _suppliers初始值改为listOf("全部")
+- LOW: PickDetailScreen.kt 键盘Done后隐藏软键盘
+- LOW: HomeScreen.kt 移除冗余padding(0.dp)
+
 ## 1.28 (2026-06-18)
 
 ### 修复
