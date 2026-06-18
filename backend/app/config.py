@@ -166,7 +166,7 @@ def start_config_watcher() -> None:
 
     async def _watch_config() -> None:
         """异步监控配置文件变更（加mtime过滤，避免Docker overlay伪触发重复加载）"""
-        nonlocal _last_kuaimai_mtime
+        global _last_kuaimai_mtime
         try:
             from watchfiles import awatch
 
