@@ -4,7 +4,7 @@ import logging
 import os
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse
 
 from app.auth import check_permission, get_current_user
 from app.config import APK_DIR, APK_VERSION_FILE, SERVER_URL, kuaimai_creds
@@ -98,11 +98,33 @@ def get_app_version(request: Request) -> AppVersionResponse:
 
     return AppVersionResponse(
         latestVersion=info.get("currentVersion", ""),
-        downloadUrl=f"{base_url}/apk/{info.get('apkFileName', '')}",
+        downloadUrl=f"{base_url}/apk-download/{info.get('apkFileName', '')}",
         updateNotes=info.get("updateNotes", ""),
         forceUpdate=info.get("forceUpdate", False),
         apkSize=apk_size,
         publishedAt=info.get("publishedAt", ""),
+    )
+
+
+@router.get("/api/app-version/download")
+def download_apk(request: Request) -> FileResponse:
+    """下载APK文件（设置正确的Content-Type，PDA/浏览器扫码下载用）"""
+    info = _load_version_info()
+    if not info or not info.get("currentVersion") or not info.get("publishedAt"):
+        raise HTTPException(status_code=404, detail="暂无已分发的版本")
+
+    file_name = info.get("apkFileName", "")
+    file_path = os.path.normpath(os.path.join(APK_DIR, file_name))
+    apk_dir_norm = os.path.normpath(APK_DIR)
+    if not file_path.startswith(apk_dir_norm):
+        raise HTTPException(status_code=403, detail="非法文件名")
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="文件不存在")
+
+    return FileResponse(
+        file_path,
+        media_type="application/vnd.android.package-archive",
+        filename=file_name,
     )
 
 
@@ -114,7 +136,7 @@ def get_app_version_qrcode(request: Request) -> dict:
         return {"success": False, "message": "暂无已分发的版本", "qrcode": ""}
 
     base_url = SERVER_URL.rstrip("/") if SERVER_URL else str(request.base_url).rstrip("/")
-    download_url = f"{base_url}/apk/{info.get('apkFileName', '')}"
+    download_url = f"{base_url}/apk-download/{info.get('apkFileName', '')}"
     qr_base64 = generate_qr_base64(download_url)
 
     return {"success": True, "qrcode": qr_base64}

@@ -1,5 +1,11 @@
 # 快麦取货通 - 变更日志
 
+## 1.47 (2026-06-18)
+
+### 修复
+- P0: system.py 新增 /api/app-version/download 自定义路由 — 设置正确的 Content-Type(application/vnd.android.package-archive) + Content-Disposition，修复PDA扫码下载APK被识别为ZIP文件无法安装的问题
+- auth.py: 添加 /apk-download 到 SKIP_AUTH_PREFIXES，允许免认证下载
+
 ## 1.46 (2026-06-18)
 
 ### 修复

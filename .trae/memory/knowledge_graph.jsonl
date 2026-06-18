@@ -143,6 +143,8 @@
 {"type":"entity","name":"BUG-P1_CompleteItemErrorMessage","entityType":"BugFix","observations":["P1-2: complete_item 错误提示","不能删除明细"]}
 {"type":"entity","name":"v1.45_禁用默认admin账户","entityType":"VersionRelease","observations":["版本号 1.45","2026-06-18 发布","database.py: 默认admin用户创建时 is_active=0（禁用）","users.py: 移除 mustChangePassword 默认密码检查","管理后台已完全使用API Key认证，user/password登录体系不再需要默认账户"]}
 {"type":"entity","name":"BUG-DefaultAdminDisabled","entityType":"BugFix","observations":["默认admin/admin123账号在首次部署时自动创建并启用","管理后台已改用API Key登录，此账号不再需要且存在安全风险","修复: _init_default_admin is_active=1→0","users.py: 移除 admin123 硬编码密码比对","文件: backend/app/database.py, backend/app/routers/users.py"]}
+{"type":"entity","name":"v1.47_修复APK下载ContentType","entityType":"VersionRelease","observations":["版本号 1.47","2026-06-18 发布","P0: system.py 新增 /api/app-version/download 自定义下载路由","Docker Alpine 系统缺少 mime.types，StaticFiles 返回 application/octet-stream","PDA浏览器检测到ZIP魔数后重命名为.zip，导致无法安装","修复: 自定义路由显式设置 Content-Type: application/vnd.android.package-archive + Content-Disposition: attachment","auth.py: /apk-download 加入 SKIP_AUTH_PREFIXES"]}
+{"type":"entity","name":"BUG-APKDownloadZip","entityType":"BugFix","observations":["Docker Alpine环境下StaticFiles使用mimetypes.guess_type无法识别.apk→application/vnd.android.package-archive","返回application/octet-stream且无Content-Disposition，PDA浏览器检测PK签名魔数后重命名为.zip","修复: system.py新增/api/app-version/download路由，FileResponse显式设置media_type和filename","文件: backend/app/routers/system.py, backend/app/auth.py"]}
 {"type":"relation","from":"F1_取货单管理","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F2_扫码待办","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F3_取货单自动完成","to":"快麦取货通项目","relationType":"属于"}
@@ -235,3 +237,5 @@
 {"type":"relation","from":"v1.43_第九次全面审计修复发布","to":"审计_第九次全面审计","relationType":"includes"}
 {"type":"relation","from":"v1.45_禁用默认admin账户","to":"BUG-DefaultAdminDisabled","relationType":"fixes"}
 {"type":"relation","from":"快麦取货通项目","to":"v1.45_禁用默认admin账户","relationType":"has_version"}
+{"type":"relation","from":"v1.47_修复APK下载ContentType","to":"BUG-APKDownloadZip","relationType":"fixes"}
+{"type":"relation","from":"快麦取货通项目","to":"v1.47_修复APK下载ContentType","relationType":"has_version"}
