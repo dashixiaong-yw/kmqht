@@ -1,5 +1,14 @@
 # 快麦取货通 - 变更日志
 
+## 1.41 (2026-06-18)
+
+### 修复
+- P0: orders.py complete_item completed_count +1 多加了 1 — 修复完成倒数第二个明细时取货单被错误标记为已完成
+- MEDIUM: config.py SERVER_PORT 默认值 8000→8900 — 修复与 Dockerfile/docker-compose 端口不一致
+
+### 审计
+- 第八次全量回溯审计：覆盖 v1.01~v1.40 约40次更新，4路并行搜索验证 Android 端12个文件 + 后端全模块 + 配置一致性 + 知识图谱
+
 ## 1.40 (2026-06-18)
 
 ### 修复

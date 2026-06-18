@@ -23,7 +23,7 @@ API_KEY: str = os.getenv("API_KEY", "")
 kuaimai_config_lock = threading.Lock()
 
 # 服务器端口
-SERVER_PORT: int = int(os.getenv("SERVER_PORT", "8000"))
+SERVER_PORT: int = int(os.getenv("SERVER_PORT", "8900"))
 
 # 快麦凭证文件路径
 KUAIMAI_CONFIG_PATH: str = os.getenv("KUAIMAI_CONFIG_PATH", "/data/kuaimai.json")

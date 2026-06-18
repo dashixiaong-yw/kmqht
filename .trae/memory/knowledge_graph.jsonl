@@ -131,6 +131,11 @@
 {"type":"entity","name":"BUG-P1_GetImageUrlsCompileConstant","entityType":"BugFix","observations":["v1.18修复: PickDetailViewModel.getImageUrls()使用AppConstants.DEFAULT_SERVER_URL（编译时常量空字符串）而非运行时从encryptedPrefs读取","导致配置服务器地址后库区图/箱图URL缺少服务器前缀，图片永不可见","修复: 注入@Named('encrypted') SharedPreferences，改为prefs.getString(KEY_SERVER_URL, '')"]}
 {"type":"entity","name":"SEC-OkHttpLoggingDowngrade","entityType":"安全修复","observations":["v1.18修复: HttpLoggingInterceptor使用Level.BODY在Logcat中泄露登录密码和Token","修复: 改为Level.HEADERS，不打印请求体"]}
 {"type":"entity","name":"BUG-KuaimaiCredentialsNotSyncedToPDA","entityType":"BugFix","observations":["修复: PDA端KuaimaiInterceptor所需appKey/appSecret/session从未写入SharedPreferences","根因: AuthRepository.setAppKey()/setAppSecret()无调用方，凭证仅存在于后端kuaimai.json","修复1: 后端新增GET /api/kuaimai/credentials接口返回凭证","修复2: PDA SystemApiService新增getKuaimaiCredentials()","修复3: UserRepositoryImpl.login()登录成功后自动同步凭证到本地encryptedPrefs"]}
+{"type":"entity","name":"BUG-P0_CompletedCountPlus1","entityType":"BugFix","observations":["orders.py complete_item 中 completed_count +1 多加了 1","第242行已执行 UPDATE completed_count = completed_count + 1，但第249行 SELECT 时又写了 completed_count + 1 as new_completed","后果：完成倒数第二个明细时 new_completed >= total_count 提前成立，取货单被错误标记为已完成","修复：去掉 SELECT 中的 +1，改为 completed_count as new_completed","文件：backend/app/routers/orders.py#L248-L249"]}
+{"type":"entity","name":"BUG-CONFIG_ServerPortDefault","entityType":"BugFix","observations":["config.py SERVER_PORT 默认值写死为 8000","Dockerfile、docker-compose.yml、.env.docker.example 全部使用 8900","风险：.env 未正确加载时端口回退 8000，与 uvicorn 实际 8900 不一致","修复：将默认值从 8000 改为 8900","文件：backend/app/config.py#L26"]}
+{"type":"entity","name":"v1.41_第八次回溯审计发布","entityType":"VersionRelease","observations":["版本号 1.41","2026-06-18 发布","修复 P0：orders.py completed_count +1 错误","修复 MEDIUM：config.py SERVER_PORT 默认端口不一致","附：第八次全量回溯审计结束"]}
+{"type":"entity","name":"审计_第八次全量回溯审计","entityType":"Audit","observations":["覆盖 v1.01~v1.40 约40次更新","4路并行搜索代理分别覆盖 Android 端12个文件、后端全模块、配置一致性、知识图谱","Android 端：全部12个关键文件修复已正确应用，无遗漏无回归","后端：发现 1 个 P0 逻辑 bug + 1 个配置缺陷","配置一致性：版本号一致，端口默认值不一致","知识图谱：134实体+73关系，完整"]}
+{"type":"entity","name":"审计_近40次更新回归检查","entityType":"Decision","observations":["并发4路搜索代理并行审计","Android端全部12个关键文件已确认修复正确应用","后端发现orders.py P0 completed_count计算错误","后端发现config.py端口默认值不一致","知识图谱完整性确认，设计决策已全部记录"]}
 {"type":"relation","from":"F1_取货单管理","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F2_扫码待办","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F3_取货单自动完成","to":"快麦取货通项目","relationType":"属于"}
@@ -204,3 +209,10 @@
 {"type":"relation","from":"v1.11_快麦API全面缺陷修复","to":"KuaimaiInterceptor_嵌套JSON解析修复","relationType":"includes"}
 {"type":"relation","from":"v1.11_快麦API全面缺陷修复","to":"快麦API_multipart_form_data","relationType":"includes"}
 {"type":"relation","from":"v1.11_快麦API全面缺陷修复","to":"快麦后端参数类型安全","relationType":"includes"}
+{"type":"relation","from":"v1.41_第八次回溯审计发布","to":"BUG-P0_CompletedCountPlus1","relationType":"fixes"}
+{"type":"relation","from":"v1.41_第八次回溯审计发布","to":"BUG-CONFIG_ServerPortDefault","relationType":"fixes"}
+{"type":"relation","from":"v1.41_第八次回溯审计发布","to":"审计_第八次全量回溯审计","relationType":"includes"}
+{"type":"relation","from":"审计_第八次全量回溯审计","to":"审计_近40次更新回归检查","relationType":"uses"}
+{"type":"relation","from":"快麦取货通项目","to":"v1.41_第八次回溯审计发布","relationType":"has_version"}
+{"type":"relation","from":"BUG-P0_CompletedCountPlus1","to":"快麦取货通项目","relationType":"belongs_to"}
+{"type":"relation","from":"BUG-CONFIG_ServerPortDefault","to":"快麦取货通项目","relationType":"belongs_to"}

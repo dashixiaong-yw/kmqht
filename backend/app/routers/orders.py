@@ -245,7 +245,7 @@ def complete_item(order_id: int, item_id: int, user: dict = Depends(get_current_
         )
         # 检查是否全部完成
         cursor.execute(
-            "SELECT total_count, completed_count + 1 as new_completed FROM pick_orders WHERE id = ?",
+            "SELECT total_count, completed_count as new_completed FROM pick_orders WHERE id = ?",
             (order_id,)
         )
         order_info = cursor.fetchone()
