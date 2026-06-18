@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 # 不需要认证的路径前缀（/images/匹配静态文件目录，/api/images/仍需认证）
 # /admin 精确匹配管理后台页面，避免误配 /admin-api 等路径
-SKIP_AUTH_PREFIXES = ("/images/", "/health", "/docs", "/redoc", "/openapi.json", "/setup", "/api/app-version", "/apk/", "/apk-download")
+SKIP_AUTH_PREFIXES = ("/images/", "/health", "/docs", "/redoc", "/openapi.json", "/setup", "/api/app-version", "/api/app-version/download", "/api/app-version/qrcode", "/apk/", "/apk-download")
 
 # 全部有效权限代码
 VALID_PERMISSIONS = {"settings", "update_supplier", "update_remark", "manage_area_image", "manage_box_image"}

@@ -1,5 +1,12 @@
 # 快麦取货通 - 变更日志
 
+## 1.51 (2026-06-19)
+
+### 修复
+- BUG: APK下载二维码扫码后PDA浏览器显示401 "缺少API Key"
+- 根因: auth.py SKIP_AUTH_PREFIXES 精确匹配逻辑误拦截 /api/app-version/download 和 /api/app-version/qrcode
+- 修复: 将两个路径加入 SKIP_AUTH_PREFIXES，PDA浏览器扫码无需API Key即可下载APK
+
 ## 1.50 (2026-06-18)
 
 ### 配置
