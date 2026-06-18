@@ -5,6 +5,7 @@ import logging
 import os
 import re
 import shutil
+from html import escape
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile

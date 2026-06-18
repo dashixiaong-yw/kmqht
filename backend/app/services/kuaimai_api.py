@@ -82,16 +82,17 @@ async def _call_api(method: str, extra_params: Optional[Dict[str, Any]] = None) 
     params["sign"] = _sign(params, secret_snapshot)
 
     try:
-        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
-            response = await client.post(KUAIMAI_API_BASE, data=params)
-            response.raise_for_status()
-            result: Dict[str, Any] = response.json()
+        client = _get_client()
+        response = await client.post(KUAIMAI_API_BASE, data=params)
+        response.raise_for_status()
+        result: Dict[str, Any] = response.json()
 
         # 检查API错误
         if "error_response" in result:
             error = result["error_response"]
-            logger.error(f"快麦API错误: code={error.get('code')}, msg={error.get('zh_desc', error.get('msg'))}")
-            raise ValueError(f"快麦API错误: {error.get('msg', '未知错误')}")
+            err_msg = f"快麦API错误: code={error.get('code')}, msg={error.get('zh_desc', error.get('msg'))}"
+            logger.error(err_msg)
+            raise ValueError(err_msg)
 
         # 提取API响应数据
         # V1: 响应包装在 {method}_response 中
@@ -104,7 +105,7 @@ async def _call_api(method: str, extra_params: Optional[Dict[str, Any]] = None) 
         if not api_response:
             logger.warning(f"快麦API响应为空")
 
-        return api_response
+        return api_response if api_response else result
     except httpx.TimeoutException as e:
         logger.error(f"快麦API请求超时: {e}")
         raise

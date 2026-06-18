@@ -1,5 +1,14 @@
 # 快麦取货通 - 变更日志
 
+## 1.38 (2026-06-18)
+
+### 修复
+- CRASH: v1.37 backend修复未实际应用——_call_api()仍用async with新建连接→改用_get_client()连接池(P0)
+- CRASH: v1.37 ValueError缺code/zh_desc→完整记录(P0)
+- CRASH: v1.37 get_supplier_list缺wrapper_key解包→支持supplier_list_query_response(P0)
+- HIGH: boxImageUrl拼接缺trimEnd('/')→补上(P1)
+- MEDIUM: _call_api()返回None时result.get() AttributeError→回退result(P1)
+
 ## 1.37 (2026-06-18)
 
 ### 修复

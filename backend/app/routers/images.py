@@ -99,19 +99,8 @@ async def upload_image(
     image_url = f"images/{date_dir}/{file_name}"
     relative_file_path = f"{date_dir}/{file_name}"
 
-    # 先INSERT DB记录（防止孤儿清理线程竞态）
-    if existing:
-        cursor.execute("DELETE FROM product_images WHERE id = ?", (existing["id"],))
-        db.commit()
     try:
-        cursor.execute(
-            """INSERT INTO product_images (sku_outer_id, image_type, image_url, file_path, created_at)
-               VALUES (?, ?, ?, ?, ?)""",
-            (skuOuterId, imageType, image_url, relative_file_path, format_beijing(now))
-        )
-        db.commit()
-
-        # 再写入文件
+        # 先写入文件，再操作DB（防止写文件失败导致旧记录丢失）
         content = await file.read()
         if len(content) == 0:
             raise HTTPException(status_code=400, detail="上传文件为空")
@@ -119,16 +108,30 @@ async def upload_image(
             raise HTTPException(status_code=400, detail=f"文件大小超过限制（最大2MB），当前{len(content) // 1024}KB")
         with open(file_path, "wb") as f:
             f.write(content)
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"保存图片失败: {e}")
-        # 回滚：删除刚插入的记录
-        cursor.execute("DELETE FROM product_images WHERE sku_outer_id = ? AND image_type = ?", (skuOuterId, imageType))
-        db.commit()
-        if os.path.exists(file_path):
-            os.remove(file_path)
+        logger.error(f"保存图片文件失败: {e}")
         raise HTTPException(status_code=500, detail="保存图片失败")
 
-    # 删除旧图片文件和记录
+    # 文件写入成功，操作DB
+    try:
+        if existing:
+            cursor.execute("DELETE FROM product_images WHERE id = ?", (existing["id"],))
+        cursor.execute(
+            """INSERT INTO product_images (sku_outer_id, image_type, image_url, file_path, created_at)
+               VALUES (?, ?, ?, ?, ?)""",
+            (skuOuterId, imageType, image_url, relative_file_path, format_beijing(now))
+        )
+        db.commit()
+    except Exception as e:
+        logger.error(f"保存图片记录失败: {e}")
+        db.rollback()
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        raise HTTPException(status_code=500, detail="保存图片记录失败")
+
+    # 删除旧图片文件
     if existing:
         old_file_path = os.path.join(IMAGE_DIR, existing["file_path"])
         try:

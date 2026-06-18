@@ -171,7 +171,7 @@ class ProductViewModel @Inject constructor(
                             if (serverUrl.isNotEmpty()) "${serverUrl.trimEnd('/')}${url.imageUrl}" else url.imageUrl
                         },
                         boxImageUrl = boxImage?.let { url ->
-                            if (serverUrl.isNotEmpty()) "$serverUrl${url.imageUrl}" else url.imageUrl
+                            if (serverUrl.isNotEmpty()) "${serverUrl.trimEnd('/')}${url.imageUrl}" else url.imageUrl
                         }
                     )
                 }
