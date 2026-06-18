@@ -155,25 +155,34 @@ def save_kuaimai_config() -> None:
 
 
 _watcher_task: Optional[asyncio.Task] = None
+_last_kuaimai_mtime: float = 0.0
 
 
 def start_config_watcher() -> None:
     """启动配置文件热重载监控"""
     global _watcher_task
     import asyncio
+    import os
 
     async def _watch_config() -> None:
-        """异步监控配置文件变更"""
+        """异步监控配置文件变更（加mtime过滤，避免Docker overlay伪触发重复加载）"""
+        nonlocal _last_kuaimai_mtime
         try:
             from watchfiles import awatch
 
-            config_dir = str(Path(KUAIMAI_CONFIG_PATH).parent)
-            config_name = Path(KUAIMAI_CONFIG_PATH).name
+            config_path_obj = Path(KUAIMAI_CONFIG_PATH)
+            config_dir = str(config_path_obj.parent)
+            config_name = config_path_obj.name
             async for changes in awatch(config_dir):
                 for change_type, path in changes:
-                    if config_name in path:
-                        logger.info(f"检测到配置文件变更: {change_type}")
-                        load_kuaimai_config()
+                    if config_name not in path:
+                        continue
+                    current_mtime = os.path.getmtime(KUAIMAI_CONFIG_PATH)
+                    if current_mtime == _last_kuaimai_mtime:
+                        continue
+                    _last_kuaimai_mtime = current_mtime
+                    logger.info(f"检测到配置文件变更: {change_type}")
+                    load_kuaimai_config()
         except ImportError as e:
             logger.warning(f"watchfiles未安装，配置热重载不可用: {e}")
         except Exception as e:
