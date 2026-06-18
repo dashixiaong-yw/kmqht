@@ -234,6 +234,21 @@ fun ProductScreen(
                     )
                 }
             }
+            // 信息提示（非错误）
+            uiState.infoMessage?.let { message ->
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                    )
+                ) {
+                    Text(
+                        text = message,
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(12.dp)
+                    )
+                }
+            }
         }
 
         // 供应商选择对话框

@@ -184,7 +184,7 @@ fun PickDetailScreen(
         items
     } else {
         items.filter { it.supplierName == currentSupplier }
-    }).sortedWith(compareBy<PickItemEntity> { it.status }.thenByDescending { it.createdAt })
+    }).sortedWith(compareBy<PickItemEntity> { it.status }.thenByDescending { it.createdAt }.thenByDescending { it.id })
 
     val completedCount = items.count { it.status == 1 }
     val totalCount = items.size

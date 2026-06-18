@@ -20,6 +20,7 @@ from app.config import (
     check_session_warning,
     load_kuaimai_config,
     start_config_watcher,
+    stop_config_watcher,
 )
 from app.database import get_db, init_db
 from app.routers import admin, areas, images, orders, system, users
@@ -105,9 +106,13 @@ async def startup_event() -> None:
 
 # ==================== 定时任务 ====================
 
+_scheduler: Optional[BackgroundScheduler] = None
+
+
 def _start_scheduler() -> None:
     """启动定时任务调度器"""
-    scheduler = BackgroundScheduler(timezone="Asia/Shanghai")
+    global _scheduler
+    _scheduler = BackgroundScheduler(timezone="Asia/Shanghai")
 
     # 每1分钟检查取货单超时（12小时超时）
     scheduler.add_job(
@@ -176,7 +181,17 @@ def _start_scheduler() -> None:
     )
 
     scheduler.start()
+    _scheduler = scheduler
     logger.info("定时任务调度器已启动")
+
+
+def _stop_scheduler() -> None:
+    """停止定时任务调度器"""
+    global _scheduler
+    if _scheduler:
+        _scheduler.shutdown(wait=False)
+        _scheduler = None
+        logger.info("定时任务调度器已停止")
 
 
 def _check_order_timeout() -> None:
@@ -328,7 +343,12 @@ def _refresh_kuaimai_session() -> None:
             logger.error(f"定时刷新快麦session异常: {e}")
 
     try:
-        asyncio.run(_do_refresh())
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(_do_refresh())
+        finally:
+            loop.close()
     except Exception as e:
         logger.error(f"刷新session失败: {e}")
 

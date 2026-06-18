@@ -47,6 +47,7 @@ data class ProductUiState(
     val isUploading: Boolean = false,
     val uploadProgress: Int = 0,
     val error: String? = null,
+    val infoMessage: String? = null,
     val isSavingRemark: Boolean = false,
     val isSavingSupplier: Boolean = false,
     val showSupplierDialog: Boolean = false,
@@ -369,7 +370,7 @@ class ProductViewModel @Inject constructor(
 
                     _uiState.value = _uiState.value.copy(
                         isUploading = false,
-                        error = "图片将在网络恢复后自动上传"
+                        infoMessage = "图片将在网络恢复后自动上传"
                     )
                 } catch (queueError: Exception) {
                     _uiState.value = _uiState.value.copy(

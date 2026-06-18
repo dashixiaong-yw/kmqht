@@ -1,5 +1,21 @@
 # 快麦取货通 - 变更日志
 
+## 1.30 (2026-06-18)
+
+### 修复
+- CRASH: NetworkMonitor移除init register() — 修复Android 12+双重注册崩溃
+- CRASH: main.py asyncio.run→new_event_loop — 修复热重载时RuntimeError
+- CRASH: main.py shutdown事件+_stop_scheduler — 修复关闭时任务泄漏
+- HIGH: ScannerManager register()时读取Prefs settings — 修复扫码声音/振动设置不生效
+- HIGH: config.py热重载task加全局引用+stop函数 — 修复异常失控+关闭泄漏
+- MEDIUM: OrderSyncWorker 成功后imageFile.delete() — 修复离线图片文件积累
+- MEDIUM: ProductViewModel infoMessage分离+UiState添加 — 修复信息覆盖错误
+- MEDIUM: config.py+main.py shutdown生命周期管理
+- LOW: PickDetailScreen排序加thenBy{it.id}
+- LOW: AppDatabase注释version=2
+- LOW: Docker memory 512M→512MiB
+- LOW: ProductScreen infoMessage显示卡片
+
 ## 1.29 (2026-06-18)
 
 ### 修复

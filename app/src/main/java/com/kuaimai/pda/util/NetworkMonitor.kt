@@ -22,10 +22,6 @@ class NetworkMonitor @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
 
-    init {
-        register()
-    }
-
     enum class Status {
         ONLINE, OFFLINE, WEAK
     }

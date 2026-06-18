@@ -219,6 +219,7 @@ class OrderSyncWorker(
             return false
         }
         imageUploadService.uploadImage(imageFile, imageType, skuOuterId)
+        imageFile.delete()
         return true
     }
 

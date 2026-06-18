@@ -13,7 +13,7 @@ import com.kuaimai.pda.data.db.entity.ProductImageEntity
 
 /**
  * 快麦取货通 Room 数据库
- * version = 1，禁止 fallbackToDestructiveMigration
+ * version = 2，禁止 fallbackToDestructiveMigration
  */
 @Database(
     entities = [

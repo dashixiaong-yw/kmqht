@@ -148,8 +148,12 @@ def save_kuaimai_config() -> None:
         logger.error(f"保存快麦凭证失败: {e}")
 
 
+_watcher_task: Optional[asyncio.Task] = None
+
+
 def start_config_watcher() -> None:
     """启动配置文件热重载监控"""
+    global _watcher_task
     import asyncio
 
     async def _watch_config() -> None:
@@ -171,10 +175,19 @@ def start_config_watcher() -> None:
 
     try:
         loop = asyncio.get_event_loop()
-        loop.create_task(_watch_config())
+        _watcher_task = loop.create_task(_watch_config())
         logger.info("配置文件热重载监控已启动")
     except RuntimeError as e:
         logger.warning(f"启动配置监控失败: {e}")
+
+
+def stop_config_watcher() -> None:
+    """停止配置文件热重载监控"""
+    global _watcher_task
+    if _watcher_task:
+        _watcher_task.cancel()
+        _watcher_task = None
+        logger.info("配置文件热重载监控已停止")
 
 
 def check_session_warning() -> None:

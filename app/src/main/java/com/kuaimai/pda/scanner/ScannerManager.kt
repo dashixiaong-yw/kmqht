@@ -64,6 +64,11 @@ class ScannerManager @Inject constructor() {
     fun register(context: Context) {
         if (isRegistered) return
 
+        // 从 SharedPreferences 读取用户设置
+        val prefs = context.getSharedPreferences("kuaimai_settings", Context.MODE_PRIVATE)
+        soundEnabled = prefs.getBoolean("scan_sound", true)
+        vibrationEnabled = prefs.getBoolean("scan_vibration", true)
+
         // 初始化震动器
         vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
