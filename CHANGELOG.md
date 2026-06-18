@@ -1,5 +1,10 @@
 # 快麦取货通 - 变更日志
 
+## 1.48 (2026-06-18)
+
+### 修复
+- P0: system.py downloadUrl路径从 `/apk-download/{apkFileName}` 改为 `/api/app-version/download` — 修复内网穿透场景扫码下载APK返回404的问题（根因：v1.47新增的/download路由路径是/api/app-version/download，但生成URL时写成了不存在的/apk-download/路径）
+
 ## 1.47 (2026-06-18)
 
 ### 修复

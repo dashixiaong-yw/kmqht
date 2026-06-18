@@ -98,7 +98,7 @@ def get_app_version(request: Request) -> AppVersionResponse:
 
     return AppVersionResponse(
         latestVersion=info.get("currentVersion", ""),
-        downloadUrl=f"{base_url}/apk-download/{info.get('apkFileName', '')}",
+        downloadUrl=f"{base_url}/api/app-version/download",
         updateNotes=info.get("updateNotes", ""),
         forceUpdate=info.get("forceUpdate", False),
         apkSize=apk_size,
@@ -136,7 +136,7 @@ def get_app_version_qrcode(request: Request) -> dict:
         return {"success": False, "message": "暂无已分发的版本", "qrcode": ""}
 
     base_url = SERVER_URL.rstrip("/") if SERVER_URL else str(request.base_url).rstrip("/")
-    download_url = f"{base_url}/apk-download/{info.get('apkFileName', '')}"
+    download_url = f"{base_url}/api/app-version/download"
     qr_base64 = generate_qr_base64(download_url)
 
     return {"success": True, "qrcode": qr_base64}
