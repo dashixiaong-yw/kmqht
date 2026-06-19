@@ -3,12 +3,14 @@ ARG BUILD_VERSION
 WORKDIR /app
 
 ENV TZ=Asia/Shanghai
-RUN apk add --no-cache curl tzdata rust cargo && \
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
+    apk add --no-cache curl tzdata rust cargo && \
     ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
     echo "Asia/Shanghai" > /etc/timezone
 
 COPY requirements.txt .
 RUN --mount=type=cache,target=/root/.cache/pip \
+    PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/ \
     pip install -r requirements.txt && \
     apk del rust cargo
 
