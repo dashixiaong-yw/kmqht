@@ -11,6 +11,8 @@ import com.kuaimai.pda.data.api.dto.UpdateUserRequest
 import com.kuaimai.pda.data.api.dto.UserListResponse
 import com.kuaimai.pda.data.api.dto.UserResponse
 import com.kuaimai.pda.util.PrefsKeys
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -49,6 +51,34 @@ interface UserRepository {
 
     /** 获取最近一次登录结果（含mustChangePassword标志） */
     fun getLoginResult(): LoginResponse?
+
+    // ↓↓↓ 记住密码相关（全部本地加密存储） ↓↓↓
+
+    /** 是否启用了"记住密码" */
+    fun isSavePasswordEnabled(): Boolean
+
+    /** 设置"记住密码"开关 */
+    fun setSavePasswordEnabled(enabled: Boolean)
+
+    /** 获取已保存的用户名 */
+    fun getSavedUsername(): String
+
+    /** 获取已保存的密码 */
+    fun getSavedPassword(): String
+
+    /** 保存账号密码（给当前已勾选记住密码的用户） */
+    fun saveCredentials(username: String, password: String)
+
+    /** 清除已保存的账号密码 */
+    fun clearSavedCredentials()
+
+    // ↓↓↓ 登录历史相关（全部本地加密存储） ↓↓↓
+
+    /** 获取登录历史（按最近使用降序，最近10条） */
+    fun getLoginHistory(): List<String>
+
+    /** 将登录成功的用户名加入历史（去重、移到列首、限10条） */
+    fun saveToLoginHistory(username: String)
 
     /** 获取用户列表（需settings权限） */
     suspend fun getUsers(): Result<UserListResponse>
@@ -302,5 +332,71 @@ class UserRepositoryImpl @Inject constructor(
             .apply()
         _currentUser.value = null
         Log.i(TAG, "本地用户数据已清除")
+    }
+
+    // ↓↓↓ 记住密码实现 ↓↓↓
+
+    override fun isSavePasswordEnabled(): Boolean {
+        return prefs.getBoolean(PrefsKeys.KEY_SAVE_PASSWORD, false)
+    }
+
+    override fun setSavePasswordEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(PrefsKeys.KEY_SAVE_PASSWORD, enabled).apply()
+    }
+
+    override fun getSavedUsername(): String {
+        return prefs.getString(PrefsKeys.KEY_SAVED_USERNAME, "") ?: ""
+    }
+
+    override fun getSavedPassword(): String {
+        return prefs.getString(PrefsKeys.KEY_SAVED_PASSWORD, "") ?: ""
+    }
+
+    override fun saveCredentials(username: String, password: String) {
+        prefs.edit()
+            .putString(PrefsKeys.KEY_SAVED_USERNAME, username)
+            .putString(PrefsKeys.KEY_SAVED_PASSWORD, password)
+            .apply()
+    }
+
+    override fun clearSavedCredentials() {
+        prefs.edit()
+            .remove(PrefsKeys.KEY_SAVED_USERNAME)
+            .remove(PrefsKeys.KEY_SAVED_PASSWORD)
+            .apply()
+    }
+
+    // ↓↓↓ 登录历史实现 ↓↓↓
+
+    private val gson = Gson()
+
+    override fun getLoginHistory(): List<String> {
+        val json = prefs.getString(PrefsKeys.KEY_LOGIN_HISTORY, null) ?: return emptyList()
+        return try {
+            val type = object : TypeToken<List<String>>() {}.type
+            gson.fromJson(json, type) ?: emptyList()
+        } catch (e: Exception) {
+            Log.w(TAG, "解析登录历史失败: ${e.message}")
+            emptyList()
+        }
+    }
+
+    override fun saveToLoginHistory(username: String) {
+        val json = prefs.getString(PrefsKeys.KEY_LOGIN_HISTORY, null)
+        val list = if (json != null) {
+            try {
+                val type = object : TypeToken<MutableList<String>>() {}.type
+                gson.fromJson<MutableList<String>>(json, type) ?: mutableListOf()
+            } catch (e: Exception) {
+                Log.w(TAG, "解析登录历史失败，重置: ${e.message}")
+                mutableListOf()
+            }
+        } else {
+            mutableListOf()
+        }
+        list.remove(username)
+        list.add(0, username)
+        if (list.size > 10) list.removeAt(list.size - 1)
+        prefs.edit().putString(PrefsKeys.KEY_LOGIN_HISTORY, gson.toJson(list)).apply()
     }
 }

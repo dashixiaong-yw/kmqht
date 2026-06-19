@@ -2,20 +2,27 @@ package com.kuaimai.pda.ui.login
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -24,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,7 +67,22 @@ fun LoginScreen(
     var confirmPassword by remember { mutableStateOf("") }
     var changePasswordError by remember { mutableStateOf("") }
     var isChangingPassword by remember { mutableStateOf(false) }
+    var savePasswordChecked by remember { mutableStateOf(false) }
+    var savedUsername by remember { mutableStateOf("") }
+    val loginHistory = remember { mutableStateListOf<String>() }
+    var dropdownExpanded by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    // 页面加载时读取本地保存的凭据和历史
+    LaunchedEffect(Unit) {
+        savePasswordChecked = userRepository.isSavePasswordEnabled()
+        savedUsername = userRepository.getSavedUsername()
+        if (savePasswordChecked && savedUsername.isNotEmpty()) {
+            username = savedUsername
+            password = userRepository.getSavedPassword()
+        }
+        loginHistory.addAll(userRepository.getLoginHistory())
+    }
 
     Scaffold(
         topBar = {
@@ -89,25 +112,58 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // 用户名输入
-            OutlinedTextField(
-                value = username,
-                onValueChange = {
-                    username = it
-                    errorMessage = ""
-                },
-                label = { Text("用户名") },
-                leadingIcon = {
-                    Icon(
-                        Icons.Default.Person,
-                        contentDescription = "用户名",
-                        modifier = Modifier.size(24.dp)
-                    )
-                },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading
-            )
+            // 用户名输入（带登录历史下拉）
+            ExposedDropdownMenuBox(
+                expanded = dropdownExpanded && loginHistory.isNotEmpty(),
+                onExpandedChange = { if (loginHistory.isNotEmpty()) dropdownExpanded = it }
+            ) {
+                OutlinedTextField(
+                    value = username,
+                    onValueChange = { newValue ->
+                        username = newValue
+                        errorMessage = ""
+                        if (newValue != savedUsername && password.isNotEmpty()) {
+                            password = ""
+                        }
+                        dropdownExpanded = newValue.isEmpty() && loginHistory.isNotEmpty()
+                    },
+                    label = { Text("用户名") },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = "用户名",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = dropdownExpanded)
+                    },
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
+                    enabled = !isLoading
+                )
+                ExposedDropdownMenu(
+                    expanded = dropdownExpanded && loginHistory.isNotEmpty(),
+                    onDismissRequest = { dropdownExpanded = false }
+                ) {
+                    loginHistory.forEach { historyUsername ->
+                        DropdownMenuItem(
+                            text = { Text(historyUsername) },
+                            onClick = {
+                                username = historyUsername
+                                dropdownExpanded = false
+                                if (historyUsername != savedUsername) {
+                                    password = ""
+                                } else if (savePasswordChecked) {
+                                    password = userRepository.getSavedPassword()
+                                }
+                            }
+                        )
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -131,6 +187,27 @@ fun LoginScreen(
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !isLoading
             )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // 记住密码
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = savePasswordChecked,
+                    onCheckedChange = { savePasswordChecked = it },
+                    colors = CheckboxDefaults.colors(checkedColor = BrandBlue),
+                    enabled = !isLoading
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "记住密码",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 

@@ -21,4 +21,10 @@ object PrefsKeys {
     // 服务器配置相关（EncryptedSharedPreferences）
     const val KEY_BASE_URL = "base_url"
     const val KEY_SERVER_URL = "server_url"
+
+    // 登录页面凭据相关（EncryptedSharedPreferences）
+    const val KEY_SAVE_PASSWORD = "save_password"       // 是否记住密码
+    const val KEY_SAVED_USERNAME = "saved_username"     // 保存的用户名
+    const val KEY_SAVED_PASSWORD = "saved_password"     // 保存的密码
+    const val KEY_LOGIN_HISTORY = "login_history"       // 登录历史（Gson序列化 List<String>）
 }

@@ -1,5 +1,12 @@
 # 快麦取货通 - 变更日志
 
+## 1.54 (2026-06-19)
+
+### 修复
+- P0: upload_app_version 返回版本信息（latestVersion/apkSize/publishedAt等）直接在前端渲染，不再依赖后端二次读取JSON文件 — 修复NAS/Docker文件系统延迟导致首次上传后无分发按钮
+- P0: get_app_version 增加APK文件存在性检查 — 修复版本JSON有记录但APK文件缺失时仍返回版本信息导致下载404
+- P0: 新增 renderApkCard() 前端函数 — 上传成功后直接使用响应数据渲染版本卡片，消除文件系统写后读不一致问题
+
 ## 1.53 (2026-06-19)
 
 ### 修复

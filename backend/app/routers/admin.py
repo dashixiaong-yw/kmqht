@@ -81,7 +81,16 @@ def upload_app_version(
         del info["publishedAt"]
     _save_version_info(info)
     logger.info(f"用户 {user.get('username', '?')} 上传了新版本 {latestVersion}")
-    return {"success": True, "message": "上传成功，点击分发后所有PDA将收到更新"}
+    return {
+        "success": True,
+        "message": "上传成功，点击分发后所有PDA将收到更新",
+        "latestVersion": latestVersion,
+        "apkFileName": apk_filename,
+        "updateNotes": updateNotes,
+        "forceUpdate": forceUpdate,
+        "apkSize": len(content),
+        "publishedAt": "",
+    }
 
 
 @router.post("/api/app-version/publish")
@@ -775,12 +784,38 @@ async function uploadApk() {{
   try {{
     const r = await api('/api/app-version/upload', {{ method: 'POST', body: formData, headers: {{}} }});
     alert(r.message || '上传成功');
-    loadApk();
+    if (r.latestVersion) {{
+      renderApkCard(r);
+    }} else {{
+      loadApk();
+    }}
   }} catch(e) {{
     alert('上传失败: ' + e.message);
   }} finally {{
     btn.disabled = false; btn.textContent = '上传';
   }}
+}}
+
+function renderApkCard(r) {{
+  const container = document.getElementById('apkStatus');
+  const uploadSection = document.getElementById('apkUploadSection');
+  const forceLabel = r.forceUpdate ? '<span class="badge badge-red">强制更新</span>' : '<span class="badge badge-green">可选更新</span>';
+  const sizeStr = r.apkSize ? (r.apkSize / 1024 / 1024).toFixed(1) + ' MB' : '未知';
+  const publishedInfo = '<p style="font-size:13px;color:#dc2626;margin-top:4px">尚未分发</p>';
+  const publishBtn = '<button class="btn btn-success" onclick="publishApk()" style="margin-top:8px">立即分发</button>';
+  container.innerHTML = `
+    <div class="card">
+      <h3>当前版本信息</h3>
+      <p>版本号: <strong>${{escapeHtml(r.latestVersion)}}</strong> ${{forceLabel}}</p>
+      <p>APK 大小: ${{sizeStr}}</p>
+      <p>更新说明:</p>
+      <pre style="background:#f8fafc;padding:8px;border-radius:4px;font-size:13px;white-space:pre-wrap">${{escapeHtml(r.updateNotes || '无')}}</pre>
+      ${{publishedInfo}}
+      ${{publishBtn}}
+      <div id="apkQrCode"></div>
+    </div>
+  `;
+  uploadSection.style.display = 'block';
 }}
 
 async function publishApk() {{

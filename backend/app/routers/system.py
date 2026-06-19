@@ -92,6 +92,8 @@ def get_app_version(request: Request) -> AppVersionResponse:
         return AppVersionResponse(latestVersion="", downloadUrl="")
 
     apk_path = os.path.join(APK_DIR, info.get("apkFileName", ""))
+    if not os.path.exists(apk_path):
+        return AppVersionResponse(latestVersion="", downloadUrl="")
     apk_size = os.path.getsize(apk_path) if os.path.exists(apk_path) else 0
     # 优先用环境变量 SERVER_URL（兼容反向代理），否则从请求 Host 自动获取
     base_url = SERVER_URL.rstrip("/") if SERVER_URL else str(request.base_url).rstrip("/")
