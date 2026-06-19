@@ -41,15 +41,15 @@ def create_order(req: CreateOrderRequest, user: dict = Depends(get_current_user)
     # 查找当日该拣货区已有单号，递增序号
     # 转义SQL LIKE通配符，防止拣货区名称包含%或_导致意外匹配
     escaped_area_name = req.areaName.replace("%", "\\%").replace("_", "\\_")
-    prefix = f"{date_str}-{req.areaName}"
-    escaped_prefix = f"{date_str}-{escaped_area_name}"
+    prefix = f"{req.areaName}-{date_str}"
+    escaped_prefix = f"{escaped_area_name}-{date_str}"
     cursor.execute(
         "SELECT order_no FROM pick_orders WHERE order_no LIKE ? ESCAPE '\\' ORDER BY id DESC",
-        (f"{escaped_prefix}%",)
+        (f"{escaped_prefix}-%",)
     )
     existing = cursor.fetchall()
-    # 单号格式：yyyyMMdd-拣货区X（X从1开始递增）
-    order_no = f"{prefix}{len(existing) + 1}"
+    # 单号格式：拣货区-yyyyMMdd-X（X从1开始递增）
+    order_no = f"{prefix}-{len(existing) + 1}"
 
     # 默认12小时后过期
     expire_at = now + timedelta(hours=12)
@@ -71,10 +71,10 @@ def create_order(req: CreateOrderRequest, user: dict = Depends(get_current_user)
                 # 单号冲突，重新查询并生成
                 cursor.execute(
                     "SELECT order_no FROM pick_orders WHERE order_no LIKE ? ESCAPE '\\' ORDER BY id DESC",
-                    (f"{escaped_prefix}%",)
+                    (f"{escaped_prefix}-%",)
                 )
                 existing = cursor.fetchall()
-                order_no = f"{prefix}{len(existing) + 1}"
+                order_no = f"{prefix}-{len(existing) + 1}"
                 logger.warning(f"单号冲突，重试生成: {order_no} (attempt={attempt + 1})")
             else:
                 logger.error(f"创建取货单失败: {e}")

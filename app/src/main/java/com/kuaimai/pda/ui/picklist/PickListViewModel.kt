@@ -12,7 +12,10 @@ import com.kuaimai.pda.data.repository.UserRepository
 import com.kuaimai.pda.util.TimeUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -60,6 +63,10 @@ class PickListViewModel @Inject constructor(
     /** 删除确认弹窗 */
     private val _deleteTarget = MutableStateFlow<PickOrderEntity?>(null)
     val deleteTarget: StateFlow<PickOrderEntity?> = _deleteTarget.asStateFlow()
+
+    /** 创建成功后导航到详情页的事件 */
+    private val _navigateToOrderEvent = MutableSharedFlow<Long>()
+    val navigateToOrderEvent: SharedFlow<Long> = _navigateToOrderEvent.asSharedFlow()
 
     init {
         loadAreas()
@@ -143,6 +150,7 @@ class PickListViewModel @Inject constructor(
                 pickOrderRepository.insertOrder(response.toOrderEntity())
                 _showNewOrderDialog.value = false
                 loadActiveOrders()
+                _navigateToOrderEvent.emit(response.id)
             } catch (e: Exception) {
                 _errorMessage.value = "创建取货单失败: ${e.message}"
             } finally {

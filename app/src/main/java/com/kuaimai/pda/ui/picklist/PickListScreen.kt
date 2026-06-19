@@ -33,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -76,6 +77,13 @@ fun PickListScreen(
         errorMessage?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.clearError()
+        }
+    }
+
+    // 创建成功后自动跳转详情页
+    LaunchedEffect(Unit) {
+        viewModel.navigateToOrderEvent.collectLatest { orderId ->
+            onNavigateToDetail(orderId)
         }
     }
 
@@ -131,8 +139,8 @@ fun PickListScreen(
                     // F24: 按拣货区分组排序
                     val sortedActiveOrders = activeOrders.sortedWith(
                         compareBy<PickOrderEntity> {
-                            // 从orderNo中提取拣货区名称（格式: yyyyMMdd-拣货区X）
-                            it.orderNo.substringAfter("-", "未知")
+                            // 从orderNo中提取拣货区名称（格式: 拣货区-yyyyMMdd-X）
+                            it.orderNo.substringBefore("-", "未知")
                         }.thenByDescending { it.createdAt }
                     )
 
