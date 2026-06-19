@@ -9,11 +9,8 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from starlette.responses import JSONResponse
 
-from app.auth import ApiKeyMiddleware
 from app.config import (
-    API_KEY,
     APK_DIR,
     CORS_ORIGINS,
     IMAGE_DIR,
@@ -51,13 +48,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# API Key认证中间件
-if API_KEY:
-    app.add_middleware(ApiKeyMiddleware)
-    logger.info("API Key认证已启用")
-else:
-    logger.warning("API_KEY未配置，认证中间件未启用")
 
 # 注册路由
 app.include_router(admin.router)

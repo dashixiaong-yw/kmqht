@@ -1,4 +1,4 @@
-"""认证模块 - API Key中间件 + 用户Token校验 + 权限检查"""
+"""认证模块 - 用户Token校验 + 权限检查"""
 
 import hashlib
 import hmac
@@ -6,55 +6,13 @@ import logging
 from typing import List, Optional
 
 from fastapi import Depends, HTTPException, Request
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import JSONResponse
 
 from app.config import API_KEY
 from app.database import get_db
 
 logger = logging.getLogger(__name__)
 
-# 不需要认证的路径前缀（/images/匹配静态文件目录，/api/images/仍需认证）
-# /admin 精确匹配管理后台页面，避免误配 /admin-api 等路径
-SKIP_AUTH_PREFIXES = ("/images/", "/health", "/docs", "/redoc", "/openapi.json", "/setup", "/api/app-version/download", "/api/app-version/qrcode", "/api/app-version", "/apk/", "/api/users/login")
-
-# 全部有效权限代码
 VALID_PERMISSIONS = {"settings", "update_supplier", "update_remark", "manage_area_image", "manage_box_image"}
-
-
-class ApiKeyMiddleware(BaseHTTPMiddleware):
-    """API Key认证中间件"""
-
-    async def dispatch(self, request: Request, call_next):
-        # 管理后台页面精确匹配（不需要API Key）
-        if request.url.path == "/admin" or request.url.path.startswith("/setup"):
-            return await call_next(request)
-
-        # 跳过不需要认证的路径
-        for prefix in SKIP_AUTH_PREFIXES:
-            if request.url.path.startswith(prefix):
-                # /api/app-version 精确匹配（避免 upload/publish 绕过API Key）
-                if prefix == "/api/app-version" and request.url.path != "/api/app-version":
-                    break
-                return await call_next(request)
-
-        # 检查X-API-Key请求头
-        api_key = request.headers.get("X-API-Key", "")
-        if not api_key:
-            logger.warning(f"缺少API Key: {request.url.path}")
-            return JSONResponse(
-                status_code=401,
-                content={"success": False, "message": "缺少API Key"}
-            )
-
-        if not hmac.compare_digest(api_key, API_KEY):
-            logger.warning(f"API Key无效: {request.url.path}")
-            return JSONResponse(
-                status_code=403,
-                content={"success": False, "message": "API Key无效"}
-            )
-
-        return await call_next(request)
 
 
 def get_current_user(request: Request) -> dict:
