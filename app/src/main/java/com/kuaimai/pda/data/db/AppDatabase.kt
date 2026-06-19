@@ -22,7 +22,7 @@ import com.kuaimai.pda.data.db.entity.ProductImageEntity
         ProductImageEntity::class,
         PendingOperationEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {

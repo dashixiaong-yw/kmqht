@@ -75,6 +75,9 @@ class OrderResponse(BaseModel):
     createdAt: str
     completedAt: Optional[str] = None
     expireAt: str
+    createdBy: str = ""
+    assignedTo: str = ""
+    visibility: str = "private"
 
 
 class OrderDetailResponse(BaseModel):
@@ -88,6 +91,9 @@ class OrderDetailResponse(BaseModel):
     createdAt: str
     completedAt: Optional[str] = None
     expireAt: str
+    createdBy: str = ""
+    assignedTo: str = ""
+    visibility: str = "private"
     items: List[ItemResponse] = []
 
 

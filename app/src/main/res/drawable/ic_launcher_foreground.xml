@@ -1,65 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 启动图标前景 - 白色"取货"文字 -->
+<!-- 启动图标前景 - 粗体"取货"文字 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- "取"字 - 左侧 -->
-    <!-- 耳字旁 - 左竖 -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M20,32 L26,32 L26,78 L20,78 Z"/>
-    <!-- 耳字旁 - 右竖 -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M42,32 L48,32 L48,78 L42,78 Z"/>
-    <!-- 耳字旁 - 上横 -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M20,40 L48,40 L48,44 L20,44 Z"/>
-    <!-- 耳字旁 - 中横 -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M20,52 L48,52 L48,56 L20,56 Z"/>
-    <!-- 耳字旁 - 下横 -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M20,64 L48,64 L48,68 L20,68 Z"/>
-    <!-- 又部 - 横撇 -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M50,26 L58,26 L58,76 L50,76 Z"/>
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M46,68 L62,68 L62,74 L46,74 Z"/>
 
-    <!-- "货"字 - 右侧 -->
-    <!-- 亻部 -->
+    <!-- 粗体方正版 取货 -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M64,24 L70,24 L70,56 L64,56 Z"/>
-    <!-- 匕部 -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M74,28 L92,28 L92,34 L74,34 Z"/>
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M80,34 L86,34 L86,54 L80,54 Z"/>
-    <!-- 贝部 - 外框 -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M64,54 L94,54 L94,80 L64,80 Z"/>
-    <!-- 贝部 - 内横 -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M64,64 L94,64 L94,68 L64,68 Z"/>
-    <!-- 贝部 - 左撇 -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M66,76 L70,76 L70,88 L66,88 Z"/>
-    <!-- 贝部 - 右点 -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M88,76 L92,76 L92,88 L88,88 Z"/>
+        android:fillColor="#ffffff"
+        android:pathData="
+            M30,38 L30,74 L44,74 L44,60 L52,60 L52,74 L64,74 L64,38 L52,38 L52,48 L44,48 L44,38 Z
+            M64,38 L64,48 L76,48 L76,38 L88,38 L88,48 L76,48 L76,60 L88,60 L88,74 L64,74 Z
+        " />
+
 </vector>

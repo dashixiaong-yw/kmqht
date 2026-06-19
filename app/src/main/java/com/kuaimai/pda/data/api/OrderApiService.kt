@@ -91,6 +91,20 @@ interface OrderApiService {
         @Path("itemId") itemId: Long
     ): BaseResponse
 
+    /** 发布取货单到公共列表 */
+    @POST("api/orders/{orderId}/publish")
+    suspend fun publishOrder(
+        @Header("X-User-Token") token: String,
+        @Path("orderId") orderId: Long
+    ): BaseResponse
+
+    /** 领取公开取货单 */
+    @POST("api/orders/{orderId}/claim")
+    suspend fun claimOrder(
+        @Header("X-User-Token") token: String,
+        @Path("orderId") orderId: Long
+    ): BaseResponse
+
     /** 获取取货单供应商列表 */
     @GET("api/orders/{orderId}/suppliers")
     suspend fun getSuppliers(

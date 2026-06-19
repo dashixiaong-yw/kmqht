@@ -43,5 +43,15 @@ data class PickOrderEntity(
     val completedAt: Long? = null,
 
     @ColumnInfo(name = "expire_at")
-    val expireAt: Long
+    val expireAt: Long,
+
+    @ColumnInfo(name = "created_by")
+    val createdBy: String = "",
+
+    @ColumnInfo(name = "assigned_to")
+    val assignedTo: String = "",
+
+    /** 可见性：private/public */
+    @ColumnInfo(name = "visibility")
+    val visibility: String = "private",
 )

@@ -22,6 +22,14 @@ private val MIGRATION_1_2 = object : Migration(1, 2) {
     }
 }
 
+private val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE pick_order ADD COLUMN created_by TEXT NOT NULL DEFAULT ''")
+        db.execSQL("ALTER TABLE pick_order ADD COLUMN assigned_to TEXT NOT NULL DEFAULT ''")
+        db.execSQL("ALTER TABLE pick_order ADD COLUMN visibility TEXT NOT NULL DEFAULT 'private'")
+    }
+}
+
 /**
  * 数据库层依赖注入：Room Database + DAO
  */
@@ -40,7 +48,7 @@ object DatabaseModule {
             AppDatabase::class.java,
             "kuaimai_pda.db"
         )
-            .addMigrations(MIGRATION_1_2)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
             .build()
     }
 

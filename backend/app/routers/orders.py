@@ -59,9 +59,9 @@ def create_order(req: CreateOrderRequest, user: dict = Depends(get_current_user)
     for attempt in range(max_retries):
         try:
             cursor.execute(
-                """INSERT INTO pick_orders (order_no, status, completion_type, total_count, completed_count, created_at, expire_at)
-                   VALUES (?, 0, 0, 0, 0, ?, ?)""",
-                (order_no, format_beijing(now), format_beijing(expire_at))
+                """INSERT INTO pick_orders (order_no, status, completion_type, total_count, completed_count, created_at, expire_at, created_by, assigned_to, visibility)
+                   VALUES (?, 0, 0, 0, 0, ?, ?, ?, ?, 'private')""",
+                (order_no, format_beijing(now), format_beijing(expire_at), user["username"], user["username"])
             )
             db.commit()
             break
@@ -87,33 +87,67 @@ def create_order(req: CreateOrderRequest, user: dict = Depends(get_current_user)
 
 @router.get("", response_model=OrderListResponse)
 def list_orders(status: Optional[int] = Query(None, description="状态过滤: 0=进行中, 1=已完成"), user: dict = Depends(get_current_user)) -> OrderListResponse:
-    """获取取货单列表，按创建时间倒序"""
+    """获取取货单列表，按访问权限+创建时间倒序"""
     db = get_db()
     cursor = db.cursor()
+    username = user["username"]
+
+    base_sql = "SELECT * FROM pick_orders WHERE (assigned_to = ? OR (visibility = 'public' AND assigned_to = ''))"
+    params: list = [username]
 
     if status is not None:
-        cursor.execute(
-            "SELECT * FROM pick_orders WHERE status = ? ORDER BY created_at DESC",
-            (status,)
-        )
-    else:
-        cursor.execute("SELECT * FROM pick_orders ORDER BY created_at DESC")
+        base_sql += " AND status = ?"
+        params.append(status)
+
+    base_sql += " ORDER BY created_at DESC"
+    cursor.execute(base_sql, params)
 
     rows = cursor.fetchall()
     orders = [_row_to_order_response(row) for row in rows]
     return OrderListResponse(data=orders)
 
 
+@router.post("/{order_id}/publish", response_model=BaseResponse)
+def publish_order(order_id: int, user: dict = Depends(get_current_user)) -> BaseResponse:
+    """发布取货单到公共列表（仅创建者可操作）"""
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM pick_orders WHERE id = ?", (order_id,))
+    row = cursor.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="取货单不存在")
+    if row["created_by"] != user["username"]:
+        raise HTTPException(status_code=403, detail="仅创建者可发布此取货单")
+    cursor.execute(
+        "UPDATE pick_orders SET visibility = 'public', assigned_to = '' WHERE id = ?",
+        (order_id,)
+    )
+    db.commit()
+    return BaseResponse(message="取货单已发布")
+
+
+@router.post("/{order_id}/claim", response_model=BaseResponse)
+def claim_order(order_id: int, user: dict = Depends(get_current_user)) -> BaseResponse:
+    """领取公开取货单（仅可领取未被领取的）"""
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute(
+        "UPDATE pick_orders SET visibility = 'private', assigned_to = ? WHERE id = ? AND visibility = 'public' AND assigned_to = ''",
+        (user["username"], order_id)
+    )
+    if cursor.rowcount == 0:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="此取货单已被其他用户领取")
+    db.commit()
+    return BaseResponse(message="取货单领取成功")
+
+
 @router.get("/{order_id}", response_model=OrderDetailResponse)
 def get_order(order_id: int, supplierName: Optional[str] = Query(None, description="供应商名称过滤"), user: dict = Depends(get_current_user)) -> OrderDetailResponse:
     """获取取货单详情（含明细），支持供应商过滤"""
+    order_row = _check_order_access(order_id, user["username"])
     db = get_db()
     cursor = db.cursor()
-
-    cursor.execute("SELECT * FROM pick_orders WHERE id = ?", (order_id,))
-    order_row = cursor.fetchone()
-    if not order_row:
-        raise HTTPException(status_code=404, detail="取货单不存在")
 
     # 查询明细
     if supplierName:
@@ -141,6 +175,9 @@ def get_order(order_id: int, supplierName: Optional[str] = Query(None, descripti
         createdAt=order.createdAt,
         completedAt=order.completedAt,
         expireAt=order.expireAt,
+        createdBy=order.createdBy,
+        assignedTo=order.assignedTo,
+        visibility=order.visibility,
         items=items,
     )
 
@@ -148,15 +185,13 @@ def get_order(order_id: int, supplierName: Optional[str] = Query(None, descripti
 @router.post("/{order_id}/items", response_model=ItemResponse)
 async def add_item(order_id: int, req: AddItemRequest, user: dict = Depends(get_current_user)) -> ItemResponse:
     """添加取货明细，后端查询快麦API并缓存"""
+    _check_order_access(order_id, user["username"])
     db = get_db()
     cursor = db.cursor()
 
-    # 检查取货单是否存在
-    cursor.execute("SELECT * FROM pick_orders WHERE id = ?", (order_id,))
+    # 检查取货单状态
+    cursor.execute("SELECT status FROM pick_orders WHERE id = ?", (order_id,))
     order_row = cursor.fetchone()
-    if not order_row:
-        raise HTTPException(status_code=404, detail="取货单不存在")
-
     if order_row["status"] == 1:
         raise HTTPException(status_code=400, detail="取货单已完成，无法添加明细")
 
@@ -216,6 +251,7 @@ async def add_item(order_id: int, req: AddItemRequest, user: dict = Depends(get_
 @router.put("/{order_id}/items/{item_id}/complete", response_model=BaseResponse)
 def complete_item(order_id: int, item_id: int, user: dict = Depends(get_current_user)) -> BaseResponse:
     """完成取货明细（幂等操作）"""
+    _check_order_access(order_id, user["username"])
     db = get_db()
     cursor = db.cursor()
 
@@ -265,6 +301,7 @@ def complete_item(order_id: int, item_id: int, user: dict = Depends(get_current_
 @router.put("/{order_id}/items/{item_id}/restore", response_model=BaseResponse)
 def restore_item(order_id: int, item_id: int, user: dict = Depends(get_current_user)) -> BaseResponse:
     """恢复取货明细（撤销完成）"""
+    _check_order_access(order_id, user["username"])
     db = get_db()
     cursor = db.cursor()
 
@@ -313,13 +350,12 @@ def restore_item(order_id: int, item_id: int, user: dict = Depends(get_current_u
 @router.put("/{order_id}/complete-all", response_model=BaseResponse)
 def complete_all_items(order_id: int, user: dict = Depends(get_current_user)) -> BaseResponse:
     """批量完成取货单所有明细"""
+    _check_order_access(order_id, user["username"])
     db = get_db()
     cursor = db.cursor()
 
     cursor.execute("SELECT * FROM pick_orders WHERE id = ?", (order_id,))
     order_row = cursor.fetchone()
-    if not order_row:
-        raise HTTPException(status_code=404, detail="取货单不存在")
 
     # 空取货单不允许完成
     if order_row["total_count"] == 0:
@@ -353,14 +389,16 @@ def complete_all_items(order_id: int, user: dict = Depends(get_current_user)) ->
 
 @router.delete("/{order_id}", response_model=BaseResponse)
 def delete_order(order_id: int, user: dict = Depends(get_current_user)) -> BaseResponse:
-    """删除取货单（仅允许删除未完成的取货单，级联删除明细）"""
+    """删除取货单（仅创建者可删除，级联删除明细）"""
+    _check_order_access(order_id, user["username"])
     db = get_db()
     cursor = db.cursor()
 
-    cursor.execute("SELECT id, status FROM pick_orders WHERE id = ?", (order_id,))
+    cursor.execute("SELECT id, status, created_by FROM pick_orders WHERE id = ?", (order_id,))
     order_row = cursor.fetchone()
-    if not order_row:
-        raise HTTPException(status_code=404, detail="取货单不存在")
+
+    if order_row["created_by"] != user["username"]:
+        raise HTTPException(status_code=403, detail="仅创建者可删除此取货单")
 
     # 不允许删除已完成的取货单
     if order_row["status"] == 1:
@@ -398,6 +436,7 @@ def delete_order(order_id: int, user: dict = Depends(get_current_user)) -> BaseR
 @router.delete("/{order_id}/items/{item_id}", response_model=BaseResponse)
 def delete_item(order_id: int, item_id: int, user: dict = Depends(get_current_user)) -> BaseResponse:
     """删除取货明细"""
+    _check_order_access(order_id, user["username"])
     db = get_db()
     cursor = db.cursor()
 
@@ -450,6 +489,7 @@ def delete_item(order_id: int, item_id: int, user: dict = Depends(get_current_us
 @router.get("/{order_id}/suppliers", response_model=List[str])
 def get_suppliers(order_id: int, user: dict = Depends(get_current_user)) -> List[str]:
     """获取取货单中的供应商列表（去重）"""
+    _check_order_access(order_id, user["username"])
     db = get_db()
     cursor = db.cursor()
 
@@ -475,7 +515,25 @@ def _row_to_order_response(row: sqlite3.Row) -> OrderResponse:
         createdAt=row["created_at"],
         completedAt=row["completed_at"],
         expireAt=row["expire_at"],
+        createdBy=row["created_by"],
+        assignedTo=row["assigned_to"],
+        visibility=row["visibility"],
     )
+
+
+def _check_order_access(order_id: int, username: str) -> sqlite3.Row:
+    """检查当前用户是否有权访问此取货单，通过返回行数据，不通过抛403"""
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM pick_orders WHERE id = ?", (order_id,))
+    row = cursor.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="取货单不存在")
+    if row["assigned_to"] != username and not (
+        row["visibility"] == "public" and not row["assigned_to"]
+    ):
+        raise HTTPException(status_code=403, detail="无权操作此取货单")
+    return row
 
 
 def _row_to_item_response(row: sqlite3.Row) -> ItemResponse:

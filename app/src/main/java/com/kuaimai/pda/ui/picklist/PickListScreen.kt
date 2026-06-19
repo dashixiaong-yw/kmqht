@@ -148,7 +148,11 @@ fun PickListScreen(
                             PickOrderCard(
                                 order = order,
                                 onClick = { onNavigateToDetail(order.id) },
-                                onLongPress = { viewModel.requestDelete(order) }
+                                onLongPress = { viewModel.requestDelete(order) },
+                                onPublish = if (order.visibility == "private" && order.assignedTo == order.createdBy)
+                                    { { viewModel.publishOrder(order.id) } } else null,
+                                onClaim = if (order.visibility == "public")
+                                    { { viewModel.claimOrder(order.id) } } else null
                             )
                         }
                     }

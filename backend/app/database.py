@@ -67,7 +67,10 @@ def init_db() -> None:
             completed_count INTEGER NOT NULL DEFAULT 0 CHECK(completed_count >= 0),
             created_at DATETIME NOT NULL,
             completed_at DATETIME,
-            expire_at DATETIME NOT NULL
+            expire_at DATETIME NOT NULL,
+            created_by VARCHAR(32) NOT NULL DEFAULT '',
+            assigned_to VARCHAR(32) NOT NULL DEFAULT '',
+            visibility VARCHAR(16) NOT NULL DEFAULT 'private'
         )
     """)
 
@@ -181,6 +184,23 @@ def init_db() -> None:
     user_count = cursor.fetchone()[0]
     if user_count == 0:
         _init_default_admin(cursor)
+
+    # 迁移: pick_orders 表追加新列（兼容已有数据库）
+    migrations = [
+        "ALTER TABLE pick_orders ADD COLUMN created_by VARCHAR(32) NOT NULL DEFAULT ''",
+        "ALTER TABLE pick_orders ADD COLUMN assigned_to VARCHAR(32) NOT NULL DEFAULT ''",
+        "ALTER TABLE pick_orders ADD COLUMN visibility VARCHAR(16) NOT NULL DEFAULT 'private'",
+    ]
+    for sql in migrations:
+        try:
+            cursor.execute(sql)
+            col_name = sql.split("ADD COLUMN")[1].strip().split()[0]
+            logger.info(f"数据库迁移: pick_orders 已添加 {col_name} 列")
+        except sqlite3.OperationalError as e:
+            if "duplicate column" in str(e).lower():
+                pass
+            else:
+                raise
 
     conn.commit()
     logger.info("数据库表初始化完成")

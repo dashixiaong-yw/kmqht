@@ -12,16 +12,14 @@ import com.kuaimai.pda.data.repository.UserRepository
 import com.kuaimai.pda.util.TimeUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
  * 取货列表ViewModel
- * 管理取货单列表数据、新建取货单、删除取货单
+ * 管理取货单列表数据、新建取货单、删除取货单、发布/领取
  */
 @HiltViewModel
 class PickListViewModel @Inject constructor(
@@ -31,10 +29,9 @@ class PickListViewModel @Inject constructor(
     private val userRepository: UserRepository
 ) : ViewModel() {
 
-    /** 进行中的取货单列表 */
-    val activeOrders: StateFlow<List<PickOrderEntity>> =
-        pickOrderRepository.getOrdersByStatus(0)
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    /** 进行中的取货单列表（从后端API获取） */
+    private val _activeOrders = MutableStateFlow<List<PickOrderEntity>>(emptyList())
+    val activeOrders: StateFlow<List<PickOrderEntity>> = _activeOrders.asStateFlow()
 
     /** 已完成的取货单列表（7天内） */
     private val _completedOrders = MutableStateFlow<List<PickOrderEntity>>(emptyList())
@@ -66,7 +63,25 @@ class PickListViewModel @Inject constructor(
 
     init {
         loadAreas()
+        loadActiveOrders()
         loadCompletedOrders()
+    }
+
+    /**
+     * 加载进行中的取货单列表（从后端API获取）
+     */
+    fun loadActiveOrders() {
+        viewModelScope.launch {
+            try {
+                val token = userRepository.getToken()
+                val response = orderApiService.listOrders(token, status = 0)
+                _activeOrders.value = response.data.map { it.toOrderEntity() }
+            } catch (e: Exception) {
+                Log.e("PickListViewModel", "加载取货单列表失败: ${e.message}", e)
+                _errorMessage.value = "加载取货单列表失败: ${e.message?.take(80) ?: "未知错误"}"
+                _activeOrders.value = emptyList()
+            }
+        }
     }
 
     /**
@@ -91,11 +106,13 @@ class PickListViewModel @Inject constructor(
      */
     private fun loadCompletedOrders() {
         viewModelScope.launch {
-            val sevenDaysAgo = TimeUtils.now() - TimeUtils.COMPLETED_ORDER_RANGE_MS
-            pickOrderRepository.getCompletedOrders(sevenDaysAgo)
-                .collect { orders ->
-                    _completedOrders.value = orders
-                }
+            try {
+                val token = userRepository.getToken()
+                val response = orderApiService.listOrders(token, status = 1)
+                _completedOrders.value = response.data.map { it.toOrderEntity() }
+            } catch (e: Exception) {
+                Log.e("PickListViewModel", "加载已完成取货单失败: ${e.message}", e)
+            }
         }
     }
 
@@ -123,21 +140,47 @@ class PickListViewModel @Inject constructor(
             try {
                 val token = userRepository.getToken()
                 val response = orderApiService.createOrder(token, CreateOrderRequest(areaName))
-                // 同步到本地数据库（使用后端返回的真实时间）
-                val order = PickOrderEntity(
-                    id = response.id,
-                    orderNo = response.orderNo,
-                    status = response.status,
-                    completionType = response.completionType,
-                    totalCount = response.totalCount,
-                    completedCount = response.completedCount,
-                    createdAt = TimeUtils.parseBeijingTime(response.createdAt).let { if (it > 0) it else TimeUtils.now() },
-                    expireAt = TimeUtils.parseBeijingTime(response.expireAt).let { if (it > 0) it else TimeUtils.now() + TimeUtils.DEFAULT_EXPIRE_MS }
-                )
-                pickOrderRepository.insertOrder(order)
+                pickOrderRepository.insertOrder(response.toOrderEntity())
                 _showNewOrderDialog.value = false
+                loadActiveOrders()
             } catch (e: Exception) {
                 _errorMessage.value = "创建取货单失败: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * 发布取货单到公共列表
+     */
+    fun publishOrder(orderId: Long) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val token = userRepository.getToken()
+                orderApiService.publishOrder(token, orderId)
+                loadActiveOrders()
+            } catch (e: Exception) {
+                _errorMessage.value = "发布取货单失败: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * 领取公开取货单
+     */
+    fun claimOrder(orderId: Long) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val token = userRepository.getToken()
+                orderApiService.claimOrder(token, orderId)
+                loadActiveOrders()
+            } catch (e: Exception) {
+                _errorMessage.value = "领取取货单失败: ${e.message}"
             } finally {
                 _isLoading.value = false
             }
@@ -181,10 +224,9 @@ class PickListViewModel @Inject constructor(
             try {
                 val token = userRepository.getToken()
                 orderApiService.deleteOrder(token, order.id)
-                // API成功：直接删除本地
                 pickOrderRepository.deleteOrder(order)
+                loadActiveOrders()
             } catch (e: Exception) {
-                // API失败：乐观删除+入队
                 pickOrderRepository.deleteOrderWithQueue(order)
                 _errorMessage.value = "删除取货单失败，将在网络恢复后重试: ${e.message}"
             } finally {
