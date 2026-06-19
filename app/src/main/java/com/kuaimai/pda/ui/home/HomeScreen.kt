@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,9 +20,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -55,22 +53,15 @@ import com.kuaimai.pda.ui.theme.BorderGray
 import com.kuaimai.pda.ui.theme.BrandBlue
 import com.kuaimai.pda.ui.theme.DangerBg
 import com.kuaimai.pda.ui.theme.PrimaryLightBg
-import com.kuaimai.pda.ui.theme.PrimaryLightText
 import com.kuaimai.pda.ui.theme.SurfaceGray
 import com.kuaimai.pda.ui.theme.SurfaceWhite
+import com.kuaimai.pda.ui.theme.TextPrimary
 import com.kuaimai.pda.ui.theme.TextSecondary
 import com.kuaimai.pda.ui.theme.WarningBg
 import com.kuaimai.pda.ui.theme.WarningText
 import com.kuaimai.pda.util.AppConstants
 import com.kuaimai.pda.util.NetworkMonitor
 
-/**
- * 主页：居中Logo + 模块入口卡片
- * 无底部导航栏，使用卡片式入口
- * 首次使用显示引导提示条
- * 会话即将过期显示黄色警告条
- * Token刷新失败弹出对话框
- */
 @Composable
 fun HomeScreen(
     userRepository: UserRepository,
@@ -81,7 +72,6 @@ fun HomeScreen(
     prefs: SharedPreferences? = null,
     authRepository: AuthRepository? = null
 ) {
-    // 网络监听注册/注销
     DisposableEffect(networkMonitor) {
         networkMonitor?.register()
         onDispose {
@@ -89,12 +79,10 @@ fun HomeScreen(
         }
     }
 
-    // 首次使用引导提示
     var showGuide by remember {
         mutableStateOf(prefs?.getBoolean(KEY_GUIDE_SHOWN, false) != true)
     }
 
-    // 会话即将过期预警（距过期<5天，每小时刷新）
     var showSessionWarning by remember { mutableStateOf(false) }
     var sessionWarningText by remember { mutableStateOf("") }
     LaunchedEffect(Unit) {
@@ -125,7 +113,6 @@ fun HomeScreen(
         }
     }
 
-    // Token刷新失败弹窗
     var showTokenExpiredDialog by remember { mutableStateOf(false) }
     LaunchedEffect(authRepository) {
         if (authRepository != null) {
@@ -140,7 +127,6 @@ fun HomeScreen(
             .fillMaxSize()
             .background(SurfaceWhite)
     ) {
-        // 网络状态指示器
         if (networkMonitor != null) {
             NetworkStatusIndicator(networkMonitor = networkMonitor)
         }
@@ -154,19 +140,17 @@ fun HomeScreen(
         ) {
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Logo图标框
             Box(
                 modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(16.dp))
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(14.dp))
                     .background(PrimaryLightBg),
                 contentAlignment = Alignment.Center
             ) {
-                Text("📦", fontSize = 28.sp)
+                Text("📦", fontSize = 24.sp)
             }
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Logo区域 - 居中
             Text(
                 text = "快麦取货通",
                 style = MaterialTheme.typography.headlineLarge.copy(
@@ -183,7 +167,6 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 首次使用引导提示条（所有用户可见）
             if (showGuide) {
                 Row(
                     modifier = Modifier
@@ -219,7 +202,6 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // 会话即将过期警告条
             if (showSessionWarning) {
                 Row(
                     modifier = Modifier
@@ -254,63 +236,38 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
-            // 取货列表入口 - 水平布局
             ModuleCard(
                 title = "取货列表",
                 description = "查看和管理取货单",
                 iconBgColor = PrimaryLightBg,
-                icon = {
-                    Icon(
-                        Icons.Default.List,
-                        contentDescription = "取货列表",
-                        modifier = Modifier.size(32.dp),
-                        tint = BrandBlue
-                    )
-                },
+                icon = { Text("📋", fontSize = 24.sp) },
                 onClick = onNavigateToPickList
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
-            // 商品详情入口 - 水平布局
             ModuleCard(
                 title = "商品详情",
                 description = "扫码查看规格信息",
                 iconBgColor = DangerBg,
-                icon = {
-                    Icon(
-                        Icons.Default.Search,
-                        contentDescription = "商品详情",
-                        modifier = Modifier.size(32.dp),
-                        tint = BrandBlue
-                    )
-                },
+                icon = { Text("🔍", fontSize = 24.sp) },
                 onClick = onNavigateToProduct
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
-            // 设置入口（所有用户可见）
             ModuleCard(
                 title = "设置",
                 description = "扫码方式、反馈开关",
                 iconBgColor = SurfaceGray,
-                    icon = {
-                        Icon(
-                            Icons.Default.Settings,
-                            contentDescription = "设置",
-                            modifier = Modifier.size(32.dp),
-                            tint = BrandBlue
-                        )
-                    },
-                    onClick = onNavigateToSettings
-                )
+                icon = { Text("⚙️", fontSize = 24.sp) },
+                onClick = onNavigateToSettings
+            )
         }
     }
 
-    // Token刷新失败弹窗
     if (showTokenExpiredDialog) {
         AlertDialog(
             onDismissRequest = { showTokenExpiredDialog = false },
@@ -333,10 +290,6 @@ fun HomeScreen(
     }
 }
 
-/**
- * 模块入口卡片 - 水平布局（左侧蓝色图标框，右侧标题+描述）
- * 匹配HTML原型设计：白色卡片背景+左侧52dp蓝色图标框
- */
 @Composable
 private fun ModuleCard(
     title: String,
@@ -349,35 +302,32 @@ private fun ModuleCard(
         modifier = Modifier
             .clickable(onClick = onClick)
             .border(1.dp, BorderGray, RoundedCornerShape(12.dp)),
-        colors = CardDefaults.cardColors(
-            containerColor = SurfaceWhite
-        ),
+        colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(12.dp)
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column(
+            Box(
                 modifier = Modifier
-                    .background(iconBgColor)
-                    .padding(horizontal = 16.dp, vertical = 20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .size(52.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(iconBgColor),
+                contentAlignment = Alignment.Center
             ) {
                 icon()
             }
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 16.dp, vertical = 20.dp)
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Bold,
-                        color = PrimaryLightText
+                        color = TextPrimary
                     )
                 )
                 Spacer(modifier = Modifier.height(2.dp))

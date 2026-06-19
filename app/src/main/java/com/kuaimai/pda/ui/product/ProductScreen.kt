@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -428,7 +429,7 @@ private fun SkuInfoCard(
                     Spacer(modifier = Modifier.width(8.dp))
                     if (canChangeSupplier) {
                         TextButton(onClick = onChangeSupplier) {
-                            Text("切换", fontSize = 14.sp, color = BrandBlue)
+                            Text("✏️ 切换", fontSize = 14.sp, color = BrandBlue)
                         }
                     }
                 }
@@ -462,33 +463,38 @@ private fun RemarkSection(
                 style = MaterialTheme.typography.titleSmall
             )
             Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = remark,
-                onValueChange = onRemarkChange,
-                placeholder = { Text("输入备注信息") },
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                maxLines = 3,
-                shape = RoundedCornerShape(8.dp)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Button(
-                onClick = onSaveRemark,
-                enabled = !isSaving,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = PrimaryLightBg,
-                    contentColor = PrimaryLightText
-                ),
-                modifier = Modifier.align(Alignment.End)
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                if (isSaving) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp,
-                        color = PrimaryLightText
+                OutlinedTextField(
+                    value = remark,
+                    onValueChange = onRemarkChange,
+                    placeholder = { Text("输入备注信息") },
+                    modifier = Modifier.weight(1f),
+                    maxLines = 2,
+                    shape = RoundedCornerShape(8.dp)
+                )
+                Button(
+                    onClick = onSaveRemark,
+                    enabled = !isSaving,
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = PrimaryLightBg,
+                        contentColor = PrimaryLightText
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
+                ) {
+                    if (isSaving) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = PrimaryLightText
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                    }
+                    Text("💾 保存")
                 }
-                Text("保存备注")
             }
         }
     }
@@ -586,6 +592,7 @@ private fun ImageUploadSlot(
     Box(
         modifier = modifier
             .aspectRatio(1f)
+            .heightIn(max = 120.dp)
             .drawBehind {
                 drawRoundRect(
                     color = borderColor,

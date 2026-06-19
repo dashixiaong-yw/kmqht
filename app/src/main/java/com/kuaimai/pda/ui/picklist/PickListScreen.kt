@@ -3,14 +3,15 @@ package com.kuaimai.pda.ui.picklist
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -35,7 +36,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.kuaimai.pda.data.db.entity.PickOrderEntity
 import com.kuaimai.pda.ui.components.PickOrderCard
@@ -98,8 +101,16 @@ fun PickListScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.showNewOrderDialog() }) {
-                        Icon(Icons.Default.Add, contentDescription = "新建", tint = SurfaceWhite)
+                    TextButton(
+                        onClick = { viewModel.showNewOrderDialog() },
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.textButtonColors(
+                            containerColor = PrimaryLightBg,
+                            contentColor = PrimaryLightText
+                        ),
+                        modifier = Modifier.height(36.dp).defaultMinSize(minWidth = 56.dp)
+                    ) {
+                        Text("+ 新建", fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = BrandBlue)
@@ -130,7 +141,7 @@ fun PickListScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "暂无进行中的取货单\n点击右上角[+]新建",
+                            text = "暂无进行中的取货单\n点击右上角[+ 新建]新建",
                             style = MaterialTheme.typography.bodyLarge,
                             color = TextSecondary
                         )

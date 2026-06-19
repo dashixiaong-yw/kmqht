@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -132,32 +133,16 @@ fun PickOrderCard(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // 第二行：创建者
-            Row(modifier = Modifier.fillMaxWidth()) {
+            // 第二行：创建者 + 时间
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = "创建者: ${order.createdBy.take(12)}",
                     fontSize = 13.sp,
                     color = TextSecondary,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
                 )
-            }
-
-            Spacer(modifier = Modifier.height(2.dp))
-
-            // 第三行：进度 + 时间
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = AppAlignment.RowBetween
-            ) {
-                Text(
-                    text = "进度: ${order.completedCount}/${order.totalCount}",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = if (order.completedCount == order.totalCount && order.totalCount > 0)
-                        SuccessText else TextSecondary
-                )
-
                 Text(
                     text = TimeUtils.formatTimestamp(order.createdAt),
                     fontSize = 12.sp,
@@ -165,32 +150,36 @@ fun PickOrderCard(
                 )
             }
 
-            // GAP-15: 进度点指示器（绿色=已完成，灰色=未完成）
-            if (order.totalCount > 0) {
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
+            Spacer(modifier = Modifier.height(2.dp))
+
+            // 第三行：进度 + 圆点
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "进度: ${order.completedCount}/${order.totalCount}",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = if (order.completedCount == order.totalCount && order.totalCount > 0)
+                        SuccessText else TextSecondary
+                )
+                if (order.totalCount > 0) {
+                    Spacer(modifier = Modifier.width(8.dp))
                     val maxDots = minOf(order.totalCount, 20)
-                repeat(maxDots) { index ->
-                    Box(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .background(
-                                color = if (index < order.completedCount) SuccessText else BorderGray,
-                                shape = CircleShape
-                            )
-                    )
-                }
-                if (order.totalCount > 20) {
-                    Box(
-                        modifier = Modifier
-                            .size(10.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    repeat(maxDots) { index ->
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .background(
+                                    color = if (index < order.completedCount) SuccessText else BorderGray,
+                                    shape = CircleShape
+                                )
+                        )
+                        if (index < maxDots - 1 || order.totalCount > 20) {
+                            Spacer(modifier = Modifier.width(3.dp))
+                        }
+                    }
+                    if (order.totalCount > 20) {
                         Text("...", fontSize = 8.sp, color = TextSecondary)
                     }
-                }
                 }
             }
         }

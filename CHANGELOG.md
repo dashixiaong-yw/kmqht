@@ -1,5 +1,14 @@
 # 快麦取货通 - 变更日志
 
+## 1.73 (2026-06-19)
+
+### 改进
+- HomeScreen：Logo 56→48dp(圆角14dp)、ModuleCard重构(Card padding 20dp + 图标Box 52×52 圆角14dp + Row spacedBy 16dp)、图标改用emoji 📋🔍⚙️、标题色改为黑色TextPrimary、卡片间距8→14dp
+- PickListScreen：新建按钮Icon(Add)→TextButton("+ 新建", shape=8dp)
+- PickOrderCard：4行→3行(创建时间移到创建者同行+进度圆点合并到进度同行)
+- PickItemRow：完成/恢复按钮紧凑(contentPadding 4×14 + RoundedCornerShape 8dp)、规格图底部标签移除
+- ProductScreen：备注框+保存按钮同行("💾 保存"含emoji+shape 8dp)、库区图/箱图上传槽位缩至120dp、供应商切换按钮加emoji "✏️ 切换"
+
 ## 1.72 (2026-06-19)
 
 ### 改进

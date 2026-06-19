@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -97,22 +98,6 @@ fun PickItemRow(
                     )
                 } else {
                     Text(text = "规格图", fontSize = 9.sp, color = TextMuted)
-                }
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(18.dp)
-                        .background(SurfaceGray.copy(alpha = 0.8f))
-                        .align(Alignment.BottomCenter),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "规格图",
-                        fontSize = 10.sp,
-                        color = TextSecondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
                 }
             }
 
@@ -223,21 +208,23 @@ fun PickItemRow(
                 if (isCompleted) {
                     TextButton(
                         onClick = onRestore,
-                        shape = RoundedCornerShape(6.dp),
+                        shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.textButtonColors(contentColor = TextSecondary),
-                        modifier = Modifier.height(32.dp).defaultMinSize(minWidth = 56.dp)
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
+                        modifier = Modifier.defaultMinSize(minWidth = 56.dp)
                     ) {
                         Text("恢复", fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     }
                 } else {
                     TextButton(
                         onClick = onComplete,
-                        shape = RoundedCornerShape(6.dp),
+                        shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.textButtonColors(
                             containerColor = SuccessBg,
                             contentColor = SuccessText
                         ),
-                        modifier = Modifier.height(32.dp).defaultMinSize(minWidth = 56.dp)
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
+                        modifier = Modifier.defaultMinSize(minWidth = 56.dp)
                     ) {
                         Text("完成", fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     }
