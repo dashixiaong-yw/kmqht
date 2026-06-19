@@ -20,6 +20,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.ListAlt
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -147,7 +151,12 @@ fun HomeScreen(
                     .background(PrimaryLightBg),
                 contentAlignment = Alignment.Center
             ) {
-                Text("📦", fontSize = 24.sp)
+                Icon(
+                    Icons.Default.Inventory,
+                    contentDescription = "Logo",
+                    tint = BrandBlue,
+                    modifier = Modifier.size(28.dp)
+                )
             }
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -262,7 +271,14 @@ fun HomeScreen(
                 title = "设置",
                 description = "扫码方式、反馈开关",
                 iconBgColor = SurfaceGray,
-                icon = { Text("⚙️", fontSize = 24.sp) },
+                icon = {
+                        Icon(
+                            Icons.Default.Settings,
+                            contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                },
                 onClick = onNavigateToSettings
             )
         }

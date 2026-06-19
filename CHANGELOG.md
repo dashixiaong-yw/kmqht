@@ -1,5 +1,21 @@
 # 快麦取货通 - 变更日志
 
+## 1.75 (2026-06-19)
+
+### 修复
+- C1: 创建者在取货单被领取后失去访问权 — list_orders + _check_order_access 追加 created_by 检查
+- F1: 图片代理SSRF漏洞 — 新增URL白名单(仅允许 alicdn/aliyuncs)+响应体10MB限制
+- F2: 存量用户权限迁移 — 为所有 settings 权限用户自动追加 update_supplier
+- F2: Worker 漏同步 — doWork 改为循环处理直到队列为空
+- F2: delete_order 缺 rowcount 检查 — 竞态假成功修复
+- 图片死重试修复 — 文件不存在时返回true(视为不可恢复)
+- 静默catch 加 Log.w — syncItemsFromBackend 异常暴露
+- 非FK IntegrityError 包装 HTTPException(409)
+
+### 改进
+- Emoji→Material Icons — 6处替换(📦→Inventory/📋→ListAlt/🔍→Search/⚙️→Settings/✏️→Edit/💾→Save)，消除国产PDA渲染tofu/空白风险
+- orders.py docstring 单号格式修正
+
 ## 1.74 (2026-06-19)
 
 ### 修复

@@ -7,6 +7,7 @@ import threading
 import time
 import uuid
 from typing import Dict, List
+from urllib.parse import urlparse
 
 import httpx
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
@@ -212,10 +213,19 @@ def delete_image(
 @router.get("/images/proxy")
 def proxy_image(url: str = Query(..., description="快麦图片URL"), user: dict = Depends(get_current_user)) -> Response:
     """代理加载快麦图片（PDA无法直连阿里CDN时使用）"""
+    parsed = urlparse(url)
+    allowed_domains = ("img.alicdn.com", "aliyuncs.com")
+    if not any(parsed.netloc.endswith(d) for d in allowed_domains):
+        raise HTTPException(status_code=400, detail="不支持的图片域名")
     try:
         response = httpx.get(url, timeout=10.0)
         response.raise_for_status()
-        return Response(content=response.content, media_type=response.headers.get("content-type", "image/jpeg"))
+        content = response.content
+        if len(content) > 10 * 1024 * 1024:
+            raise HTTPException(status_code=413, detail="图片过大")
+        return Response(content=content, media_type=response.headers.get("content-type", "image/jpeg"))
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"图片代理失败: {url} - {e}")
         raise HTTPException(status_code=502, detail="图片加载失败")

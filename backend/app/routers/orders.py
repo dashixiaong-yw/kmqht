@@ -79,7 +79,7 @@ def create_order(req: CreateOrderRequest, user: dict = Depends(get_current_user)
                 logger.warning(f"单号冲突，重试生成: {order_no} (attempt={attempt + 1})")
             else:
                 logger.error(f"创建取货单失败: {e}")
-                raise HTTPException(status_code=500, detail="创建取货单失败，请稍后重试")
+                raise HTTPException(status_code=409, detail="该SKU已存在于取货单中") HTTPException(status_code=409, detail="该SKU已存在于取货单中") HTTPException(status_code=500, detail="创建取货单失败，请稍后重试")
 
     cursor.execute("SELECT * FROM pick_orders WHERE order_no = ?", (order_no,))
     row = cursor.fetchone()
@@ -93,8 +93,8 @@ def list_orders(status: Optional[int] = Query(None, description="状态过滤: 0
     cursor = db.cursor()
     username = user["username"]
 
-    base_sql = "SELECT * FROM pick_orders WHERE (assigned_to = ? OR (visibility = 'public' AND assigned_to = ''))"
-    params: list = [username]
+    base_sql = "SELECT * FROM pick_orders WHERE (assigned_to = ? OR created_by = ? OR (visibility = 'public' AND assigned_to = ''))"
+    params: list = [username, username]
 
     if status is not None:
         base_sql += " AND status = ?"
@@ -257,7 +257,7 @@ def add_item(order_id: int, req: AddItemRequest, user: dict = Depends(get_curren
         if "FOREIGN KEY constraint failed" in str(e):
             logger.warning(f"取货单 {order_id} 已被删除，添加明细失败")
             raise HTTPException(status_code=410, detail="取货单已被删除，请刷新列表")
-        raise
+        raise HTTPException(status_code=409, detail="该SKU已存在于取货单中")
     except HTTPException:
         db.rollback()
         raise
@@ -548,7 +548,7 @@ def _check_order_access(order_id: int, username: str) -> sqlite3.Row:
     row = cursor.fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="取货单不存在")
-    if row["assigned_to"] != username and not (
+    if row["assigned_to"] != username and row["created_by"] != username and not (
         row["visibility"] == "public" and not row["assigned_to"]
     ):
         raise HTTPException(status_code=403, detail="无权操作此取货单")

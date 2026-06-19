@@ -74,34 +74,43 @@ class OrderSyncWorker(
                 return@withContext Result.failure()
             }
 
-            val operations = dao.getAllPending()
-            if (operations.isEmpty()) {
-                Log.d(TAG, "无待同步操作")
-                return@withContext Result.success()
-            }
-
-            val grouped = operations.groupBy { it.orderId }
             var hasFailure = false
+            var hasWork = true
+            while (hasWork) {
+                val operations = dao.getAllPending()
+                if (operations.isEmpty()) {
+                    hasWork = false
+                    break
+                }
 
-            for ((orderId, orderOps) in grouped) {
-                for (op in orderOps) {
-                    val success = syncOperation(op, dao)
-                    if (success) {
-                        dao.deleteById(op.id)
-                        Log.d(TAG, "操作同步成功: ${op.operationType} orderId=$orderId")
-                    } else {
-                        val current = dao.getById(op.id)
-                        if (current == null) continue
-                        if (current.retryCount == -1) {
-                            Log.w(TAG, "操作已标记冲突: ${op.operationType} orderId=$orderId")
-                        } else if (current.retryCount >= MAX_RETRY) {
-                            Log.e(TAG, "操作同步失败超过${MAX_RETRY}次，标记冲突: ${op.operationType}")
-                            dao.updateRetryCount(op.id, -1)
+                val grouped = operations.groupBy { it.orderId }
+                var loopFailure = false
+
+                for ((orderId, orderOps) in grouped) {
+                    for (op in orderOps) {
+                        val success = syncOperation(op, dao)
+                        if (success) {
+                            dao.deleteById(op.id)
+                            Log.d(TAG, "操作同步成功: ${op.operationType} orderId=$orderId")
                         } else {
-                            dao.updateRetryCount(op.id, current.retryCount + 1)
+                            val current = dao.getById(op.id)
+                            if (current == null) continue
+                            if (current.retryCount == -1) {
+                                Log.w(TAG, "操作已标记冲突: ${op.operationType} orderId=$orderId")
+                            } else if (current.retryCount >= MAX_RETRY) {
+                                Log.e(TAG, "操作同步失败超过${MAX_RETRY}次，标记冲突: ${op.operationType}")
+                                dao.updateRetryCount(op.id, -1)
+                            } else {
+                                dao.updateRetryCount(op.id, current.retryCount + 1)
+                            }
+                            loopFailure = true
                         }
-                        hasFailure = true
                     }
+                }
+
+                if (loopFailure) hasFailure = true
+                if (!loopFailure && dao.getAllPending().isNotEmpty()) {
+                    Log.d(TAG, "仍有待处理操作，继续下一轮")
                 }
             }
 
@@ -298,8 +307,8 @@ class OrderSyncWorker(
         val filePath = extractPayloadValue(op.payload, "file_path") ?: return false
         val imageFile = File(filePath)
         if (!imageFile.exists()) {
-            Log.e(TAG, "图片文件不存在: $filePath")
-            return false
+            Log.w(TAG, "图片文件不存在，放弃同步: $filePath")
+            return true
         }
         val uploader = imageUploadService ?: return false
         val imageDao = productImageDao ?: return false

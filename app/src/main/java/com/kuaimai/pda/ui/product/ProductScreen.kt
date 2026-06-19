@@ -33,6 +33,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -432,7 +434,9 @@ private fun SkuInfoCard(
                     Spacer(modifier = Modifier.width(8.dp))
                     if (canChangeSupplier) {
                         TextButton(onClick = onChangeSupplier) {
-                            Text("✏️ 切换", fontSize = 14.sp, color = BrandBlue)
+                            Icon(Icons.Default.Edit, contentDescription = "切换", modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("切换", fontSize = 14.sp, color = BrandBlue)
                         }
                     }
                 }
@@ -495,8 +499,11 @@ private fun RemarkSection(
                             color = PrimaryLightText
                         )
                         Spacer(modifier = Modifier.width(4.dp))
+                    } else {
+                        Icon(Icons.Default.Save, contentDescription = "保存", modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
                     }
-                    Text("💾 保存")
+                    Text("保存")
                 }
             }
         }

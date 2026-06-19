@@ -202,6 +202,16 @@ def init_db() -> None:
             else:
                 raise
 
+    # 权限迁移: 为拥有 settings 权限的用户追加 update_supplier
+    cursor.execute("""
+        INSERT OR IGNORE INTO user_permissions (user_id, permission)
+        SELECT DISTINCT up.user_id, 'update_supplier'
+        FROM user_permissions up
+        WHERE up.permission = 'settings'
+    """)
+    if cursor.rowcount > 0:
+        logger.info(f"权限迁移: 已为 {cursor.rowcount} 个用户追加 update_supplier 权限")
+
     conn.commit()
     logger.info("数据库表初始化完成")
 

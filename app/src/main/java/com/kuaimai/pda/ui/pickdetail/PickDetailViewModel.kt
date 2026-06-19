@@ -45,6 +45,10 @@ class PickDetailViewModel @Inject constructor(
     @Named("encrypted") private val prefs: SharedPreferences
 ) : ViewModel() {
 
+    companion object {
+        private const val TAG = "PickDetailVM"
+    }
+
     /** 取货单ID */
     val orderId: Long = savedStateHandle["orderId"] ?: 0L
 
@@ -407,7 +411,9 @@ class PickDetailViewModel @Inject constructor(
                 }
             }
             loadSuppliers()
-        } catch (_: Exception) { }
+        } catch (e: Exception) {
+            Log.w(TAG, "syncItemsFromBackend失败: ${e.message}")
+        }
     }
 
     /**
