@@ -156,7 +156,7 @@ fun PickListScreen(
                             PickOrderCard(
                                 order = order,
                                 onClick = { onNavigateToDetail(order.id) },
-                                onLongPress = { viewModel.requestDelete(order) },
+                                onDelete = { viewModel.requestDelete(order) },
                                 onPublish = if (order.visibility == "private" && order.assignedTo == order.createdBy)
                                     { { viewModel.publishOrder(order.id) } } else null,
                                 onClaim = if (order.visibility == "public")
@@ -197,7 +197,7 @@ fun PickListScreen(
         AlertDialog(
             onDismissRequest = { viewModel.cancelDelete() },
             title = { Text("确认删除") },
-            text = { Text("确定要删除取货单 ${order.orderNo} 吗？此操作不可撤销。") },
+            text = { Text("确定删除此取货单？") },
             confirmButton = {
                 Button(
                     onClick = { viewModel.confirmDelete() },
@@ -308,8 +308,7 @@ private fun CompletedOrdersList(
                 ) { order ->
                     PickOrderCard(
                         order = order,
-                        onClick = { onOrderClick(order) },
-                        onLongPress = { /* 已完成不允许删除 */ }
+                        onClick = { onOrderClick(order) }
                     )
                 }
             }

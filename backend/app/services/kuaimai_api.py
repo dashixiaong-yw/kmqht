@@ -151,6 +151,9 @@ async def get_sku_by_outer_id(sku_outer_id: str) -> Optional[Dict[str, Any]]:
             "supplier_code": "",
         }
 
+        logger.info(f"快麦SKU数据 sku={sku_outer_id}: propertiesName={sku_data.get('propertiesName','')!r}, "
+                    f"skuPicPath={sku_data.get('skuPicPath','')!r}, hasSupplier={sku_data.get('hasSupplier')}")
+
         # Step2: 如有供应商，查供应商信息
         if sku_data.get("hasSupplier") == 1 or str(sku_data.get("hasSupplier", "0")) == "1":
             supplier_result = await _call_api(

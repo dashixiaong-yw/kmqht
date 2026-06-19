@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.List
@@ -139,6 +141,7 @@ fun HomeScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -249,7 +252,7 @@ fun HomeScreen(
                 onClick = onNavigateToPickList
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // 商品详情入口 - 水平布局
             ModuleCard(
@@ -266,7 +269,7 @@ fun HomeScreen(
                 onClick = onNavigateToProduct
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // 设置入口（所有用户可见）
             ModuleCard(
@@ -321,7 +324,6 @@ private fun ModuleCard(
 ) {
     Card(
         modifier = Modifier
-            .fillMaxWidth()
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
             containerColor = SurfaceWhite

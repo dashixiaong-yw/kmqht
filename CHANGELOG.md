@@ -1,5 +1,18 @@
 # 快麦取货通 - 变更日志
 
+## 1.68 (2026-06-19)
+
+### 修复
+- Bug1: 扫码后输入框不清空/不聚焦 — 取消continuousScanMode条件守卫，始终清空+聚焦
+- Bug2: 快麦图片不显示 — 后端新增`/api/images/proxy`代理路由，PDA通过后端加载阿里CDN图片
+- Bug3: 取货单卡片布局拥挤 — 创建者/进度/时间拆为三行
+- Bug4: 发布按钮太大 — 移除卡片Button，改为长按DropdownMenu操作菜单
+- Bug5: 删除弹窗占满屏 — 精简弹窗文本
+
+### 后端
+- kuaimai_api.py: 增加快麦API原始返回数据日志（propertiesName/skuPicPath/hasSupplier）
+- images.py: 新增图片代理路由，PDA可通过后端中转加载快麦图片
+
 ## 1.67 (2026-06-19)
 
 ### 改进

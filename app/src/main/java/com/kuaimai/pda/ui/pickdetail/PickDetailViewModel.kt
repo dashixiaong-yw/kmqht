@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 import javax.inject.Inject
 import javax.inject.Named
 
@@ -65,7 +66,7 @@ class PickDetailViewModel @Inject constructor(
     val currentSupplier: StateFlow<String> = _currentSupplier.asStateFlow()
 
     /** 连续扫码模式 */
-    private val _continuousScanMode = MutableStateFlow(false)
+    private val _continuousScanMode = MutableStateFlow(true)
     val continuousScanMode: StateFlow<Boolean> = _continuousScanMode.asStateFlow()
 
     /** 加载状态 */
@@ -129,6 +130,23 @@ class PickDetailViewModel @Inject constructor(
     }
 
     /**
+     * 从本地已入库的明细中提取供应商列表（无网络依赖）
+     */
+    private fun loadSuppliersFromLocal() {
+        viewModelScope.launch {
+            try {
+                val items = pickOrderRepository.getItemsByOrderId(orderId)
+                    .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList()).value
+                val suppliers = items.map { it.supplierName }
+                    .filter { it.isNotEmpty() }
+                    .distinct()
+                    .sorted()
+                _suppliers.value = listOf(AppConstants.SUPPLIER_ALL_LABEL) + suppliers
+            } catch (_: Exception) { }
+        }
+    }
+
+    /**
      * 扫码添加取货明细
      * @param barcode 扫描到的条码
      */
@@ -166,11 +184,17 @@ class PickDetailViewModel @Inject constructor(
                     createdAt = TimeUtils.parseBeijingTime(response.createdAt).let { if (it > 0) it else TimeUtils.now() }
                 )
                 pickOrderRepository.insertItem(item)
-                loadSuppliers()
+                loadSuppliersFromLocal()
                 _scanSuccessEvent.emit(Unit)
             } catch (e: Exception) {
-                _errorMessage.value = "添加明细失败: ${e.message}"
-                _scanFailureEvent.emit("添加明细失败: ${e.message}")
+                if (e is HttpException && e.code() == 409) {
+                    _errorMessage.value = null
+                    syncItemsFromBackend()
+                    _duplicateScan.value = true
+                } else {
+                    _errorMessage.value = "添加明细失败: ${e.message}"
+                    _scanFailureEvent.emit("添加明细失败: ${e.message}")
+                }
             } finally {
                 _isLoading.value = false
             }
@@ -358,6 +382,43 @@ class PickDetailViewModel @Inject constructor(
      */
     fun clearError() {
         _errorMessage.value = null
+    }
+
+    /**
+     * 从后端同步最新明细到本地（不含UI加载状态）
+     */
+    private suspend fun syncItemsFromBackend() {
+        try {
+            val token = userRepository.getToken()
+            val detail = orderApiService.getOrderDetail(token, orderId)
+            detail.items.forEach { itemResponse ->
+                val existing = pickOrderRepository.getItemByOrderIdAndSkuOuterId(orderId, itemResponse.skuOuterId)
+                if (existing == null) {
+                    pickOrderRepository.insertItem(
+                        PickItemEntity(
+                            id = itemResponse.id,
+                            orderId = orderId,
+                            skuOuterId = itemResponse.skuOuterId,
+                            sysItemId = itemResponse.sysItemId,
+                            sysSkuId = itemResponse.sysSkuId,
+                            propertiesName = itemResponse.propertiesName,
+                            picPath = itemResponse.picPath,
+                            status = itemResponse.status,
+                            supplierName = itemResponse.supplierName,
+                            supplierCode = itemResponse.supplierCode,
+                            remark = itemResponse.remark,
+                            createdAt = TimeUtils.parseBeijingTime(itemResponse.createdAt).let { if (it > 0) it else TimeUtils.now() }
+                        )
+                    )
+                } else {
+                    val completedAt = TimeUtils.parseBeijingTimeOrNull(itemResponse.completedAt)
+                    if (existing.status != itemResponse.status) {
+                        pickOrderRepository.updateItemStatusDirect(existing.id, itemResponse.status, completedAt)
+                    }
+                }
+            }
+            loadSuppliers()
+        } catch (_: Exception) { }
     }
 
     /**

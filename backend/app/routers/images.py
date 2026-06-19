@@ -1,4 +1,4 @@
-"""图片路由 - 图片上传/查询/删除"""
+"""图片路由 - 图片上传/查询/删除/代理"""
 
 import logging
 import os
@@ -8,7 +8,9 @@ import time
 import uuid
 from typing import Dict, List
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+import httpx
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from starlette.responses import Response
 
 from app.auth import check_permission, get_current_user
 from app.config import IMAGE_DIR
@@ -205,6 +207,18 @@ def delete_image(
         db.rollback()
         logger.error(f"删除图片记录失败: {e}")
         raise HTTPException(status_code=500, detail="删除图片记录失败，请稍后重试")
+
+
+@router.get("/images/proxy")
+def proxy_image(url: str = Query(..., description="快麦图片URL"), user: dict = Depends(get_current_user)) -> Response:
+    """代理加载快麦图片（PDA无法直连阿里CDN时使用）"""
+    try:
+        response = httpx.get(url, timeout=10.0)
+        response.raise_for_status()
+        return Response(content=response.content, media_type=response.headers.get("content-type", "image/jpeg"))
+    except Exception as e:
+        logger.error(f"图片代理失败: {url} - {e}")
+        raise HTTPException(status_code=502, detail="图片加载失败")
 
 
 def _row_to_image_response(row: sqlite3.Row) -> ImageResponse:

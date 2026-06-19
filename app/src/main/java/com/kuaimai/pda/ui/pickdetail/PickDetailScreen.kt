@@ -143,15 +143,12 @@ fun PickDetailScreen(
         }
     }
 
-    // 扫码成功反馈 + 连续扫码清空输入框
+    // 扫码成功反馈 + 清空输入框并重新聚焦
     LaunchedEffect(Unit) {
         viewModel.scanSuccessEvent.collectLatest {
             viewModel.provideFeedback(context, ScanFeedbackType.SUCCESS)
-            // 连续扫码模式下清空输入框并重新聚焦
-            if (continuousScanMode) {
-                scanInput = ""
-                focusRequester.requestFocus()
-            }
+            scanInput = ""
+            focusRequester.requestFocus()
         }
     }
 
