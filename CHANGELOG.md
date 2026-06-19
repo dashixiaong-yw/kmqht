@@ -1,5 +1,12 @@
 # 快麦取货通 - 变更日志
 
+## 1.59 (2026-06-19)
+
+### 修复
+- SSL证书信任锚错误：SakuraFRP自动HTTPS证书不被Android信任
+- AppConstants.kt + .env.docker.example https→http 回退
+- FRP隧道自身已提供TLS加密传输，应用层无需叠加HTTPS
+
 ## 1.58 (2026-06-19)
 
 ### 修复

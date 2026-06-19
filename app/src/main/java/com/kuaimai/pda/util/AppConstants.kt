@@ -7,7 +7,7 @@ package com.kuaimai.pda.util
 object AppConstants {
 
     /** 后端服务器默认地址（预置FRP内网穿透地址，开箱即用） */
-    const val DEFAULT_SERVER_URL = "https://frp-off.com:64623"
+    const val DEFAULT_SERVER_URL = "http://frp-off.com:64623"
 
     /** 快麦开放平台API基础URL（Retrofit baseUrl必须以/结尾，@POST("router")拼接完整路径） */
     const val KUAIMAI_API_URL = "https://gw.superboss.cc/"
