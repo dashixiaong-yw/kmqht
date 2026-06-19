@@ -4,10 +4,12 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,9 +17,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,12 +46,6 @@ import com.kuaimai.pda.ui.theme.TextMuted
 import com.kuaimai.pda.ui.theme.TextPrimary
 import com.kuaimai.pda.ui.theme.TextSecondary
 
-/**
- * 取货明细行组件
- * 匹配HTML原型：左侧52dp规格图+底部标注，中间规格名+供应商名，右侧40dp库区图+装箱图+完成按钮
- * 最小高度72dp, 触摸目标≥56dp×56dp
- * 已完成状态alpha 0.55, 删除线
- */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PickItemRow(
@@ -69,7 +67,7 @@ fun PickItemRow(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 3.dp)
             .combinedClickable(
-                onClick = { /* 常规点击无操作 */ },
+                onClick = { },
                 onLongClick = onLongPress
             ),
         shape = RoundedCornerShape(12.dp),
@@ -78,17 +76,15 @@ fun PickItemRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(80.dp)
                 .padding(horizontal = 12.dp, vertical = 10.dp)
                 .alpha(contentAlpha),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.Top
         ) {
-            // 左侧：52dp规格图（带底部"规格图"标注）
             Box(
                 modifier = Modifier
                     .clickable { onImageClick() }
-                    .size(width = 56.dp, height = 56.dp)
-                    .clip(RoundedCornerShape(6.dp))
+                    .size(width = 52.dp, height = 52.dp)
+                    .clip(RoundedCornerShape(8.dp))
                     .background(SurfaceGray),
                 contentAlignment = Alignment.Center
             ) {
@@ -100,18 +96,12 @@ fun PickItemRow(
                         contentScale = ContentScale.Crop
                     )
                 } else {
-                    // 无图占位
-                    Text(
-                        text = "规格图",
-                        fontSize = 9.sp,
-                        color = TextMuted
-                    )
+                    Text(text = "规格图", fontSize = 9.sp, color = TextMuted)
                 }
-                // 底部"规格图"标注
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(14.dp)
+                        .height(18.dp)
                         .background(SurfaceGray.copy(alpha = 0.8f))
                         .align(Alignment.BottomCenter),
                     contentAlignment = Alignment.Center
@@ -119,17 +109,16 @@ fun PickItemRow(
                     Text(
                         text = "规格图",
                         fontSize = 10.sp,
-                        color = TextSecondary
+                        color = TextSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
-            // 中间：规格名 + 供应商名
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = item.propertiesName.ifEmpty { item.skuOuterId },
                     fontSize = 16.sp,
@@ -151,128 +140,106 @@ fun PickItemRow(
                 )
             }
 
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
-            // 右侧：库区图 + 装箱图 + 完成/恢复按钮
-            // 库区图小方块
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(SurfaceGray)
-                    .clickable { onAreaImageClick() },
-                contentAlignment = Alignment.Center
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                if (!areaImageUrl.isNullOrEmpty()) {
-                    AsyncImage(
-                        model = areaImageUrl,
-                        contentDescription = "库区图",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Text(
-                        text = "库区",
-                        fontSize = 9.sp,
-                        color = TextMuted
-                    )
-                }
-                // 底部"库区"标注
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(12.dp)
-                        .background(SurfaceGray.copy(alpha = 0.8f))
-                        .align(Alignment.BottomCenter),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "库区",
-                        fontSize = 10.sp,
-                        color = TextSecondary
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            // 装箱图小方块
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(SurfaceGray)
-                    .clickable { onBoxImageClick() },
-                contentAlignment = Alignment.Center
-            ) {
-                if (!boxImageUrl.isNullOrEmpty()) {
-                    AsyncImage(
-                        model = boxImageUrl,
-                        contentDescription = "装箱图",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Text(
-                        text = "箱图",
-                        fontSize = 9.sp,
-                        color = TextMuted
-                    )
-                }
-                // 底部"箱图"标注
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(12.dp)
-                        .background(SurfaceGray.copy(alpha = 0.8f))
-                        .align(Alignment.BottomCenter),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "箱图",
-                        fontSize = 10.sp,
-                        color = TextSecondary
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            // 完成/恢复按钮（F17: 最小触摸热区56dp×44dp）
-            if (isCompleted) {
-                Card(
-                    shape = RoundedCornerShape(6.dp),
-                    colors = CardDefaults.cardColors(containerColor = PrimaryLightBg),
-                    onClick = onRestore
-                ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     Box(
-                        modifier = Modifier.size(width = 56.dp, height = 56.dp),
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(SurfaceGray)
+                            .clickable { onAreaImageClick() },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = "恢复",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = PrimaryLightText
-                        )
+                        if (!areaImageUrl.isNullOrEmpty()) {
+                            AsyncImage(
+                                model = areaImageUrl,
+                                contentDescription = "库区图",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Text(text = "库区", fontSize = 9.sp, color = TextMuted)
+                        }
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(18.dp)
+                                .background(SurfaceGray.copy(alpha = 0.8f))
+                                .align(Alignment.BottomCenter),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "库区",
+                                fontSize = 10.sp,
+                                color = TextSecondary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(SurfaceGray)
+                            .clickable { onBoxImageClick() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (!boxImageUrl.isNullOrEmpty()) {
+                            AsyncImage(
+                                model = boxImageUrl,
+                                contentDescription = "装箱图",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Text(text = "箱图", fontSize = 9.sp, color = TextMuted)
+                        }
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(18.dp)
+                                .background(SurfaceGray.copy(alpha = 0.8f))
+                                .align(Alignment.BottomCenter),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "箱图",
+                                fontSize = 10.sp,
+                                color = TextSecondary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
                 }
-            } else {
-                Card(
-                    shape = RoundedCornerShape(6.dp),
-                    colors = CardDefaults.cardColors(containerColor = SuccessBg),
-                    onClick = onComplete
-                ) {
-                    Box(
-                        modifier = Modifier.size(56.dp),
-                        contentAlignment = Alignment.Center
+
+                if (isCompleted) {
+                    TextButton(
+                        onClick = onRestore,
+                        shape = RoundedCornerShape(6.dp),
+                        colors = ButtonDefaults.textButtonColors(contentColor = TextSecondary),
+                        modifier = Modifier.height(32.dp).defaultMinSize(minWidth = 56.dp)
                     ) {
-                        Text(
-                            text = "完成",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = SuccessText
-                        )
+                        Text("恢复", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                    }
+                } else {
+                    TextButton(
+                        onClick = onComplete,
+                        shape = RoundedCornerShape(6.dp),
+                        colors = ButtonDefaults.textButtonColors(
+                            containerColor = SuccessBg,
+                            contentColor = SuccessText
+                        ),
+                        modifier = Modifier.height(32.dp).defaultMinSize(minWidth = 56.dp)
+                    ) {
+                        Text("完成", fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     }
                 }
             }

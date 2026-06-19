@@ -135,6 +135,28 @@ object NetworkModule {
             .build()
     }
 
+    /** 信任所有证书的OkHttp客户端（图片上传等服务端自签证书用） */
+    @Provides
+    @Singleton
+    @Named("trustAll")
+    fun provideTrustAllOkHttpClient(
+        kuaimaiInterceptor: KuaimaiInterceptor,
+        loggingInterceptor: HttpLoggingInterceptor,
+        tokenAuthenticator: TokenAuthenticator
+    ): OkHttpClient {
+        return OkHttpClient.Builder()
+            .connectionPool(ConnectionPool(5, 30, TimeUnit.SECONDS))
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(15, TimeUnit.SECONDS)
+            .writeTimeout(15, TimeUnit.SECONDS)
+            .addInterceptor(kuaimaiInterceptor)
+            .addInterceptor(loggingInterceptor)
+            .authenticator(tokenAuthenticator)
+            .hostnameVerifier { _, _ -> true }
+            .sslSocketFactory(unsafeSslSocketFactory, unsafeTrustManager)
+            .build()
+    }
+
     /** 快麦Retrofit实例 */
     @Provides
     @Singleton

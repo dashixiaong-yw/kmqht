@@ -2,7 +2,9 @@ package com.kuaimai.pda.ui.home
 
 import android.content.SharedPreferences
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -36,6 +38,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -47,9 +51,12 @@ import com.kuaimai.pda.data.repository.UserRepository
 import com.kuaimai.pda.ui.components.NetworkStatusIndicator
 import com.kuaimai.pda.ui.settings.SettingsViewModel.Companion.KEY_GUIDE_SHOWN
 import com.kuaimai.pda.ui.theme.AppAlignment
+import com.kuaimai.pda.ui.theme.BorderGray
 import com.kuaimai.pda.ui.theme.BrandBlue
+import com.kuaimai.pda.ui.theme.DangerBg
 import com.kuaimai.pda.ui.theme.PrimaryLightBg
 import com.kuaimai.pda.ui.theme.PrimaryLightText
+import com.kuaimai.pda.ui.theme.SurfaceGray
 import com.kuaimai.pda.ui.theme.SurfaceWhite
 import com.kuaimai.pda.ui.theme.TextSecondary
 import com.kuaimai.pda.ui.theme.WarningBg
@@ -147,6 +154,18 @@ fun HomeScreen(
         ) {
             Spacer(modifier = Modifier.height(32.dp))
 
+            // Logo图标框
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(PrimaryLightBg),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("📦", fontSize = 28.sp)
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+
             // Logo区域 - 居中
             Text(
                 text = "快麦取货通",
@@ -241,6 +260,7 @@ fun HomeScreen(
             ModuleCard(
                 title = "取货列表",
                 description = "查看和管理取货单",
+                iconBgColor = PrimaryLightBg,
                 icon = {
                     Icon(
                         Icons.Default.List,
@@ -257,7 +277,8 @@ fun HomeScreen(
             // 商品详情入口 - 水平布局
             ModuleCard(
                 title = "商品详情",
-                description = "查看商品信息和图片",
+                description = "扫码查看规格信息",
+                iconBgColor = DangerBg,
                 icon = {
                     Icon(
                         Icons.Default.Search,
@@ -275,6 +296,7 @@ fun HomeScreen(
             ModuleCard(
                 title = "设置",
                 description = "扫码方式、反馈开关",
+                iconBgColor = SurfaceGray,
                     icon = {
                         Icon(
                             Icons.Default.Settings,
@@ -319,15 +341,18 @@ fun HomeScreen(
 private fun ModuleCard(
     title: String,
     description: String,
+    iconBgColor: Color,
     icon: @Composable () -> Unit,
     onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick)
+            .border(1.dp, BorderGray, RoundedCornerShape(12.dp)),
         colors = CardDefaults.cardColors(
             containerColor = SurfaceWhite
         ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(12.dp)
     ) {
         Row(
@@ -335,16 +360,14 @@ private fun ModuleCard(
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 左侧52dp蓝色图标框
             Column(
                 modifier = Modifier
-                    .background(PrimaryLightBg)
+                    .background(iconBgColor)
                     .padding(horizontal = 16.dp, vertical = 20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 icon()
             }
-            // 右侧标题+描述
             Column(
                 modifier = Modifier
                     .weight(1f)

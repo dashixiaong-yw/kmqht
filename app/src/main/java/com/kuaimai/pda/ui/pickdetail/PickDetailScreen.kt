@@ -112,6 +112,8 @@ fun PickDetailScreen(
     val context = LocalContext.current
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     var showDeleteConfirm by remember { mutableStateOf<PickItemEntity?>(null) }
+    var previewImageUrl by remember { mutableStateOf<String?>(null) }
+    var previewImageLabel by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
 
     // GAP-05: 屏幕常亮
@@ -340,8 +342,18 @@ fun PickDetailScreen(
                         onImageClick = { onNavigateToProduct(item.skuOuterId) },
                         areaImageUrl = areaImageUrl,
                         boxImageUrl = boxImageUrl,
-                        onAreaImageClick = { onNavigateToProduct(item.skuOuterId) },
-                        onBoxImageClick = { onNavigateToProduct(item.skuOuterId) }
+                        onAreaImageClick = {
+                            if (areaImageUrl != null) {
+                                previewImageUrl = areaImageUrl
+                                previewImageLabel = "库区图 - ${item.skuOuterId}"
+                            }
+                        },
+                        onBoxImageClick = {
+                            if (boxImageUrl != null) {
+                                previewImageUrl = boxImageUrl
+                                previewImageLabel = "箱图 - ${item.skuOuterId}"
+                            }
+                        }
                     )
                 }
             }
@@ -418,6 +430,27 @@ fun PickDetailScreen(
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = null }) {
                     Text("取消")
+                }
+            }
+        )
+    }
+
+    // 图片大图预览弹窗
+    previewImageUrl?.let { url ->
+        AlertDialog(
+            onDismissRequest = { previewImageUrl = null },
+            title = { Text(previewImageLabel) },
+            text = {
+                coil.compose.AsyncImage(
+                    model = url,
+                    contentDescription = previewImageLabel,
+                    modifier = Modifier.fillMaxWidth(),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { previewImageUrl = null }) {
+                    Text("关闭")
                 }
             }
         )

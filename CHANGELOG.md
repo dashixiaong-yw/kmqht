@@ -1,5 +1,16 @@
 # 快麦取货通 - 变更日志
 
+## 1.71 (2026-06-19)
+
+### 修复
+- 取货单详情：PickItemRow规格图/库区图/箱图标签截断修复（Box高度14dp/12dp→18dp）+ 布局对齐原型（右侧Column图片在上按钮在下，图片44dp，按钮TextButton）
+- 取货单详情：库区图/箱图点击改为大图Dialog预览（不再跳转商品详情页）
+- 商品详情页图片上传修复：ImageUploadService OkHttpClient添加SSL绕过（FRP自签证书导致SSLHandshakeException）+ ProductViewModel异常分级（IOException→入离线队列, 其他→展示错误）
+
+### 改进
+- 首页：新增Logo图标框 + 模块卡片图标背景色区分（取货列表蓝/商品详情红/设置灰）+ 卡片添加1px边框和阴影
+- 首页：商品详情模块描述文案对齐原型("扫码查看规格信息")
+
 ## 1.70 (2026-06-19)
 
 ### 修复

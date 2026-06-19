@@ -25,7 +25,7 @@ import okio.buffer
  * 支持进度回调、失败重试（最多3次）
  */
 class ImageUploadService @Inject constructor(
-    private val client: OkHttpClient,
+    @Named("trustAll") private val client: OkHttpClient,
     @Named("encrypted") private val encryptedPrefs: SharedPreferences
 ) {
 

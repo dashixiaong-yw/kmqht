@@ -82,6 +82,7 @@ class ProductViewModel @Inject constructor(
 
     companion object {
         private const val DEFAULT_SERVER_URL = AppConstants.DEFAULT_SERVER_URL
+        private const val TAG = "ProductViewModel"
     }
 
     private val _uiState = MutableStateFlow(ProductUiState())
@@ -364,8 +365,8 @@ class ProductViewModel @Inject constructor(
                     _uiState.value.copy(boxImageUrl = fullUrl)
                 }
                 _uiState.value = _uiState.value.copy(isUploading = false, uploadProgress = 100)
-            } catch (e: Exception) {
-                // 离线支持：将图片复制到持久目录并入队等待网络恢复后上传
+            } catch (e: java.io.IOException) {
+                Log.e(TAG, "图片上传网络异常，入离线队列: ${e.message}", e)
                 try {
                     val pendingDir = File(appContext.filesDir, "pending_images")
                     pendingDir.mkdirs()
@@ -382,9 +383,15 @@ class ProductViewModel @Inject constructor(
                 } catch (queueError: Exception) {
                     _uiState.value = _uiState.value.copy(
                         isUploading = false,
-                        error = "上传图片失败: ${e.message}"
+                        error = "上传图片失败: ${queueError.message}"
                     )
                 }
+            } catch (e: Exception) {
+                Log.e(TAG, "图片上传失败: ${e.message}", e)
+                _uiState.value = _uiState.value.copy(
+                    isUploading = false,
+                    error = "上传图片失败: ${e.message ?: "未知错误"}"
+                )
             }
         }
     }
