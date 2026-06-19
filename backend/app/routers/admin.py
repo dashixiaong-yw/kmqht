@@ -221,26 +221,6 @@ input:focus,select:focus {{ border-color:#2563eb; }}
   <div class="status" id="connStatus">未连接</div>
 </div>
 <div class="container">
-  <!-- ====== 公开区域：扫码配置（无需API Key） ====== -->
-  <div class="card" style="margin-bottom:24px;border-color:#bfdbfe">
-    <h3>PDA 扫码配置</h3>
-    <p style="font-size:13px;color:#666;margin-bottom:12px">
-      新 PDA 首次使用时，扫描下方二维码自动配置服务器地址和 API Key
-    </p>
-    <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
-      <div class="qr-box">{qr_html}</div>
-      <div>
-        <p style="font-size:13px;color:#666;margin-bottom:4px">服务器地址</p>
-        <p style="font-size:15px;font-weight:600;color:#1d4ed8;word-break:break-all">
-          {server_url or "未配置（请在 .env 中设置 SERVER_URL）"}
-        </p>
-        <p style="font-size:13px;color:#666;margin-top:4px">API Key: {api_key_status}</p>
-      </div>
-    </div>
-  </div>
-
-  <hr style="border:none;border-top:2px solid #e5e7eb;margin-bottom:24px">
-
   <!-- ====== API Key 登录区域 ====== -->
   <div id="loginSection" style="display:block">
     <div style="max-width:360px;margin:0 auto 24px;text-align:center">
