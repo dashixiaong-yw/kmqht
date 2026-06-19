@@ -1,5 +1,17 @@
 # 快麦取货通 - 变更日志
 
+## 1.74 (2026-06-19)
+
+### 修复
+- 供应商列表：后端权限 `settings` → `update_supplier`，解决获取不到供应商列表的问题
+- 备注同步：OrderSyncWorker 每次新增 pending 操作后自动触发同步
+- title 覆盖：Worker 同步时实时从 `item.single.get` 获取最新 title，不再使用 `"."`
+- 商品详情扫码：`loadSkuInfo()` 改为 API 优先，实时从快麦获取备注/供应商/标题，Room 仅离线降级
+
+### 新增
+- 后端新增 `GET /api/sku/{sku_outer_id}` 端点，实时返回快麦 SKU 详细信息
+- 供应商选择对话框增加加载状态、错误提示和重试按钮
+
 ## 1.73 (2026-06-19)
 
 ### 改进

@@ -18,7 +18,7 @@
 ## 二、开发修改流程
 
 ```
-[查阅知识图谱] → [修改代码(可循环)] → [验证+构建(失败回退)] → 全部完成 → [更新版本号 → 更新知识图谱 → 同步docker-deploy → Git提交推送]
+[查阅知识图谱] → [修改代码(可循环)] → [lint验证] → [更新版本号] → 全部完成 → [构建APK → 更新知识图谱 → 同步docker-deploy → Git提交推送]
 ```
 
 **步骤（禁止跳过任何步骤）**：
@@ -28,8 +28,8 @@
 | 1 | 开发 | **查阅知识图谱** | 首次修改前必须查阅；批量任务中后续任务按需查阅 |
 | 2 | 开发 | 修改代码 | 在 `app/` 目录修改，**支持批量完成多个任务后再进入收尾** |
 | 3 | 开发 | 验证代码 | `./gradlew lint` 必须通过；**失败则回到Step 2修复** |
-| 4 | 开发 | 构建APK | `./gradlew assembleRelease`（签名+混淆）构建成功；**失败则回到Step 2修复** |
-| 5 | 收尾 | 更新版本号（含Docker BUILD_VERSION） | **⚠️ 进入收尾后禁止再修改代码**；**先读取6处当前版本号取最大值，再+1递增**，更新6处并验证一致 |
+| 4 | 开发 | 更新版本号（含Docker BUILD_VERSION） | **先读取6处当前版本号取最大值，再+1递增**，更新6处并验证一致。**升级后仍可回到Step 2修复代码** |
+| 5 | 收尾 | 构建APK | `./gradlew assembleRelease`（签名+混淆）构建成功，**此APK为最终发布版本**（文件名含新版本号）；**失败则回到Step 2修复** |
 | 6 | 收尾 | **更新知识图谱** | 将本次所有变更的设计决策同步到知识图谱 |
 | 7 | 收尾 | 同步到docker-deploy | 运行 `.\scripts\sync-to-docker-deploy.ps1 -Force` 同步后端部署文件 |
 | 8 | 收尾 | Git 提交推送 | `git add .` → `git commit -m "v版本号: 变更描述"` → `git push` |
@@ -43,7 +43,7 @@
 
 - ✅ 所有任务代码修改已完成（逐项确认，无遗漏）
 - ✅ `./gradlew lint` 通过
-- ✅ `./gradlew assembleRelease`（分发签名APK）构建成功
+- ✅ 版本号已更新（6处一致）
 
 **收尾阶段禁止回退**：进入Step 5后禁止再修改任何代码文件。若发现遗漏，必须完成当前收尾（Step 5-8），再以新版本号重新走完整流程。
 
@@ -53,7 +53,7 @@
 
 | 规则 | 说明 |
 |------|------|
-| **开发阶段可循环** | Step 1-4可重复执行，直到所有任务完成且验证构建通过 |
+| **开发阶段可循环** | Step 1-4可重复执行，直到所有任务完成且验证通过 |
 | **收尾阶段不可逆** | 进入Step 5后禁止再修改任何代码，必须完成Step 5-8 |
 | **批量任务合并提交** | 多个任务必须在同一版本中合并提交，版本号只递增一次 |
 | 禁止同版本二次修改 | Git 提交后，该版本代码封版 |
@@ -233,11 +233,12 @@ mcp_kuaimai-memory_search_nodes(query="取货单")
 - [ ] 所有任务代码修改已完成（批量任务时逐项确认无遗漏）
 - [ ] 代码修改在 `app/` 目录完成
 - [ ] 代码验证通过（lint）
-- [ ] APK构建成功（release 构建产出 `release/快麦取货通-版本号.apk`）
+- [ ] 版本号已更新（4处手动 + 6处一致）
 
 **收尾阶段**：
 
 - [ ] 6处版本号一致（build.gradle.kts + CHANGELOG.md + gradle.properties + backend/docker-compose.yml + docker-deploy/docker-compose.yml + docker-deploy/docker-compose.yaml BUILD_VERSION）
+- [ ] APK构建成功（release 构建产出 `release/快麦取货通-版本号.apk`）
 - [ ] 已更新知识图谱（本次所有变更的设计决策已同步）
 - [ ] 已同步到docker-deploy（运行 `.\scripts\sync-to-docker-deploy.ps1 -Force`）
 - [ ] Git commit 消息符合格式 `v版本号: 变更描述`

@@ -5,13 +5,14 @@ import com.kuaimai.pda.data.api.dto.KuaimaiCredentialsResponse
 import com.kuaimai.pda.data.api.dto.KuaimaiRefreshResponse
 import com.kuaimai.pda.data.api.dto.KuaimaiSessionStatusResponse
 import com.kuaimai.pda.data.api.dto.KuaimaiSuppliersResponse
+import com.kuaimai.pda.data.api.dto.SkuDetailResponse
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
+import retrofit2.http.Path
 
 /**
  * 后端系统API服务接口
- * 包含快麦session状态查询和手动刷新
  */
 interface SystemApiService {
 
@@ -42,4 +43,11 @@ interface SystemApiService {
     /** 获取已分发的最新应用版本（无需 token，匿名访问） */
     @GET("api/app-version")
     suspend fun getAppVersion(): AppVersionResponse
+
+    /** 获取单个SKU详细信息（实时从快麦获取） */
+    @GET("api/sku/{skuOuterId}")
+    suspend fun getSkuDetail(
+        @Header("X-User-Token") token: String,
+        @Path("skuOuterId") skuOuterId: String
+    ): SkuDetailResponse
 }

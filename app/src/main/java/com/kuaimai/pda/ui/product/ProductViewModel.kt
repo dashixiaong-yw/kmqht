@@ -54,7 +54,9 @@ data class ProductUiState(
     val isSavingSupplier: Boolean = false,
     val showSupplierDialog: Boolean = false,
     val showConfirmDialog: ConfirmType? = null,
-    val scanInput: String = ""
+    val scanInput: String = "",
+    val isLoadingSuppliers: Boolean = false,
+    val supplierError: String? = null
 )
 
 /** 确认对话框类型 */
@@ -111,37 +113,56 @@ class ProductViewModel @Inject constructor(
 
     /**
      * 加载SKU信息
+     * API优先：先从后端实时获取快麦最新数据，网络失败时降级到本地Room
      * @param skuOuterId SKU外部编码
      */
     fun loadSkuInfo(skuOuterId: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             try {
-                // 先从本地数据库查询（优先按当前订单精确查询）
-                val item = if (currentOrderId > 0) {
-                    pickItemDao.getByOrderIdAndSkuOuterId(currentOrderId, skuOuterId)
-                } else {
-                    pickItemDao.getBySkuOuterId(skuOuterId)
-                }
-                if (item != null) {
-                    currentItem = item
+                // 优先从后端API获取实时快麦数据
+                var loaded = false
+                try {
+                    val token = prefs.getString(PrefsKeys.KEY_USER_TOKEN, "") ?: ""
+                    val detail = systemApiService.getSkuDetail(token, skuOuterId)
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         skuOuterId = skuOuterId,
-                        propertiesName = item.propertiesName,
-                        picPath = item.picPath,
-                        supplierName = item.supplierName,
-                        supplierCode = item.supplierCode,
-                        remark = item.remark
+                        propertiesName = detail.propertiesName,
+                        picPath = detail.picPath,
+                        supplierName = detail.supplierName,
+                        supplierCode = detail.supplierCode,
+                        remark = detail.remark
                     )
-                } else {
-                    // 本地无数据，仅设置ID等待扫码
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        skuOuterId = skuOuterId
-                    )
+                    loaded = true
+                } catch (apiError: Exception) {
+                    Log.w(TAG, "后端API获取SKU详情失败，降级到本地Room: ${apiError.message}")
                 }
-                // 加载图片
+                if (!loaded) {
+                    // 网络失败时降级到本地数据库
+                    val item = if (currentOrderId > 0) {
+                        pickItemDao.getByOrderIdAndSkuOuterId(currentOrderId, skuOuterId)
+                    } else {
+                        pickItemDao.getBySkuOuterId(skuOuterId)
+                    }
+                    if (item != null) {
+                        currentItem = item
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            skuOuterId = skuOuterId,
+                            propertiesName = item.propertiesName,
+                            picPath = item.picPath,
+                            supplierName = item.supplierName,
+                            supplierCode = item.supplierCode,
+                            remark = item.remark
+                        )
+                    } else {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            skuOuterId = skuOuterId
+                        )
+                    }
+                }
                 loadImages(skuOuterId)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
@@ -259,7 +280,7 @@ class ProductViewModel @Inject constructor(
      * 显示供应商选择对话框
      */
     fun showSupplierDialog() {
-        _uiState.value = _uiState.value.copy(showSupplierDialog = true)
+        _uiState.value = _uiState.value.copy(showSupplierDialog = true, supplierError = null)
         loadSuppliers()
     }
 
@@ -267,7 +288,14 @@ class ProductViewModel @Inject constructor(
      * 隐藏供应商选择对话框
      */
     fun hideSupplierDialog() {
-        _uiState.value = _uiState.value.copy(showSupplierDialog = false)
+        _uiState.value = _uiState.value.copy(showSupplierDialog = false, supplierError = null)
+    }
+
+    /**
+     * 重试加载供应商列表
+     */
+    fun retryLoadSuppliers() {
+        loadSuppliers()
     }
 
     /**
@@ -275,15 +303,18 @@ class ProductViewModel @Inject constructor(
      */
     private fun loadSuppliers() {
         viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoadingSuppliers = true, supplierError = null)
             try {
                 val token = prefs.getString(PrefsKeys.KEY_USER_TOKEN, "") ?: ""
                 val response = systemApiService.getKuaimaiSuppliers(token)
                 _suppliers.value = response.suppliers.map { item ->
                     SupplierDto(supplierName = item.name, supplierCode = item.code, supplierId = item.id)
                 }
+                _uiState.value = _uiState.value.copy(isLoadingSuppliers = false)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
-                    error = "加载供应商列表失败: ${e.message}"
+                    isLoadingSuppliers = false,
+                    supplierError = "加载失败: ${e.message}"
                 )
             }
         }

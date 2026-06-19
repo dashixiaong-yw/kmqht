@@ -20,6 +20,7 @@ from app.models import (
     KuaimaiSessionStatusResponse,
     KuaimaiSupplierItem,
     KuaimaiSuppliersResponse,
+    SkuDetailResponse,
 )
 from app.utils.qr_utils import generate_qr_base64
 from app.utils.time_utils import beijing_now, format_beijing
@@ -171,8 +172,8 @@ def get_kuaimai_session_status(user: dict = Depends(check_permission("settings")
 
 
 @router.get("/api/kuaimai/suppliers", response_model=KuaimaiSuppliersResponse)
-async def get_kuaimai_suppliers(user: dict = Depends(check_permission("settings"))) -> KuaimaiSuppliersResponse:
-    """获取快麦供应商列表（含编码，采购权限）"""
+async def get_kuaimai_suppliers(user: dict = Depends(check_permission("update_supplier"))) -> KuaimaiSuppliersResponse:
+    """获取快麦供应商列表（含编码）"""
     from app.services.kuaimai_api import get_supplier_list
 
     try:
@@ -250,3 +251,53 @@ def update_kuaimai_credentials(
 def setup_page() -> RedirectResponse:
     """扫码配置页面已合并到管理后台"""
     return RedirectResponse(url="/admin", status_code=302)
+
+
+@router.get("/api/sku/{sku_outer_id}", response_model=SkuDetailResponse)
+async def get_sku_detail(sku_outer_id: str, user: dict = Depends(get_current_user)) -> SkuDetailResponse:
+    """获取单个SKU详细信息（实时从快麦获取备注、供应商、标题等）"""
+    from app.services.cache import get_sku_info
+    from app.services.kuaimai_api import _build_common_params, _sign, _get_client, KUAIMAI_API_BASE
+
+    try:
+        sku_info = await get_sku_info(sku_outer_id)
+        if sku_info is None:
+            raise HTTPException(status_code=404, detail="SKU不存在")
+        item_title = sku_info.get("properties_name", "")
+        item_outer_id = sku_info.get("item_outer_id", "")
+        if item_outer_id:
+            from app.config import kuaimai_creds, kuaimai_config_lock
+            try:
+                params = _build_common_params("item.single.get")
+                params["outerId"] = item_outer_id
+                with kuaimai_config_lock:
+                    secret_snapshot = kuaimai_creds.app_secret
+                params["sign"] = _sign(params, secret_snapshot)
+                client = _get_client()
+                response = await client.post(KUAIMAI_API_BASE, data=params)
+                response.raise_for_status()
+                item_result = response.json()
+                wrapper = item_result.get("item_single_get_response", item_result)
+                item_data = wrapper.get("item", wrapper)
+                fetched_title = item_data.get("title", "")
+                if fetched_title:
+                    item_title = fetched_title
+            except Exception as e:
+                logger.warning(f"获取商品标题失败，使用propertiesName: {e}")
+        return SkuDetailResponse(
+            skuOuterId=sku_outer_id,
+            propertiesName=sku_info.get("properties_name", ""),
+            picPath=sku_info.get("pic_path", ""),
+            remark=sku_info.get("remark", ""),
+            supplierName=sku_info.get("supplier_name", ""),
+            supplierCode=sku_info.get("supplier_code", ""),
+            itemTitle=item_title,
+            sysItemId=sku_info.get("sys_item_id", 0),
+            sysSkuId=sku_info.get("sys_sku_id", 0),
+            itemOuterId=sku_info.get("item_outer_id", ""),
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"查询SKU详情失败: {e}")
+        raise HTTPException(status_code=502, detail=f"查询SKU详情失败: {e}")

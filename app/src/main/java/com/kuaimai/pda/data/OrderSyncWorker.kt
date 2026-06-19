@@ -8,7 +8,9 @@ import com.kuaimai.pda.data.api.ImageUploadService
 import com.kuaimai.pda.data.api.KuaimaiApiService
 import com.kuaimai.pda.data.api.OrderApiService
 import com.kuaimai.pda.data.api.dto.AddOrderItemRequest
+import com.kuaimai.pda.data.api.dto.ItemGetRequest
 import com.kuaimai.pda.data.api.dto.ItemUpdateRequest
+import com.kuaimai.pda.data.api.dto.SkuQueryRequest
 import com.kuaimai.pda.data.api.dto.SkuUpdateDto
 import com.kuaimai.pda.data.api.dto.SupplierUpdateDto
 import com.kuaimai.pda.data.db.dao.PendingOperationDao
@@ -229,11 +231,12 @@ class OrderSyncWorker(
         val skuOuterId = extractPayloadValue(op.payload, "sku_outer_id") ?: return false
         val propertiesName = extractPayloadValue(op.payload, "properties_name") ?: return false
         val outerId = skuOuterId.substringBefore("-")
+        val title = getLatestTitle(kmApi, skuOuterId, propertiesName)
         val request = ItemUpdateRequest(
             id = itemId,
             method = "erp.item.general.addorupdate",
             outerId = outerId,
-            title = ".",
+            title = title,
             skus = listOf(SkuUpdateDto(skuId = skuId, skuOuterId = skuOuterId, skuRemark = remark, skuPropertiesName = propertiesName))
         )
         val response = kmApi.updateItemRemark(request)
@@ -253,12 +256,13 @@ class OrderSyncWorker(
         val skuId = extractPayloadValue(op.payload, "sys_sku_id")?.toLongOrNull() ?: return false
         val skuPropertiesName = extractPayloadValue(op.payload, "properties_name") ?: ""
         val outerId = skuOuterId.substringBefore("-")
+        val title = getLatestTitle(kmApi, skuOuterId, skuPropertiesName)
         val skuSuppliers = listOf(SupplierUpdateDto(supplierCode = supplierCode, supplierName = supplierName))
         val request = ItemUpdateRequest(
             id = itemId,
             method = "erp.item.general.addorupdate",
             outerId = outerId,
-            title = ".",
+            title = title,
             skus = listOf(SkuUpdateDto(
                 skuId = skuId, skuOuterId = skuOuterId,
                 skuPropertiesName = skuPropertiesName,
@@ -271,6 +275,21 @@ class OrderSyncWorker(
             return false
         }
         return true
+    }
+
+    private suspend fun getLatestTitle(kmApi: KuaimaiApiService, skuOuterId: String, fallback: String): String {
+        try {
+            val skuResp = kmApi.getSkuInfo(SkuQueryRequest(skuOuterId = skuOuterId))
+            val skuList = skuResp.response?.itemSku ?: emptyList()
+            val itemOuterId = skuList.firstOrNull()?.itemOuterId ?: ""
+            if (itemOuterId.isBlank()) return fallback
+            val itemResp = kmApi.getItemDetail(ItemGetRequest(outerId = itemOuterId))
+            val title = itemResp.response?.item?.title ?: ""
+            return title.ifBlank { fallback }
+        } catch (e: Exception) {
+            Log.w(TAG, "获取最新title失败，使用降级值: ${e.message}")
+            return fallback
+        }
     }
 
     private suspend fun syncImageUpload(op: PendingOperationEntity): Boolean {

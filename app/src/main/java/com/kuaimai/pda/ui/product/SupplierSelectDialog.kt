@@ -31,18 +31,25 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kuaimai.pda.data.api.dto.SupplierDto
+import com.kuaimai.pda.ui.theme.BrandBlue
+import com.kuaimai.pda.ui.theme.DangerText
 import com.kuaimai.pda.ui.theme.SupplierRed
+import com.kuaimai.pda.ui.theme.TextSecondary
 
 /**
  * 供应商选择对话框
- * 支持搜索过滤供应商列表
+ * 支持搜索过滤供应商列表、加载状态、错误重试
  */
 @Composable
 fun SupplierSelectDialog(
     suppliers: List<SupplierDto>,
+    isLoading: Boolean = false,
+    error: String? = null,
+    onRetry: (() -> Unit)? = null,
     onSelect: (SupplierDto) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -53,7 +60,6 @@ fun SupplierSelectDialog(
         title = { Text("选择供应商") },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
-                // 搜索框
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
@@ -71,51 +77,84 @@ fun SupplierSelectDialog(
                         imeAction = androidx.compose.ui.text.input.ImeAction.Search
                     ),
                     keyboardActions = KeyboardActions(
-                        onSearch = { /* 搜索由文本变化触发 */ }
+                        onSearch = { }
                     )
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // 供应商列表
-                val filtered = if (searchQuery.isBlank()) {
-                    suppliers
-                } else {
-                    suppliers.filter {
-                        it.supplierName.contains(searchQuery, ignoreCase = true) ||
-                        it.supplierCode.contains(searchQuery, ignoreCase = true)
-                    }
-                }
-
-                if (suppliers.isEmpty()) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 24.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                        Spacer(modifier = Modifier.size(8.dp))
-                        Text("加载中...", style = MaterialTheme.typography.bodyMedium)
-                    }
-                } else if (filtered.isEmpty()) {
-                    Text(
-                        text = "未找到匹配的供应商",
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(vertical = 16.dp)
-                    )
-                } else {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(300.dp)
-                    ) {
-                        items(filtered, key = { it.supplierCode }) { supplier ->
-                            SupplierItemRow(
-                                supplier = supplier,
-                                onClick = { onSelect(supplier) }
+                when {
+                    error != null -> {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = error,
+                                color = DangerText,
+                                style = MaterialTheme.typography.bodyMedium,
+                                textAlign = TextAlign.Center
                             )
+                            if (onRetry != null) {
+                                Spacer(modifier = Modifier.height(12.dp))
+                                TextButton(onClick = onRetry) {
+                                    Text("重试", color = BrandBlue)
+                                }
+                            }
+                        }
+                    }
+                    isLoading && suppliers.isEmpty() -> {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 24.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            Spacer(modifier = Modifier.size(8.dp))
+                            Text("加载中...", style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                    suppliers.isEmpty() && !isLoading -> {
+                        Text(
+                            text = "暂无供应商数据",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary,
+                            modifier = Modifier.padding(vertical = 16.dp),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                    else -> {
+                        val filtered = if (searchQuery.isBlank()) {
+                            suppliers
+                        } else {
+                            suppliers.filter {
+                                it.supplierName.contains(searchQuery, ignoreCase = true) ||
+                                it.supplierCode.contains(searchQuery, ignoreCase = true)
+                            }
+                        }
+                        if (filtered.isEmpty()) {
+                            Text(
+                                text = "未找到匹配的供应商",
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(vertical = 16.dp)
+                            )
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(300.dp)
+                            ) {
+                                items(filtered, key = { it.supplierCode }) { supplier ->
+                                    SupplierItemRow(
+                                        supplier = supplier,
+                                        onClick = { onSelect(supplier) }
+                                    )
+                                }
+                            }
                         }
                     }
                 }

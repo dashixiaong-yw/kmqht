@@ -256,3 +256,17 @@ class KuaimaiSupplierItem(BaseModel):
 class KuaimaiSuppliersResponse(BaseModel):
     """快麦供应商列表响应"""
     suppliers: List[KuaimaiSupplierItem] = []
+
+
+class SkuDetailResponse(BaseModel):
+    """单个SKU详细信息（实时从快麦获取）"""
+    skuOuterId: str = ""
+    propertiesName: str = ""
+    picPath: str = ""
+    remark: str = ""
+    supplierName: str = ""
+    supplierCode: str = ""
+    itemTitle: str = ""
+    sysItemId: int = 0
+    sysSkuId: int = 0
+    itemOuterId: str = ""

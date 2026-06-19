@@ -1,5 +1,12 @@
 package com.kuaimai.pda.data.repository
 
+import android.content.Context
+import androidx.work.Constraints
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import com.kuaimai.pda.data.OrderSyncWorker
 import com.kuaimai.pda.data.db.dao.PickItemDao
 import com.kuaimai.pda.data.db.dao.PickOrderDao
 import com.kuaimai.pda.data.db.dao.PendingOperationDao
@@ -7,6 +14,7 @@ import com.kuaimai.pda.data.db.entity.PickItemEntity
 import com.kuaimai.pda.data.db.entity.PickOrderEntity
 import com.kuaimai.pda.data.db.entity.PendingOperationEntity
 import com.kuaimai.pda.util.TimeUtils
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
@@ -57,7 +65,8 @@ interface PickOrderRepository {
 class PickOrderRepositoryImpl @Inject constructor(
     private val pickOrderDao: PickOrderDao,
     private val pickItemDao: PickItemDao,
-    private val pendingOperationDao: PendingOperationDao
+    private val pendingOperationDao: PendingOperationDao,
+    @ApplicationContext private val appContext: Context
 ) : PickOrderRepository {
 
     override fun getAllOrders(): Flow<List<PickOrderEntity>> {
@@ -237,5 +246,18 @@ class PickOrderRepositoryImpl @Inject constructor(
             retryCount = 0
         )
         pendingOperationDao.insert(operation)
+        triggerSyncWorker()
+    }
+
+    private fun triggerSyncWorker() {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+        val workRequest = OneTimeWorkRequestBuilder<OrderSyncWorker>()
+            .setConstraints(constraints)
+            .build()
+        WorkManager.getInstance(appContext)
+            .beginUniqueWork("order_sync", ExistingWorkPolicy.KEEP, workRequest)
+            .enqueue()
     }
 }

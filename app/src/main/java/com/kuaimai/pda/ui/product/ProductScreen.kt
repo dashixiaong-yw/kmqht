@@ -283,6 +283,9 @@ fun ProductScreen(
             val suppliers by viewModel.suppliers.collectAsState()
             SupplierSelectDialog(
                 suppliers = suppliers,
+                isLoading = uiState.isLoadingSuppliers,
+                error = uiState.supplierError,
+                onRetry = viewModel::retryLoadSuppliers,
                 onSelect = viewModel::selectSupplier,
                 onDismiss = viewModel::hideSupplierDialog
             )
