@@ -51,7 +51,6 @@ fun GuideScreen(
 ) {
     var currentStep by remember { mutableIntStateOf(0) }
     var serverUrl by remember { mutableStateOf(AppConstants.DEFAULT_SERVER_URL) }
-    var apiKey by remember { mutableStateOf("") }
     var selectedScanMethod by remember { mutableIntStateOf(0) }
     var showCameraScan by remember { mutableStateOf(false) }
     var qrScanError by remember { mutableStateOf(false) }
@@ -65,9 +64,6 @@ fun GuideScreen(
                 if (result != null) {
                     qrScanError = false
                     serverUrl = result.serverUrl
-                    if (result.apiKey.isNotEmpty()) {
-                        apiKey = result.apiKey
-                    }
                 } else {
                     qrScanError = true
                 }
@@ -97,13 +93,9 @@ fun GuideScreen(
         when (currentStep) {
             0 -> StepServerConfig(
                 serverUrl = serverUrl,
-                apiKey = apiKey,
                 onScanConfig = { showCameraScan = true },
                 onNext = {
                     encryptedPrefs.edit().putString(PrefsKeys.KEY_SERVER_URL, serverUrl.trim()).apply()
-                    if (apiKey.isNotBlank()) {
-                        encryptedPrefs.edit().putString(PrefsKeys.KEY_API_KEY, apiKey.trim()).apply()
-                    }
                     currentStep = 1
                 }
             )
@@ -133,7 +125,6 @@ fun GuideScreen(
 @Composable
 private fun StepServerConfig(
     serverUrl: String,
-    apiKey: String,
     onScanConfig: () -> Unit,
     onNext: () -> Unit
 ) {

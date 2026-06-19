@@ -13,7 +13,6 @@ object PrefsKeys {
     const val KEY_SESSION_EXPIRE = "session_expire_time"
 
     // 快麦凭证相关（EncryptedSharedPreferences）
-    const val KEY_API_KEY = "api_key"
     const val KEY_APP_KEY = "app_key"
     const val KEY_APP_SECRET = "app_secret"
     const val KEY_SESSION = "session"

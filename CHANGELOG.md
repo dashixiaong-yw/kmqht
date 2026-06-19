@@ -7,6 +7,14 @@
 - PDA登录后所有请求仅需User Token，不再被API Key中间件拦截
 - 修复"后台已配置拣货区但PDA显示暂无拣货区"(及所有业务API 401问题)
 
+### 性能
+- 移除 RateLimitInterceptor：PDA 人机交互场景无需全局同步限流，消除全流量 200ms 延迟
+- 移除 ApiKeyInterceptor + AuthRepository.get/setApiKey + 引导页 apiKey 输入：API Key 验证已废弃
+- HttpLogging 级别 HEADERS→BASIC：减少 Logcat I/O，防止 X-User-Token 等敏感信息泄露
+- SetupQrParser.SetupConfig 移除 apiKey 字段：二维码解析忽略废弃的 apikey 参数
+- PrefsKeys 移除 KEY_API_KEY：全栈清理
+- PendingOperationDao 删除 getByType()：0 引用死代码
+
 ## 1.64 (2026-06-19)
 
 ### 修复

@@ -153,6 +153,8 @@
 {"type":"entity","name":"S2_冷启动鉴权本地化","entityType":"设计决策","observations":["冷启动时AppNavigation调validateToken()发起apiService.getCurrentUser(token)网络请求，阻塞首次渲染10-15秒，即使网络正常也可能因服务端延迟卡死","修复：UserRepository新增isTokenLocallyValid()读取本地KEY_SESSION_EXPIRE时间戳（登录时写入7天），0网络依赖；AppNavigation改用本地检查 (v1.63)"]}
 {"type":"entity","name":"S3_退出登录Loading状态","entityType":"设计决策","observations":["退出登录弹窗的confirmButton立即关闭弹窗(showLogoutDialog=false)后才执行logout()，logout()中apiService.logout(token)阻塞10秒，用户感知","没有反应","修复：SettingsScreen新增isLoggingOut状态，弹窗不关闭，显示\"正在退出...\"，按钮禁用 (v1.63)"]}
 {"type":"entity","name":"S4_logout清除本地先于API调用","entityType":"设计决策","observations":["logout()先调clearLocalUser()再调apiService.logout(token)，确保本地数据立即清除，不依赖网络","API调用加withTimeout(5000L)，最多等5秒，超时后降级不影响用户体验","修复两个问题：退出登录卡死正在退出…、杀后台重进直接进主页（v1.64）"]}
+{"type":"entity","name":"P0_RateLimitInterceptor移除","entityType":"设计决策","observations":["RateLimitInterceptor对全流量同步限流200ms，PDA人机交互场景无需此限制","移除provideRateLimitInterceptor + OkHttp注册 + RateLimitInterceptor类，全项目仅NetworkModule内引用，零回归风险(v1.65)"]}
+{"type":"entity","name":"P0_ApiKey全栈移除","entityType":"设计决策","observations":["ApiKeyMiddleware后端已删除，ApiKeyInterceptor/app端KEY_API_KEY全栈废弃","移除NetworkModule.ApiKeyInterceptor类 + provide方法 + OkHttp注册","移除AuthRepository接口+实现的getApiKey/setApiKey方法（0调用者）","移除GuideScreen apiKey状态变量 + StepServerConfig参数 + 保存到prefs代码","移除SetupQrParser.SetupConfig的apiKey字段，解析跳过apikey参数","移除PrefsKeys.KEY_API_KEY常量(v1.65)"]}
 {"type":"relation","from":"F1_取货单管理","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F2_扫码待办","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F3_取货单自动完成","to":"快麦取货通项目","relationType":"属于"}
@@ -265,3 +267,4 @@
 {"type":"relation","from":"F2_强制改密弹窗返回键拦截","to":"F3_会话预警动态刷新","relationType":"同级修复（同版本v1.63）"}
 {"type":"relation","from":"F3_会话预警动态刷新","to":"S1_ScannerManager_SharedPreferences修复","relationType":"同版本v1.63"}
 {"type":"relation","from":"S4_logout清除本地先于API调用","to":"S3_退出登录Loading状态","relationType":"后续修复（同模块v1.64）"}
+{"type":"relation","from":"P0_ApiKey全栈移除","to":"P0_RateLimitInterceptor移除","relationType":"同级优化（同版本v1.65）"}

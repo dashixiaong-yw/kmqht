@@ -27,9 +27,6 @@ interface PendingOperationDao {
     @Query("SELECT * FROM pending_operation WHERE order_id = :orderId ORDER BY created_at ASC")
     suspend fun getPendingByOrder(orderId: Long): List<PendingOperationEntity>
 
-    @Query("SELECT * FROM pending_operation WHERE operation_type = :type ORDER BY created_at ASC")
-    fun getByType(type: String): Flow<List<PendingOperationEntity>>
-
     @Query("UPDATE pending_operation SET retry_count = :retryCount WHERE id = :id")
     suspend fun updateRetryCount(id: Long, retryCount: Int)
 

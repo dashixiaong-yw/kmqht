@@ -18,8 +18,6 @@ interface AuthRepository {
     val tokenRefreshFailed: SharedFlow<Unit>
 
     suspend fun refreshSession(): Boolean
-    fun getApiKey(): String
-    fun setApiKey(key: String)
     fun getAppKey(): String
     fun setAppKey(key: String)
     fun getAppSecret(): String
@@ -61,14 +59,6 @@ class AuthRepositoryImpl @Inject constructor(
             _tokenRefreshFailed.emit(Unit)
             false
         }
-    }
-
-    override fun getApiKey(): String {
-        return prefs.getString(PrefsKeys.KEY_API_KEY, "") ?: ""
-    }
-
-    override fun setApiKey(key: String) {
-        prefs.edit().putString(PrefsKeys.KEY_API_KEY, key).apply()
     }
 
     override fun getAppKey(): String {

@@ -88,15 +88,6 @@ object NetworkModule {
         return context.getSharedPreferences("kuaimai_prefs", Context.MODE_PRIVATE)
     }
 
-    /** API Key拦截器：添加X-API-Key请求头 */
-    @Provides
-    @Singleton
-    fun provideApiKeyInterceptor(
-        @Named("encrypted") prefs: SharedPreferences
-    ): ApiKeyInterceptor {
-        return ApiKeyInterceptor(prefs)
-    }
-
     /** 快麦API签名拦截器 */
     @Provides
     @Singleton
@@ -106,19 +97,12 @@ object NetworkModule {
         return KuaimaiInterceptor(prefs)
     }
 
-    /** 限流拦截器：令牌桶算法，5次/秒 */
-    @Provides
-    @Singleton
-    fun provideRateLimitInterceptor(): RateLimitInterceptor {
-        return RateLimitInterceptor(maxRequests = 5, perSeconds = 1)
-    }
-
     /** 日志拦截器 */
     @Provides
     @Singleton
     fun provideLoggingInterceptor(): HttpLoggingInterceptor {
         return HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.HEADERS
+            level = HttpLoggingInterceptor.Level.BASIC
         }
     }
 
@@ -136,9 +120,7 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideOkHttpClient(
-        apiKeyInterceptor: ApiKeyInterceptor,
         kuaimaiInterceptor: KuaimaiInterceptor,
-        rateLimitInterceptor: RateLimitInterceptor,
         loggingInterceptor: HttpLoggingInterceptor,
         tokenAuthenticator: TokenAuthenticator
     ): OkHttpClient {
@@ -147,9 +129,7 @@ object NetworkModule {
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(15, TimeUnit.SECONDS)
             .writeTimeout(15, TimeUnit.SECONDS)
-            .addInterceptor(apiKeyInterceptor)
             .addInterceptor(kuaimaiInterceptor)
-            .addInterceptor(rateLimitInterceptor)
             .addInterceptor(loggingInterceptor)
             .authenticator(tokenAuthenticator)
             .build()
@@ -227,45 +207,6 @@ object NetworkModule {
     @Singleton
     fun provideSystemApiService(@Named("backend") backendRetrofit: Retrofit): SystemApiService {
         return backendRetrofit.create(SystemApiService::class.java)
-    }
-}
-
-/**
- * API Key拦截器：为请求添加X-API-Key头
- */
-class ApiKeyInterceptor(
-    private val prefs: SharedPreferences
-) : okhttp3.Interceptor {
-
-    override fun intercept(chain: okhttp3.Interceptor.Chain): okhttp3.Response {
-        val apiKey = prefs.getString(PrefsKeys.KEY_API_KEY, "") ?: ""
-        val request = chain.request().newBuilder()
-            .addHeader("X-API-Key", apiKey)
-            .build()
-        return chain.proceed(request)
-    }
-}
-
-/**
- * 限流拦截器：令牌桶算法
- */
-class RateLimitInterceptor(
-    private val maxRequests: Int,
-    private val perSeconds: Int
-) : okhttp3.Interceptor {
-
-    private val intervalMs: Long = (perSeconds * 1000L) / maxRequests
-    private var lastRequestTime: Long = 0L
-
-    @Synchronized
-    override fun intercept(chain: okhttp3.Interceptor.Chain): okhttp3.Response {
-        val now = System.currentTimeMillis()
-        val elapsed = now - lastRequestTime
-        if (elapsed < intervalMs) {
-            Thread.sleep(intervalMs - elapsed)
-        }
-        lastRequestTime = System.currentTimeMillis()
-        return chain.proceed(chain.request())
     }
 }
 

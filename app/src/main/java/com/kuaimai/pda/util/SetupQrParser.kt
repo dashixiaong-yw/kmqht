@@ -12,7 +12,7 @@ object SetupQrParser {
     /**
      * 解析扫码配置二维码
      * @param content 扫码内容
-     * @return SetupConfig(serverUrl, apiKey) 或 null
+     * @return SetupConfig(serverUrl) 或 null
      */
     fun parse(content: String): SetupConfig? {
         // 协议格式：kuaimai://setup?server=xxx&apikey=xxx
@@ -21,26 +21,22 @@ object SetupQrParser {
             if (queryPart.isEmpty()) return null
 
             var server = ""
-            var apikey = ""
 
             for (param in queryPart.split("&")) {
                 val parts = param.split("=", limit = 2)
-                if (parts.size == 2) {
-                    when (parts[0]) {
-                        "server" -> server = Uri.decode(parts[1])
-                        "apikey" -> apikey = Uri.decode(parts[1])
-                    }
+                if (parts.size == 2 && parts[0] == "server") {
+                    server = Uri.decode(parts[1])
                 }
             }
 
             if (server.isNotEmpty()) {
-                return SetupConfig(server, apikey)
+                return SetupConfig(server)
             }
         }
 
         // 兼容纯URL格式
         if (content.startsWith("http")) {
-            return SetupConfig(content, "")
+            return SetupConfig(content)
         }
 
         return null
@@ -51,6 +47,5 @@ object SetupQrParser {
  * 扫码配置结果
  */
 data class SetupConfig(
-    val serverUrl: String,
-    val apiKey: String
+    val serverUrl: String
 )
