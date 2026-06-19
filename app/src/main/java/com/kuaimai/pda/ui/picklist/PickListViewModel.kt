@@ -79,8 +79,9 @@ class PickListViewModel @Inject constructor(
                 val response = areaApiService.getAreas(token)
                 _areas.value = response.data.map { it.name }
             } catch (e: Exception) {
-                Log.w("PickListViewModel", "加载拣货区失败: ${e.message}")
-                _areas.value = listOf("A区", "B区", "C区", "D区")
+                Log.e("PickListViewModel", "加载拣货区失败: ${e.message}", e)
+                _errorMessage.value = "加载拣货区失败: ${e.message?.take(80) ?: "未知错误"}"
+                _areas.value = emptyList()
             }
         }
     }
