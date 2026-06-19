@@ -79,7 +79,7 @@ def create_order(req: CreateOrderRequest, user: dict = Depends(get_current_user)
                 logger.warning(f"单号冲突，重试生成: {order_no} (attempt={attempt + 1})")
             else:
                 logger.error(f"创建取货单失败: {e}")
-                raise HTTPException(status_code=409, detail="该SKU已存在于取货单中") HTTPException(status_code=409, detail="该SKU已存在于取货单中") HTTPException(status_code=500, detail="创建取货单失败，请稍后重试")
+                raise HTTPException(status_code=500, detail="创建取货单失败，请稍后重试")
 
     cursor.execute("SELECT * FROM pick_orders WHERE order_no = ?", (order_no,))
     row = cursor.fetchone()

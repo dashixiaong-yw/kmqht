@@ -19,7 +19,6 @@ import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Named
@@ -41,13 +40,10 @@ sealed class DownloadState {
 @Singleton
 class AppUpdateManager @Inject constructor(
     @Named("backend") private val retrofit: retrofit2.Retrofit,
+    @Named("trustAll") private val trustAllClient: OkHttpClient,
     @ApplicationContext private val context: Context,
 ) {
     private val systemApi = retrofit.create(SystemApiService::class.java)
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(120, TimeUnit.SECONDS)
-        .build()
 
     private val _isDownloading = AtomicBoolean(false)
     private val _downloadState = MutableStateFlow<DownloadState>(DownloadState.Idle)
@@ -87,7 +83,7 @@ class AppUpdateManager @Inject constructor(
                         return@Thread
                     }
                     val request = Request.Builder().url(info.downloadUrl).build()
-                    val response = client.newCall(request).execute()
+                    val response = trustAllClient.newCall(request).execute()
                     if (!response.isSuccessful) {
                         _downloadState.value = DownloadState.Failed("下载失败: HTTP ${response.code}")
                         return@Thread

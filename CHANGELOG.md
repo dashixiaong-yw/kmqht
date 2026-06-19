@@ -1,6 +1,16 @@
 # 快麦取货通 - 变更日志
 
-## 1.75 (2026-06-19)
+## 1.76 (2026-06-20)
+
+### 修复
+- P0: orders.py L82 语法错误修复 — 三个 HTTPException 挤在同一行导致后端无法启动
+- P1: AppUpdateManager APK下载 SSL 绕过 — 注入 trustAll OkHttpClient 修复 HTTPS 下载抛 SSLHandshakeException
+- P2: system.py apkFileName 空值防御 — 防止空文件名绕过文件存在检查
+- P3: system.py QRCode路由注释修正（移除过时"需API Key认证"）
+- P3: main.py 移除冗余 /apk 静态文件挂载（download_apk() 路由已覆盖）
+- P3: admin.py publish_app_version 增加 APK 文件存在性验证
+
+## 1.75 (2026-06-20)
 
 ### 修复
 - C1: 创建者在取货单被领取后失去访问权 — list_orders + _check_order_access 追加 created_by 检查

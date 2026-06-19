@@ -104,9 +104,14 @@ def publish_app_version(
     user: dict = Depends(check_permission("settings")),
 ) -> dict:
     """分发当前暂存的版本（正式发布）"""
+    from app.config import APK_DIR
     info = _load_version_info()
     if not info.get("currentVersion"):
         raise HTTPException(status_code=400, detail="没有待分发的版本，请先上传")
+    apk_filename = info.get("apkFileName", "")
+    apk_path = os.path.join(APK_DIR, apk_filename)
+    if not apk_filename or not os.path.exists(apk_path):
+        raise HTTPException(status_code=400, detail="APK文件不存在，请重新上传")
     info["publishedAt"] = format_beijing(beijing_now())
     _save_version_info(info)
     logger.info(f"用户 {user.get('username', '?')} 分发了版本 {info.get('currentVersion')}")
