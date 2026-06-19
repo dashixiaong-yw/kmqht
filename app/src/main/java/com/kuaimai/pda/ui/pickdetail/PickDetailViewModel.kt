@@ -278,7 +278,10 @@ class PickDetailViewModel @Inject constructor(
                     completedCount = detail.completedCount,
                     createdAt = TimeUtils.parseBeijingTime(detail.createdAt).let { if (it > 0) it else TimeUtils.now() },
                     completedAt = TimeUtils.parseBeijingTimeOrNull(detail.completedAt),
-                    expireAt = TimeUtils.parseBeijingTime(detail.expireAt).let { if (it > 0) it else TimeUtils.now() + TimeUtils.DEFAULT_EXPIRE_MS }
+                    expireAt = TimeUtils.parseBeijingTime(detail.expireAt).let { if (it > 0) it else TimeUtils.now() + TimeUtils.DEFAULT_EXPIRE_MS },
+                    createdBy = detail.createdBy,
+                    assignedTo = detail.assignedTo,
+                    visibility = detail.visibility
                 )
                 pickOrderRepository.updateOrder(orderEntity)
 
