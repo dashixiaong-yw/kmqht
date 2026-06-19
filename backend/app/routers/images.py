@@ -52,7 +52,7 @@ def _check_upload_rate(user_id: int) -> None:
 
 
 @router.post("/upload", response_model=ImageResponse)
-async def upload_image(
+def upload_image(
     skuOuterId: str = Form(..., max_length=64, description="SKU外部编码"),
     imageType: str = Form(..., description="图片类型: area/box"),
     file: UploadFile = File(..., description="图片文件"),
@@ -103,7 +103,7 @@ async def upload_image(
 
     try:
         # 先写入文件，再操作DB（防止写文件失败导致旧记录丢失）
-        content = await file.read()
+        content = file.file.read()
         if len(content) == 0:
             raise HTTPException(status_code=400, detail="上传文件为空")
         if len(content) > _MAX_FILE_SIZE:

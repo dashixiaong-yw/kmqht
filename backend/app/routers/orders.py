@@ -220,6 +220,11 @@ def add_item(order_id: int, req: AddItemRequest, user: dict = Depends(get_curren
 
     now = beijing_now()
     try:
+        # 重新验证订单存在性（缩小TOCTOU窗口）
+        cursor.execute("SELECT id FROM pick_orders WHERE id = ?", (order_id,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=410, detail="取货单已被删除")
+
         cursor.execute(
             """INSERT INTO pick_items (order_id, sku_outer_id, sys_item_id, sys_sku_id,
                properties_name, pic_path, status, supplier_name, supplier_code, remark, created_at)
@@ -247,6 +252,15 @@ def add_item(order_id: int, req: AddItemRequest, user: dict = Depends(get_curren
         cursor.execute("SELECT * FROM pick_items WHERE order_id = ? AND sku_outer_id = ?", (order_id, sku_outer_id))
         item_row = cursor.fetchone()
         return _row_to_item_response(item_row)
+    except sqlite3.IntegrityError as e:
+        db.rollback()
+        if "FOREIGN KEY constraint failed" in str(e):
+            logger.warning(f"取货单 {order_id} 已被删除，添加明细失败")
+            raise HTTPException(status_code=410, detail="取货单已被删除，请刷新列表")
+        raise
+    except HTTPException:
+        db.rollback()
+        raise
     except Exception as e:
         db.rollback()
         logger.error(f"添加取货明细失败: {e}")
@@ -417,7 +431,7 @@ def delete_order(order_id: int, user: dict = Depends(get_current_user)) -> BaseR
         deleted_skus = [row["sku_outer_id"] for row in cursor.fetchall()]
 
         # 删除取货单（级联删除明细）
-        cursor.execute("DELETE FROM pick_orders WHERE id = ?", (order_id,))
+        cursor.execute("DELETE FROM pick_orders WHERE id = ? AND status != 1", (order_id,))
 
         # 清理不被其他订单引用的SKU图片
         for sku_outer_id in deleted_skus:

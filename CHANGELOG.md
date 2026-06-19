@@ -1,5 +1,17 @@
 # 快麦取货通 - 变更日志
 
+## 1.70 (2026-06-19)
+
+### 修复
+- FOREIGN KEY constraint 787 彻底根除: 根因是TOCTOU竞态条件（_check_order_access检查与INSERT之间存在1~3秒快麦API调用窗口，另一线程可在此期间删除订单）。双层防护：INSERT前重验证order存在性 + 捕获sqlite3.IntegrityError区分FK异常
+- delete_order: DELETE语句增加WHERE status != 1条件，防止并发完成订单被误删
+- upload_image: 从async def改为同步def，彻底消除threading.local连接共享风险
+
+### 后端
+- orders.py: add_item新增INSERT前重验证逻辑+IntegrityError异常分级处理
+- orders.py: delete_order增加status原子性保护
+- images.py: upload_image同步化改造（async def→def, await file.read()→file.file.read()）
+
 ## 1.69 (2026-06-19)
 
 ### 修复
