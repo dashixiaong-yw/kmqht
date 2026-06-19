@@ -276,6 +276,12 @@ def restore_item(order_id: int, item_id: int, user: dict = Depends(get_current_u
     if item_row["status"] == 0:
         return BaseResponse(message="该明细未完成，无需恢复")
 
+    # 检查取货单是否已完成
+    cursor.execute("SELECT status FROM pick_orders WHERE id = ?", (order_id,))
+    order_row = cursor.fetchone()
+    if order_row and order_row["status"] == 1:
+        raise HTTPException(status_code=400, detail="已完成的取货单不能恢复明细")
+
     try:
         cursor.execute(
             "UPDATE pick_items SET status = 0, completed_at = NULL WHERE id = ?",

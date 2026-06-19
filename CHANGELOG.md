@@ -1,5 +1,18 @@
 # 快麦取货通 - 变更日志
 
+## 1.52 (2026-06-19)
+
+### 审计
+- 第十次全面审计：6路并行代理覆盖30版本(153项检查)、146项✅正确实现、6项修复（P0×1 + P2×2 + P3×3）
+
+### 修复
+- P0: auth.py SKIP_AUTH_PREFIXES 顺序错误 — `/api/app-version/download`/qrcode 提前到 `/api/app-version` 之前，避免break逻辑截胡，修复PDA扫码下载APK始终401（v1.51修复未生效）
+- P3: auth.py 移除 /apk-download 死代码（无对应路由）
+- P2: orders.py restore_item 新增 status=1 校验拦截 — 禁止已完成取货单恢复明细
+- P3: CameraScanScreen BarcodeScanner 新增 DisposableEffect 释放 — 防止ML Kit native资源泄漏
+- P2: PickItemRow 规格图触摸热区 52dp→56dp（满足最小触摸热区规范）
+- P3: build.gradle.kts 启用 isShrinkResources=true（v1.22 记录遗漏）
+
 ## 1.51 (2026-06-19)
 
 ### 修复

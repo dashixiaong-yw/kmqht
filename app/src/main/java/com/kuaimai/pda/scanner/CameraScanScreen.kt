@@ -120,6 +120,9 @@ private fun CameraPreview(
 
     // ML Kit条码扫描器
     val scanner = remember { BarcodeScanning.getClient() }
+    DisposableEffect(Unit) {
+        onDispose { scanner.close() }
+    }
 
     AndroidView(
         factory = { ctx ->
