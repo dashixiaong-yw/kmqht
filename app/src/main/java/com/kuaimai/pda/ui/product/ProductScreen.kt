@@ -50,6 +50,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -58,6 +59,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -83,6 +86,7 @@ import com.kuaimai.pda.ui.theme.SupplierRed
 import com.kuaimai.pda.ui.theme.SurfaceWhite
 import com.kuaimai.pda.ui.theme.TextSecondary
 import com.kuaimai.pda.ui.theme.WarningYellow
+import kotlinx.coroutines.flow.collectLatest
 
 /**
  * 商品详情页面
@@ -97,6 +101,21 @@ fun ProductScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+
+    val scanFocusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        scanFocusRequester.requestFocus()
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.scannerManager.scanResult.collectLatest { barcode ->
+            if (barcode.isNotEmpty()) {
+                viewModel.onScanBarcode(barcode)
+                viewModel.scannerManager.clearResult()
+            }
+        }
+    }
 
     // F22: 图片删除确认弹窗状态
     var showImageDeleteConfirm by remember { mutableStateOf<String?>(null) } // "area" or "box"
@@ -159,7 +178,8 @@ fun ProductScreen(
             ScanInputSection(
                 scanInput = uiState.scanInput,
                 onScanInputChange = viewModel::updateScanInput,
-                onConfirmScan = viewModel::confirmScanInput
+                onConfirmScan = viewModel::confirmScanInput,
+                focusRequester = scanFocusRequester
             )
 
             if (uiState.isLoading) {
@@ -314,7 +334,8 @@ fun ProductScreen(
 private fun ScanInputSection(
     scanInput: String,
     onScanInputChange: (String) -> Unit,
-    onConfirmScan: () -> Unit
+    onConfirmScan: () -> Unit,
+    focusRequester: FocusRequester
 ) {
     OutlinedTextField(
         value = scanInput,
@@ -324,7 +345,9 @@ private fun ScanInputSection(
             Icon(Icons.Default.Search, contentDescription = "搜索", modifier = Modifier.size(20.dp))
         },
         singleLine = true,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .focusRequester(focusRequester),
         shape = RoundedCornerShape(10.dp),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         keyboardActions = KeyboardActions(onSearch = { onConfirmScan() })

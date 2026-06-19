@@ -1,5 +1,6 @@
 """取货单路由 - 取货单CRUD及明细操作"""
 
+import asyncio
 import logging
 import os
 import sqlite3
@@ -183,7 +184,7 @@ def get_order(order_id: int, supplierName: Optional[str] = Query(None, descripti
 
 
 @router.post("/{order_id}/items", response_model=ItemResponse)
-async def add_item(order_id: int, req: AddItemRequest, user: dict = Depends(get_current_user)) -> ItemResponse:
+def add_item(order_id: int, req: AddItemRequest, user: dict = Depends(get_current_user)) -> ItemResponse:
     """添加取货明细，后端查询快麦API并缓存"""
     _check_order_access(order_id, user["username"])
     db = get_db()
@@ -208,8 +209,12 @@ async def add_item(order_id: int, req: AddItemRequest, user: dict = Depends(get_
     if cursor.fetchone():
         raise HTTPException(status_code=409, detail="该SKU已存在于取货单中")
 
-    # 查询SKU信息（先查缓存，再查快麦API）
-    sku_info = await get_sku_info(sku_outer_id)
+    # 同步调用快麦API获取SKU信息（同步def在线程池中运行，连接独占，无并发问题）
+    try:
+        sku_info = asyncio.run(get_sku_info(sku_outer_id))
+    except Exception as e:
+        logger.error(f"查询SKU信息失败: {e}")
+        raise HTTPException(status_code=500, detail=f"查询SKU信息失败: {e}")
     if not sku_info:
         raise HTTPException(status_code=404, detail=f"未找到SKU信息: {sku_outer_id}")
 

@@ -16,6 +16,7 @@ import com.kuaimai.pda.data.db.entity.PickItemEntity
 import com.kuaimai.pda.data.db.entity.ProductImageEntity
 import com.kuaimai.pda.data.repository.ImageRepository
 import com.kuaimai.pda.data.repository.PickOrderRepository
+import com.kuaimai.pda.scanner.ScannerManager
 import com.kuaimai.pda.util.AppConstants
 import com.kuaimai.pda.util.PrefsKeys
 import com.kuaimai.pda.util.TimeUtils
@@ -74,6 +75,7 @@ class ProductViewModel @Inject constructor(
     private val pickOrderRepository: PickOrderRepository,
     private val imageRepository: ImageRepository,
     private val systemApiService: SystemApiService,
+    val scannerManager: ScannerManager,
     @Named("encrypted") private val prefs: SharedPreferences,
     @ApplicationContext private val appContext: Context
 ) : ViewModel() {
@@ -189,6 +191,7 @@ class ProductViewModel @Inject constructor(
         if (barcode.isBlank()) return
         _uiState.value = _uiState.value.copy(scanInput = barcode)
         loadSkuInfo(barcode)
+        _uiState.value = _uiState.value.copy(scanInput = "")
     }
 
     /**
@@ -204,6 +207,7 @@ class ProductViewModel @Inject constructor(
     fun confirmScanInput() {
         val input = _uiState.value.scanInput.trim()
         if (input.isNotEmpty()) {
+            _uiState.value = _uiState.value.copy(scanInput = "")
             loadSkuInfo(input)
         }
     }

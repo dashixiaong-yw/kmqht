@@ -36,8 +36,8 @@ android {
         applicationId = "com.kuaimai.pda"
         minSdk = 24
         targetSdk = 34
-        versionCode = 168
-        versionName = "1.68"
+        versionCode = 169
+        versionName = "1.69"
 
         resourceConfigurations.add("zh")
 

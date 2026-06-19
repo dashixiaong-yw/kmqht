@@ -1,5 +1,20 @@
 # 快麦取货通 - 变更日志
 
+## 1.69 (2026-06-19)
+
+### 修复
+- HomeScreen: 底部内容截断 — 内层Column添加verticalScroll；3个模块卡片居中 — 移除fillMaxWidth；模块间距12dp→8dp
+- 扫码添加HTTP 409: 视为远程重复扫码，同步后端明细到本地后触发重复反馈，不再显示"添加明细失败"
+- FOREIGN KEY constraint 787: add_item改为同步def，线程池各线程独占SQLite连接，asyncio.run串行调用快麦API
+
+### 改进
+- 取货单详情页：连续扫码默认开启
+- 扫码添加商品后：从本地Room提取供应商列表，与商品列表同时刷新，避免竞态导致列表空白
+- 商品详情页：输入框自动聚焦 + 支持PDA硬件扫码 + 扫码后自动清空支持连续扫码
+
+### 后端
+- orders.py: add_item 从 async def 改为同步 def，使用 asyncio.run() 调用异步 get_sku_info，彻底解决多协程共享SQLite连接的FK冲突问题
+
 ## 1.68 (2026-06-19)
 
 ### 修复
