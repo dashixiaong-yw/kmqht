@@ -39,7 +39,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -88,7 +87,6 @@ import com.kuaimai.pda.ui.theme.TextSecondary
  * 供应商过滤Chips（FlowRow, 默认"全部"）
  * LazyColumn of PickItemRow
  * 底部：进度 X/Y + [全部完成]按钮
- * 连续扫码模式开关
  * 重复扫码：中等振动 + 高亮
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -102,7 +100,6 @@ fun PickDetailScreen(
     val items by viewModel.items.collectAsState()
     val suppliers by viewModel.suppliers.collectAsState()
     val currentSupplier by viewModel.currentSupplier.collectAsState()
-    val continuousScanMode by viewModel.continuousScanMode.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val duplicateScan by viewModel.duplicateScan.collectAsState()
 
@@ -270,25 +267,6 @@ fun PickDetailScreen(
                         tint = TextSecondary
                     )
                 }
-            }
-
-            // 连续扫码模式开关
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "连续扫码",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                Switch(
-                    checked = continuousScanMode,
-                    onCheckedChange = { viewModel.toggleContinuousScanMode() }
-                )
             }
 
             Spacer(modifier = Modifier.height(8.dp))

@@ -65,10 +65,6 @@ class PickDetailViewModel @Inject constructor(
     private val _currentSupplier = MutableStateFlow(AppConstants.SUPPLIER_ALL_LABEL)
     val currentSupplier: StateFlow<String> = _currentSupplier.asStateFlow()
 
-    /** 连续扫码模式 */
-    private val _continuousScanMode = MutableStateFlow(true)
-    val continuousScanMode: StateFlow<Boolean> = _continuousScanMode.asStateFlow()
-
     /** 加载状态 */
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -274,13 +270,6 @@ class PickDetailViewModel @Inject constructor(
      */
     fun setSupplierFilter(supplier: String) {
         _currentSupplier.value = supplier
-    }
-
-    /**
-     * 切换连续扫码模式
-     */
-    fun toggleContinuousScanMode() {
-        _continuousScanMode.value = !_continuousScanMode.value
     }
 
     /**

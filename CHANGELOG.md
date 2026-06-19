@@ -1,5 +1,10 @@
 # 快麦取货通 - 变更日志
 
+## 1.72 (2026-06-19)
+
+### 改进
+- 移除连续扫码开关：默认始终连续扫码（扫码后自动清空+聚焦），移除 dead code（_continuousScanMode StateFlow + toggle + Switch UI）
+
 ## 1.71 (2026-06-19)
 
 ### 修复
