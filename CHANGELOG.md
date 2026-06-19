@@ -1,5 +1,22 @@
 # 快麦取货通 - 变更日志
 
+## 1.63 (2026-06-19)
+
+### 修复
+- ScannerManager扫码声音/振动设置读取错误的SharedPreferences文件（kuaimai_settings→kuaimai_prefs）和错误key名称（scan_sound/vibration→sound_enabled/vibration_enabled），导致设置完全不生效
+- 冷启动卡死首屏：validateToken()网络验证改为isTokenLocallyValid()本地时间戳验证，秒进首页
+- 退出登录弹窗立即消失但无响应：增加isLoggingOut加载状态，弹窗不关+显示"退出中…"
+- LoginScreen强制改密弹窗未拦截Android系统返回键，增加BackHandler
+- HomeScreen会话预警只计算一次：改为while+delay每小时动态刷新
+- 登录页历史下拉箭头无数据时仍显示（点击无效）：无历史时隐藏trailingIcon
+- popUpTo(0)使用无效entry ID：改为popUpTo(navController.graph.startDestinationId)
+
+### 新增
+- 登录页"记住密码"复选框：勾选后加密保存账号密码到本地EncryptedSharedPreferences
+- 登录页用户名ExposedDropdownMenuBox：记录最近10条登录历史，按使用时间倒序
+- UserRepository新增isTokenLocallyValid()：启动鉴权不依赖网络请求
+- UserRepository新增8个方法：记住密码和登录历史管理（全部本地加密存储）
+
 ## 1.62 (2026-06-19)
 
 ### 修复

@@ -149,6 +149,9 @@
 {"type":"entity","name":"v1.52_第十次全面审计+6项修复","entityType":"VersionRelease","observations":["版本号 1.52","2026-06-19 发布","第十次全面审计: 6路并行代理 30版本 153项检查","146项✅正确实现，6项修复","P0: auth.py SKIP_PREFIXES顺序修复PDA下载401(v1.51未生效)","P2: orders.py restore_item status=1拦截","P2: PickItemRow规格图52→56dp","P3: auth.py死代码/apk-download移除","P3: CameraScan DisposableEffect资源释放","P3: build.gradle shrinkResources=true"]}
 {"type":"entity","name":"v1.53_修复FRP登录连接失败","entityType":"VersionRelease","observations":["版本号 1.53","2026-06-19 发布","P0: network_security_config.xml 新增 certificates src=user","Android 7.x 系统缺少 Let's Encrypt ISRG Root X1 根证书","OkHttp SSL 握手失败导致 ConnectException 无法连接服务器","修复: 信任用户安装的 CA 证书，兼容 FRP HTTPS 场景"]}
 {"type":"entity","name":"v1.54_修复APK上传分发链路","entityType":"VersionRelease","observations":["版本号 1.54","2026-06-19 发布","P0: upload_app_version 返回版本信息直接渲染，消除文件系统写后读延迟","P0: get_app_version 增加APK文件存在检查，防404","新增 renderApkCard() 前端函数","文件: backend/app/routers/admin.py, backend/app/routers/system.py"]}
+{"type":"entity","name":"S1_ScannerManager_SharedPreferences修复","entityType":"设计决策","observations":["ScannerManager.register()读取kuaimai_settings文件的scan_sound/scan_vibration key，但SettingsViewModel写入kuaimai_prefs文件的sound_enabled/vibration_enabled key，双重隔离导致扫码反馈设置完全不生效","修复：ScannerManager.kt L68-L70改为读取kuaimai_prefs + sound_enabled/vibration_enabled (v1.63)"]}
+{"type":"entity","name":"S2_冷启动鉴权本地化","entityType":"设计决策","observations":["冷启动时AppNavigation调validateToken()发起apiService.getCurrentUser(token)网络请求，阻塞首次渲染10-15秒，即使网络正常也可能因服务端延迟卡死","修复：UserRepository新增isTokenLocallyValid()读取本地KEY_SESSION_EXPIRE时间戳（登录时写入7天），0网络依赖；AppNavigation改用本地检查 (v1.63)"]}
+{"type":"entity","name":"S3_退出登录Loading状态","entityType":"设计决策","observations":["退出登录弹窗的confirmButton立即关闭弹窗(showLogoutDialog=false)后才执行logout()，logout()中apiService.logout(token)阻塞10秒，用户感知","没有反应","修复：SettingsScreen新增isLoggingOut状态，弹窗不关闭，显示\"正在退出...\"，按钮禁用 (v1.63)"]}
 {"type":"relation","from":"F1_取货单管理","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F2_扫码待办","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F3_取货单自动完成","to":"快麦取货通项目","relationType":"属于"}
@@ -253,3 +256,10 @@
 {"type":"relation","from":"快麦取货通项目","to":"v1.53_修复FRP登录连接失败","relationType":"has_version"}
 {"type":"relation","from":"v1.54_修复APK上传分发链路","to":"快麦取货通项目","relationType":"part_of"}
 {"type":"relation","from":"快麦取货通项目","to":"v1.54_修复APK上传分发链路","relationType":"has_version"}
+{"type":"relation","from":"S1_ScannerManager_SharedPreferences修复","to":"F0_登录页记住密码与历史","relationType":"同级实体（同版本v1.63）"}
+{"type":"relation","from":"S2_冷启动鉴权本地化","to":"S1_ScannerManager_SharedPreferences修复","relationType":"同级修复（同版本v1.63）"}
+{"type":"relation","from":"S3_退出登录Loading状态","to":"S2_冷启动鉴权本地化","relationType":"同级修复（同版本v1.63）"}
+{"type":"relation","from":"F0_登录页记住密码与历史","to":"F1_popUpTo修正","relationType":"同级功能（同版本v1.63）"}
+{"type":"relation","from":"F1_popUpTo修正","to":"F2_强制改密弹窗返回键拦截","relationType":"同级修复（同版本v1.63）"}
+{"type":"relation","from":"F2_强制改密弹窗返回键拦截","to":"F3_会话预警动态刷新","relationType":"同级修复（同版本v1.63）"}
+{"type":"relation","from":"F3_会话预警动态刷新","to":"S1_ScannerManager_SharedPreferences修复","relationType":"同版本v1.63"}
