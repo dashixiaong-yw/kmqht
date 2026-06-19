@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton
@@ -173,14 +174,16 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun logout() {
         val token = getToken()
+        clearLocalUser()
         if (token.isNotEmpty()) {
             try {
-                apiService.logout(token)
+                withTimeout(5000L) {
+                    apiService.logout(token)
+                }
             } catch (e: Exception) {
                 Log.w(TAG, "退出登录API调用失败: ${e.message}")
             }
         }
-        clearLocalUser()
     }
 
     override fun hasPermission(perm: String): Boolean {
