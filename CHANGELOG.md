@@ -1,5 +1,10 @@
 # 快麦取货通 - 变更日志
 
+## 1.53 (2026-06-19)
+
+### 修复
+- P0: network_security_config.xml 新增 `<certificates src="user" />` — 修复 FRP HTTPS 场景 PDA 登录时 "无法连接服务器"（Android 7.x 系统缺少 Let's Encrypt 根证书，OkHttp SSL 握手失败）
+
 ## 1.52 (2026-06-19)
 
 ### 审计

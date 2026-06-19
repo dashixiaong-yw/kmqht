@@ -147,6 +147,7 @@
 {"type":"entity","name":"BUG-APKDownloadZip","entityType":"BugFix","observations":["Docker Alpine环境下StaticFiles使用mimetypes.guess_type无法识别.apk→application/vnd.android.package-archive","返回application/octet-stream且无Content-Disposition，PDA浏览器检测PK签名魔数后重命名为.zip","修复: system.py新增/api/app-version/download路由，FileResponse显式设置media_type和filename","文件: backend/app/routers/system.py, backend/app/auth.py"]}
 {"type":"entity","name":"v1.48_修复APK下载404","entityType":"VersionRelease","observations":["版本号 1.48","2026-06-18 发布","P0: system.py downloadUrl从/apk-download/{fileName}改为/api/app-version/download","根因: v1.47新增自定义下载路由但URL指向了不存在的/apk-download/路径","FRP内网穿透场景扫码下载返回404，管理后台正常","修复: 2行URL路径统一指向已有路由"]}
 {"type":"entity","name":"v1.52_第十次全面审计+6项修复","entityType":"VersionRelease","observations":["版本号 1.52","2026-06-19 发布","第十次全面审计: 6路并行代理 30版本 153项检查","146项✅正确实现，6项修复","P0: auth.py SKIP_PREFIXES顺序修复PDA下载401(v1.51未生效)","P2: orders.py restore_item status=1拦截","P2: PickItemRow规格图52→56dp","P3: auth.py死代码/apk-download移除","P3: CameraScan DisposableEffect资源释放","P3: build.gradle shrinkResources=true"]}
+{"type":"entity","name":"v1.53_修复FRP登录连接失败","entityType":"VersionRelease","observations":["版本号 1.53","2026-06-19 发布","P0: network_security_config.xml 新增 certificates src=user","Android 7.x 系统缺少 Let's Encrypt ISRG Root X1 根证书","OkHttp SSL 握手失败导致 ConnectException 无法连接服务器","修复: 信任用户安装的 CA 证书，兼容 FRP HTTPS 场景"]}
 {"type":"relation","from":"F1_取货单管理","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F2_扫码待办","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F3_取货单自动完成","to":"快麦取货通项目","relationType":"属于"}
@@ -247,3 +248,5 @@
 {"type":"relation","from":"v1.52_第十次全面审计+6项修复","to":"v1.51","relationType":"fixes"}
 {"type":"relation","from":"v1.52_第十次全面审计+6项修复","to":"v1.47_修复APK下载ContentType","relationType":"fixes"}
 {"type":"relation","from":"快麦取货通项目","to":"v1.52_第十次全面审计+6项修复","relationType":"has_version"}
+{"type":"relation","from":"v1.53_修复FRP登录连接失败","to":"快麦取货通项目","relationType":"part_of"}
+{"type":"relation","from":"快麦取货通项目","to":"v1.53_修复FRP登录连接失败","relationType":"has_version"}
