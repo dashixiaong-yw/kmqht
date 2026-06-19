@@ -1,150 +1,142 @@
-# 退出登录无反应 & 全功能审计修复
+# 冷启动卡死 + 退出登录无反应 & 全功能修复
 
-## 一、问题现象
+## 一、用户确认的前提
 
-1. **退出登录点击"确定"后没有反应** — 弹窗消失，页面停滞不动
-2. 全面检查所有功能模块是否正常
+1. **网络正常**（第一次可以登录成功）
+2. **冷启动卡死首屏** — 清除后台重开 → "正在验证登录状态…"一直不消失
+3. **退出登录无反应** — 点击"确定"后弹窗消失，什么都没发生
+4. **预期行为** — 退出后解除登录状态，退回到登录页面
 
-## 二、根因分析
+## 二、共同根因分析
 
-### 🔴 Bug #1: 退出登录"没有反应"的精确根因
+两个问题的**共同根因**都是同一个设计缺陷：
 
-**代码路径**：[SettingsScreen.kt L92-L97](file:///d:/trea项目/快麦取货通/app/src/main/java/com/kuaimai/pda/ui/settings/SettingsScreen.kt#L92-L97)
+**App 核心操作（启动鉴权 / 退出登出）强制依赖服务端网络请求完成，没有本地降级路径。**
+
+### 冷启动卡死：`validateToken()` 必须在 LaunchedEffect 内完成
 
 ```kotlin
-TextButton(onClick = {
-    showLogoutDialog = false      // ← 弹窗立即消失
-    scope.launch {                // ← 启动协程
-        userRepository.logout()   // ← 阻塞10秒（网络超时）
-        onLogout()                // ← 10秒后才执行
+// AppNavigation.kt L86-L99
+LaunchedEffect(Unit) {
+    if (userRepository.isLoggedIn()) {
+        val valid = userRepository.validateToken()  // ← 网络调用，阻塞 LaunchedEffect
+        ...
     }
-}) {
-    Text("确定", color = MaterialTheme.colorScheme.error)
+    isCheckingAuth = false  // ← 这一行永远等不到
 }
 ```
 
-**时序分解**：
+`validateToken()` → `apiService.getCurrentUser(token)` → Retrofit 网络请求。即使网络"正常"，这个调用也可能：
+- 服务端正忙于处理登录后的 `syncKuaimaiCredentials` → 响应延迟
+- 服务端返回非预期响应 → Gson 反序列化异常（虽然被 catch，但仍需等服务端返回）
+- OkHttp 连接池耗尽、SSL 握手慢等
 
-```
-0秒   → 用户点"确定"
-0秒   → 弹窗消失（showLogoutDialog = false）
-0秒   → 协程启动，调用 userRepository.logout()
-         ├─ apiService.logout(token) 发起 POST 请求
-         │   └─ 网络不可用 → OkHttp 等待 10 秒 connectTimeout
-0~10秒 → 用户看到：弹窗没了，页面纹丝不动，点击无响应 → **判定为"没有反应"**
-10秒  → connectTimeout 超时，catch 异常，继续 clearLocalUser()
-10秒  → onLogout() → 导航到登录页
-```
+**核心问题**：启动鉴权不应依赖网络。登录时已保存 `KEY_SESSION_EXPIRE = 当前时间 + 7天`，冷启动只需读本地值即可判断 token 是否过期。
 
-**补充**：`logout()` 内部已有 try-catch（[UserRepository.kt L173-L179](file:///d:/trea项目/快麦取货通/app/src/main/java/com/kuaimai/pda/data/repository/UserRepository.kt#L173-L179)），网络失败不会崩溃，只是等 10 秒。但没有任何 UI 反馈告知用户"正在退出"。
-
-### 🟡 Bug #2: popUpTo(0) 路由 ID 不精确
+### 退出登录无反应：`logout()` 在协程中调用网络API
 
 ```kotlin
-navController.navigate(Routes.LOGIN) {
-    popUpTo(0) { inclusive = true }
+// SettingsScreen.kt
+scope.launch {
+    userRepository.logout()  // → apiService.logout(token) → 网络请求
+    onLogout()               // ← 等网络请求完成才能到这一行
 }
 ```
 
-`0` 不是有效的 backstack entry ID。应使用 `navController.graph.startDestinationId` 或直接使用 route 字符串。当前因 Navigation 库对无效 ID 的静默忽略，实际行为等价于 `popUpTo(startDestinationId)`，功能勉强可用，但有风险。
-
-### 🟡 审计发现的其他问题
-
-| 优先级 | 文件 | 问题 |
-|:------:|------|------|
-| P2 | [LoginScreen.kt L293](file:///d:/trea项目/快麦取货通/app/src/main/java/com/kuaimai/pda/ui/login/LoginScreen.kt#L293) | 强制修改密码弹窗 `onDismissRequest = { /* 不允许关闭 */ }`，未显式拦截 Android 返回键 |
-| P2 | [HomeScreen.kt:91](file:///d:/trea项目/快麦取货通/app/src/main/java/com/kuaimai/pda/ui/home/HomeScreen.kt#L91) | 会话预警只计算一次（LaunchedEffect(authRepository)），长时间悬挂不会动态更新 |
-| P3 | [HomeScreen.kt:203](file:///d:/trea项目/快麦取货通/app/src/main/java/com/kuaimai/pda/ui/home/HomeScreen.kt#L203) | 会话预警点击跳转到设置页，但设置页无快麦 session 刷新入口 |
-| P3 | [NetworkModule.kt:185](file:///d:/trea项目/快麦取货通/app/src/main/java/com/kuaimai/pda/di/NetworkModule.kt#L185) | Server URL 变更后需重启应用（@Singleton Retrofit），设置页改地址不即时生效 |
+弹窗已关，网络请求在后台静默运行，用户看不到任何反馈 → "没有反应"。
 
 ## 三、修复方案
 
-### 3.1 退出登录修复（SettingsScreen.kt）
+### 3.1 冷启动卡死：网络验证 → 本地时间戳验证
 
-**策略**：跳过网络调用，降级为纯本地清除。`apiService.logout(token)` 的目的只是在服务端标记 token 失效，但服务端正向验证 token 时如果 token 已过期也会拒绝。退出登录的核心是清除本地状态，网络通知是"尽力而为"。
+**UserRepository.kt — 新增 1 个方法**（仅读本地加密存储，0 网络依赖）：
 
 ```kotlin
-// 修改 logout() 实现（UserRepository.kt）
-override suspend fun logout() {
-    val token = getToken()
-    if (token.isNotEmpty()) {
-        try {
-            apiService.logout(token)
-        } catch (e: Exception) {
-            Log.w(TAG, "退出登录API调用失败: ${e.message}")
-        }
-    }
-    clearLocalUser()
+/** 检查本地token是否在有效期内（不调网络） */
+fun isTokenLocallyValid(): Boolean {
+    if (getToken().isEmpty() || _currentUser.value == null) return false
+    val expireTime = prefs.getLong(PrefsKeys.KEY_SESSION_EXPIRE, 0L)
+    return expireTime > System.currentTimeMillis()
 }
 ```
 
-**保持现有代码不变**（logout() 已有 try-catch）。修复点在 SettingsScreen：增加 `isLoggingOut` 状态 + 弹窗不立即关闭 + 显示 loading。
-
-```kotlin
-// SettingsScreen.kt 修复
-var showLogoutDialog by remember { mutableStateOf(false) }
-var isLoggingOut by remember { mutableStateOf(false) }  // 新增
-
-// 退出登录确认弹窗
-if (showLogoutDialog) {
-    AlertDialog(
-        onDismissRequest = { if (!isLoggingOut) showLogoutDialog = false },
-        title = { Text("退出登录") },
-        text = {
-            Text(if (isLoggingOut) "正在退出..." else "确定要退出当前账号吗？")
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    if (isLoggingOut) return@TextButton  // 防止重复点击
-                    isLoggingOut = true
-                    scope.launch {
-                        userRepository.logout()
-                        isLoggingOut = false
-                        showLogoutDialog = false
-                        onLogout()
-                    }
-                },
-                enabled = !isLoggingOut
-            ) {
-                Text(if (isLoggingOut) "退出中..." else "确定",
-                     color = MaterialTheme.colorScheme.error)
-            }
-        },
-        dismissButton = {
-            if (!isLoggingOut) {
-                TextButton(onClick = { showLogoutDialog = false }) {
-                    Text("取消")
-                }
-            }
-        }
-    )
-}
-```
-
-**效果**：
-- 点击"确定"后弹窗不消失，显示"正在退出..."
-- 按钮变为不可用 + 文字变为"退出中..."，防止重复点击
-- 取消按钮隐藏，防止误操作
-- logout() 完成后关闭弹窗 + 导航
-
-### 3.2 popUpTo(0) 修复（AppNavigation.kt L213）
+**AppNavigation.kt — 启动逻辑改写**（删掉 `validateToken()` 调用）：
 
 ```kotlin
 // 旧
+LaunchedEffect(Unit) {
+    if (userRepository.isLoggedIn()) {
+        val valid = userRepository.validateToken()  // 网络调用！
+        ...
+    }
+    ...
+}
+
+// 新
+LaunchedEffect(Unit) {
+    if (userRepository.isLoggedIn() && userRepository.isTokenLocallyValid()) {
+        val guideShown = prefs.getBoolean(KEY_GUIDE_SHOWN, false)
+        startDestination = if (guideShown) Routes.HOME else Routes.GUIDE
+    } else {
+        startDestination = Routes.LOGIN
+    }
+    isCheckingAuth = false
+}
+```
+
+**安全兜底**：如果 token 被服务端撤销但本地未过期 → 用户会短暂看到 HOME → 首次 API 调用返回 401 → `handleAuthError` 触发 → `loginRequired` 事件 → 自动跳 LOGIN。这是标准乐观鉴权。
+
+### 3.2 退出登录：弹窗不关 + 显示 loading
+
+```kotlin
+var isLoggingOut by remember { mutableStateOf(false) }
+
+AlertDialog(
+    onDismissRequest = { if (!isLoggingOut) showLogoutDialog = false },
+    title = { Text("退出登录") },
+    text = { Text(if (isLoggingOut) "正在退出..." else "确定要退出当前账号吗？") },
+    confirmButton = {
+        TextButton(
+            onClick = {
+                if (isLoggingOut) return@TextButton
+                isLoggingOut = true
+                scope.launch {
+                    userRepository.logout()
+                    isLoggingOut = false
+                    showLogoutDialog = false
+                    onLogout()
+                }
+            },
+            enabled = !isLoggingOut
+        ) {
+            Text(if (isLoggingOut) "退出中..." else "确定", ...)
+        }
+    },
+    dismissButton = {
+        if (!isLoggingOut) {
+            TextButton(onClick = { showLogoutDialog = false }) { Text("取消") }
+        }
+    }
+)
+```
+
+### 3.3 popUpTo(0) 修正（AppNavigation.kt ×2处）
+
+```kotlin
+// 旧：popUpTo(0) — 0 不是有效 backstack entry ID
 navController.navigate(Routes.LOGIN) {
     popUpTo(0) { inclusive = true }
 }
 
-// 新
+// 新：使用 NavGraph 的 startDestinationId
 navController.navigate(Routes.LOGIN) {
     popUpTo(navController.graph.startDestinationId) { inclusive = true }
 }
 ```
 
-需要同步修改 L106（loginRequired 路径）保持一致。
+L106（loginRequired 监听）和 L213（退出登录）都需要改。
 
-### 3.3 LoginScreen 强制改密弹窗拦截返回键
+### 3.4 LoginScreen 强制改密弹窗拦截返回键
 
 ```kotlin
 import androidx.activity.compose.BackHandler
@@ -155,15 +147,18 @@ if (showChangePasswordDialog) {
 }
 ```
 
-### 3.4 HomeScreen 会话预警动态化
+### 3.5 HomeScreen 会话预警动态刷新
 
 ```kotlin
-// 将 LaunchedEffect(authRepository) 改为 LaunchedEffect(Unit)
-// 并用 while(true) + delay(3600_000L) 每小时刷新
 LaunchedEffect(Unit) {
     while (true) {
-        // 更新预警
-        setSessionWarning()
+        authRepository?.let {
+            val expireTime = it.getSessionExpireTime()
+            if (expireTime > 0L) {
+                val now = System.currentTimeMillis()
+                // ... 计算 showSessionWarning / sessionWarningText
+            }
+        }
         delay(60 * 60 * 1000L)
     }
 }
@@ -171,18 +166,20 @@ LaunchedEffect(Unit) {
 
 ## 四、修改文件清单
 
-| # | 文件 | 改动内容 | 优先级 |
-|:--:|------|------|:------:|
-| 1 | [SettingsScreen.kt](file:///d:/trea项目/快麦取货通/app/src/main/java/com/kuaimai/pda/ui/settings/SettingsScreen.kt) | isLoggingOut 状态 + 弹窗不立即关 + loading | 🔴 P1 |
-| 2 | [AppNavigation.kt](file:///d:/trea项目/快麦取货通/app/src/main/java/com/kuaimai/pda/ui/navigation/AppNavigation.kt) | popUpTo(0) → popUpTo(startDestinationId) ×2 | 🟡 P2 |
-| 3 | [LoginScreen.kt](file:///d:/trea项目/快麦取货通/app/src/main/java/com/kuaimai/pda/ui/login/LoginScreen.kt) | 强制改密弹窗拦截 BackHandler | 🟡 P2 |
-| 4 | [HomeScreen.kt](file:///d:/trea项目/快麦取货通/app/src/main/java/com/kuaimai/pda/ui/home/HomeScreen.kt) | 会话预警动态刷新 + 点击改为弹窗说明 | 🟢 P3 |
+| # | 文件 | 改动 | 理由 |
+|:--:|------|------|------|
+| 1 | [UserRepository.kt](file:///d:/trea项目/快麦取货通/app/src/main/java/com/kuaimai/pda/data/repository/UserRepository.kt) | 新增 `isTokenLocallyValid()` | 启动鉴权不依赖网络 |
+| 2 | [AppNavigation.kt](file:///d:/trea项目/快麦取货通/app/src/main/java/com/kuaimai/pda/ui/navigation/AppNavigation.kt) | validateToken→isTokenLocallyValid；popUpTo(0)→startDestinationId | 冷启动秒进 |
+| 3 | [SettingsScreen.kt](file:///d:/trea项目/快麦取货通/app/src/main/java/com/kuaimai/pda/ui/settings/SettingsScreen.kt) | isLoggingOut + 弹窗不关 | 退出反馈可见 |
+| 4 | [LoginScreen.kt](file:///d:/trea项目/快麦取货通/app/src/main/java/com/kuaimai/pda/ui/login/LoginScreen.kt) | BackHandler | 改密不能跳过 |
+| 5 | [HomeScreen.kt](file:///d:/trea项目/快麦取货通/app/src/main/java/com/kuaimai/pda/ui/home/HomeScreen.kt) | while+delay 动态刷新 | 预警实时性 |
 
 ## 五、验证步骤
 
-1. 进入设置页 → 点击"退出登录" → 弹窗出现 → 点击"确定"
-2. 弹窗保持显示，按钮变为"退出中..."且不可点击
-3. 网络不通时，clearLocalUser 后立即导航到登录页（秒级响应）
-4. 登录页强制修改密码弹窗 → 按系统返回键 → 不消失
-5. `./gradlew lint` 通过
-6. `./gradlew assembleRelease` 构建成功
+1. 登录成功 → 清除后台 → 冷启动 → **秒进 HOME**（无等待）
+2. 清除后台 → 冷启动（网络不通时）→ 同样秒进 HOME
+3. 设置页点"退出登录" → 弹窗显示"正在退出…" → 确认 → 跳转到登录页
+4. 登录页强制改密弹窗 → 按系统返回键 → 不消失
+5. 登录页有历史 → 下拉可选择
+6. `./gradlew lint` 通过
+7. `./gradlew assembleRelease` 构建成功

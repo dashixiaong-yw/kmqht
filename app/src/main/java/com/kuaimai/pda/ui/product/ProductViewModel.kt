@@ -164,8 +164,8 @@ class ProductViewModel @Inject constructor(
             try {
                 val serverUrl = prefs.getString(PrefsKeys.KEY_SERVER_URL, DEFAULT_SERVER_URL) ?: DEFAULT_SERVER_URL
                 productImageDao.getBySkuOuterId(skuOuterId).collectLatest { images ->
-                    val areaImage = images.find { it.imageType == "area" }
-                    val boxImage = images.find { it.imageType == "box" }
+                    val areaImage = images.find { it.imageType == AppConstants.IMAGE_TYPE_AREA }
+                    val boxImage = images.find { it.imageType == AppConstants.IMAGE_TYPE_BOX }
                     _uiState.value = _uiState.value.copy(
                         areaImageUrl = areaImage?.let { url ->
                             if (serverUrl.isNotEmpty()) "${serverUrl.trimEnd('/')}${url.imageUrl}" else url.imageUrl
@@ -354,7 +354,7 @@ class ProductViewModel @Inject constructor(
 
                 val serverUrl = prefs.getString(PrefsKeys.KEY_SERVER_URL, DEFAULT_SERVER_URL) ?: DEFAULT_SERVER_URL
                 val fullUrl = if (serverUrl.isNotEmpty()) "${serverUrl.trimEnd('/')}$imageUrl" else imageUrl
-                _uiState.value = if (imageType == "area") {
+                _uiState.value = if (imageType == AppConstants.IMAGE_TYPE_AREA) {
                     _uiState.value.copy(areaImageUrl = fullUrl)
                 } else {
                     _uiState.value.copy(boxImageUrl = fullUrl)
@@ -397,7 +397,7 @@ class ProductViewModel @Inject constructor(
             try {
                 imageRepository.deleteImage(skuOuterId, imageType)
                 // 更新UI状态
-                _uiState.value = if (imageType == "area") {
+                _uiState.value = if (imageType == AppConstants.IMAGE_TYPE_AREA) {
                     _uiState.value.copy(areaImageUrl = null)
                 } else {
                     _uiState.value.copy(boxImageUrl = null)

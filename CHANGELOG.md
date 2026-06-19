@@ -1,5 +1,13 @@
 # 快麦取货通 - 变更日志
 
+## 1.62 (2026-06-19)
+
+### 修复
+- PickDetailViewModel供应商加载catch块移除假兜底，改为暴露真实错误
+- AppConstants新增SUPPLIER_ALL_LABEL/IMAGE_TYPE_AREA/IMAGE_TYPE_BOX常量
+- "全部"/"area"/"box" 3种硬编码全量替换为常量引用
+- UI文案去掉端口号硬编码
+
 ## 1.61 (2026-06-19)
 
 ### 修复

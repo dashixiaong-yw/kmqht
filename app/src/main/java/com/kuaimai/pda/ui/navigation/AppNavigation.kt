@@ -84,15 +84,9 @@ fun AppNavigation(
 
     // 启动时验证token有效性，并判断是否首次使用
     LaunchedEffect(Unit) {
-        if (userRepository.isLoggedIn()) {
-            val valid = userRepository.validateToken()
-            if (valid) {
-                // 已登录且token有效，检查是否首次使用
-                val guideShown = prefs.getBoolean(KEY_GUIDE_SHOWN, false)
-                startDestination = if (guideShown) Routes.HOME else Routes.GUIDE
-            } else {
-                startDestination = Routes.LOGIN
-            }
+        if (userRepository.isLoggedIn() && userRepository.isTokenLocallyValid()) {
+            val guideShown = prefs.getBoolean(KEY_GUIDE_SHOWN, false)
+            startDestination = if (guideShown) Routes.HOME else Routes.GUIDE
         } else {
             startDestination = Routes.LOGIN
         }
@@ -103,7 +97,7 @@ fun AppNavigation(
     LaunchedEffect(Unit) {
         userRepository.loginRequired.collect {
             navController.navigate(Routes.LOGIN) {
-                popUpTo(0) { inclusive = true }
+                popUpTo(navController.graph.startDestinationId) { inclusive = true }
             }
         }
     }
@@ -210,7 +204,7 @@ fun AppNavigation(
                 onNavigateBack = { navController.popBackStack() },
                 onLogout = {
                     navController.navigate(Routes.LOGIN) {
-                        popUpTo(0) { inclusive = true }
+                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
                     }
                 }
             )
@@ -222,7 +216,7 @@ fun AppNavigation(
         AlertDialog(
             onDismissRequest = { showSessionExpiredDialog = false; SessionExpiredEvent.reset() },
             title = { Text("快麦会话已过期") },
-            text = { Text("快麦API会话已过期，请在Web管理后台重新授权\n（浏览器访问 http://服务器地址:8900/admin）") },
+            text = { Text("快麦API会话已过期，请在Web管理后台重新授权\n（请用电脑浏览器访问管理后台）") },
             confirmButton = {
                 TextButton(onClick = { showSessionExpiredDialog = false; SessionExpiredEvent.reset() }) {
                     Text("知道了")

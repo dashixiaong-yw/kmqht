@@ -81,27 +81,39 @@ fun SettingsScreen(
     val currentUser by userRepository.currentUser.collectAsState()
     val updateCheckState by viewModel.updateCheckResult.collectAsState()
     var showLogoutDialog by remember { androidx.compose.runtime.mutableStateOf(false) }
+    var isLoggingOut by remember { androidx.compose.runtime.mutableStateOf(false) }
 
     // 退出登录确认弹窗
     if (showLogoutDialog) {
         AlertDialog(
-            onDismissRequest = { showLogoutDialog = false },
+            onDismissRequest = { if (!isLoggingOut) showLogoutDialog = false },
             title = { Text("退出登录") },
-            text = { Text("确定要退出当前账号吗？") },
+            text = {
+                Text(if (isLoggingOut) "正在退出..." else "确定要退出当前账号吗？")
+            },
             confirmButton = {
-                TextButton(onClick = {
-                    showLogoutDialog = false
-                    scope.launch {
-                        userRepository.logout()
-                        onLogout()
-                    }
-                }) {
-                    Text("确定", color = MaterialTheme.colorScheme.error)
+                TextButton(
+                    onClick = {
+                        if (isLoggingOut) return@TextButton
+                        isLoggingOut = true
+                        scope.launch {
+                            userRepository.logout()
+                            isLoggingOut = false
+                            showLogoutDialog = false
+                            onLogout()
+                        }
+                    },
+                    enabled = !isLoggingOut
+                ) {
+                    Text(if (isLoggingOut) "退出中..." else "确定",
+                         color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showLogoutDialog = false }) {
-                    Text("取消")
+                if (!isLoggingOut) {
+                    TextButton(onClick = { showLogoutDialog = false }) {
+                        Text("取消")
+                    }
                 }
             }
         )
@@ -322,7 +334,7 @@ fun SettingsScreen(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "请在电脑浏览器访问: http://服务器地址:8900/admin",
+                        text = "请用电脑浏览器访问管理后台",
                         style = MaterialTheme.typography.bodySmall,
                         color = BrandBlue,
                         fontWeight = FontWeight.Medium

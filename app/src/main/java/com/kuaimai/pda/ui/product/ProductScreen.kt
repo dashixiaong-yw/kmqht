@@ -72,6 +72,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.kuaimai.pda.data.repository.UserRepository
 import com.kuaimai.pda.ui.theme.BorderGray
+import com.kuaimai.pda.util.AppConstants
 import com.kuaimai.pda.ui.theme.BrandBlue
 import com.kuaimai.pda.ui.theme.DangerText
 import com.kuaimai.pda.ui.theme.PrimaryLightBg
@@ -195,15 +196,15 @@ fun ProductScreen(
                     isUploading = uiState.isUploading,
                     uploadProgress = uiState.uploadProgress,
                     onUploadArea = {
-                        pendingImageType = "area"
+                        pendingImageType = AppConstants.IMAGE_TYPE_AREA
                         pickImageLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                     },
                     onUploadBox = {
-                        pendingImageType = "box"
+                        pendingImageType = AppConstants.IMAGE_TYPE_BOX
                         pickImageLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                     },
-                    onDeleteArea = { showImageDeleteConfirm = "area" },
-                    onDeleteBox = { showImageDeleteConfirm = "box" },
+                    onDeleteArea = { showImageDeleteConfirm = AppConstants.IMAGE_TYPE_AREA },
+                    onDeleteBox = { showImageDeleteConfirm = AppConstants.IMAGE_TYPE_BOX },
                     canManageAreaImage = canManageAreaImage,
                     canManageBoxImage = canManageBoxImage
                 )
@@ -280,7 +281,7 @@ fun ProductScreen(
 
         // F22: 图片删除确认弹窗
         showImageDeleteConfirm?.let { imageType ->
-            val label = if (imageType == "area") "库区图" else "装箱图"
+            val label = if (imageType == AppConstants.IMAGE_TYPE_AREA) "库区图" else "装箱图"
             androidx.compose.material3.AlertDialog(
                 onDismissRequest = { showImageDeleteConfirm = null },
                 title = { Text("确认删除") },

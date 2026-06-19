@@ -17,4 +17,13 @@ object AppConstants {
 
     /** 扫码配置协议前缀 */
     const val SETUP_SCHEME = "kuaimai://setup"
+
+    /** 供应商筛选"全部"标签 */
+    const val SUPPLIER_ALL_LABEL = "全部"
+
+    /** 图片类型：库区图 */
+    const val IMAGE_TYPE_AREA = "area"
+
+    /** 图片类型：装箱图/货位图 */
+    const val IMAGE_TYPE_BOX = "box"
 }

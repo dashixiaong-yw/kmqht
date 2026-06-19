@@ -92,8 +92,11 @@ interface UserRepository {
     /** 删除用户（需settings权限） */
     suspend fun deleteUser(userId: Long): Result<Unit>
 
-    /** 验证token有效性 */
+    /** 验证token有效性（网络调用） */
     suspend fun validateToken(): Boolean
+
+    /** 检查本地token是否在有效期内（不调网络） */
+    fun isTokenLocallyValid(): Boolean
 }
 
 /**
@@ -272,6 +275,13 @@ class UserRepositoryImpl @Inject constructor(
             handleAuthError(e)
             false
         }
+    }
+
+    override fun isTokenLocallyValid(): Boolean {
+        val token = getToken()
+        if (token.isEmpty() || _currentUser.value == null) return false
+        val expireTime = prefs.getLong(PrefsKeys.KEY_SESSION_EXPIRE, 0L)
+        return expireTime > System.currentTimeMillis()
     }
 
     /**

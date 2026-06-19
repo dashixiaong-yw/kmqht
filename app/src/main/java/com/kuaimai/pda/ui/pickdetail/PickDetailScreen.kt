@@ -71,6 +71,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.kuaimai.pda.data.db.entity.PickItemEntity
 import com.kuaimai.pda.scanner.ScanFeedbackType
 import com.kuaimai.pda.ui.components.PickItemRow
+import com.kuaimai.pda.util.AppConstants
 import com.kuaimai.pda.ui.theme.BrandBlue
 import com.kuaimai.pda.ui.theme.DangerText
 import com.kuaimai.pda.ui.theme.PrimaryLightBg
@@ -180,7 +181,7 @@ fun PickDetailScreen(
     }
 
     // 根据供应商过滤明细 + GAP-07: 按状态+时间排序（未完成在上，已完成在下，同状态按时间倒序）
-    val filteredItems = (if (currentSupplier == "全部") {
+    val filteredItems = (if (currentSupplier == AppConstants.SUPPLIER_ALL_LABEL) {
         items
     } else {
         items.filter { it.supplierName == currentSupplier }

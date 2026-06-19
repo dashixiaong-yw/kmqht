@@ -85,31 +85,34 @@ fun HomeScreen(
         mutableStateOf(prefs?.getBoolean(KEY_GUIDE_SHOWN, false) != true)
     }
 
-    // 会话即将过期预警（距过期<5天）
+    // 会话即将过期预警（距过期<5天，每小时刷新）
     var showSessionWarning by remember { mutableStateOf(false) }
     var sessionWarningText by remember { mutableStateOf("") }
-    LaunchedEffect(authRepository) {
-        if (authRepository != null) {
-            val expireTime = authRepository.getSessionExpireTime()
-            if (expireTime > 0L) {
-                val now = System.currentTimeMillis()
-                if (expireTime <= now) {
-                    showSessionWarning = true
-                    sessionWarningText = "会话已过期，请重新授权"
-                } else {
-                    val daysLeft = (expireTime - now) / (1000L * 60 * 60 * 24)
-                    val hoursLeft = (expireTime - now) / (1000L * 60 * 60)
-                    if (daysLeft < AppConstants.SESSION_WARNING_DAYS) {
+    LaunchedEffect(Unit) {
+        while (true) {
+            authRepository?.let {
+                val expireTime = it.getSessionExpireTime()
+                if (expireTime > 0L) {
+                    val now = System.currentTimeMillis()
+                    if (expireTime <= now) {
                         showSessionWarning = true
-                        sessionWarningText = when {
-                            daysLeft > 1 -> "会话将在${daysLeft}天后过期，请及时刷新"
-                            daysLeft == 1L -> "会话将在1天后过期，请及时刷新"
-                            hoursLeft > 0 -> "会话将在${hoursLeft}小时后过期，请立即刷新"
-                            else -> "会话即将过期，请立即刷新"
+                        sessionWarningText = "会话已过期，请重新授权"
+                    } else {
+                        val daysLeft = (expireTime - now) / (1000L * 60 * 60 * 24)
+                        val hoursLeft = (expireTime - now) / (1000L * 60 * 60)
+                        if (daysLeft < AppConstants.SESSION_WARNING_DAYS) {
+                            showSessionWarning = true
+                            sessionWarningText = when {
+                                daysLeft > 1 -> "会话将在${daysLeft}天后过期，请及时刷新"
+                                daysLeft == 1L -> "会话将在1天后过期，请及时刷新"
+                                hoursLeft > 0 -> "会话将在${hoursLeft}小时后过期，请立即刷新"
+                                else -> "会话即将过期，请立即刷新"
+                            }
                         }
                     }
                 }
             }
+            kotlinx.coroutines.delay(60 * 60 * 1000L)
         }
     }
 

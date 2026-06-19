@@ -57,11 +57,11 @@ class PickDetailViewModel @Inject constructor(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     /** 供应商列表（从明细中提取） */
-    private val _suppliers = MutableStateFlow<List<String>>(listOf("全部"))
+    private val _suppliers = MutableStateFlow<List<String>>(listOf(AppConstants.SUPPLIER_ALL_LABEL))
     val suppliers: StateFlow<List<String>> = _suppliers.asStateFlow()
 
     /** 当前供应商过滤 */
-    private val _currentSupplier = MutableStateFlow("全部")
+    private val _currentSupplier = MutableStateFlow(AppConstants.SUPPLIER_ALL_LABEL)
     val currentSupplier: StateFlow<String> = _currentSupplier.asStateFlow()
 
     /** 连续扫码模式 */
@@ -119,9 +119,11 @@ class PickDetailViewModel @Inject constructor(
             try {
                 val token = userRepository.getToken()
                 val result = orderApiService.getSuppliers(token, orderId)
-                _suppliers.value = listOf("全部") + result
+                _suppliers.value = listOf(AppConstants.SUPPLIER_ALL_LABEL) + result
             } catch (e: Exception) {
-                _suppliers.value = listOf("全部")
+                Log.e("PickDetailViewModel", "加载供应商列表失败: ${e.message}", e)
+                _errorMessage.value = "加载供应商列表失败: ${e.message?.take(80) ?: "未知错误"}"
+                _suppliers.value = emptyList()
             }
         }
     }
@@ -371,8 +373,8 @@ class PickDetailViewModel @Inject constructor(
      */
     suspend fun getImageUrls(skuOuterId: String): Pair<String?, String?> {
         return try {
-            val areaImage = imageRepository.getImageBySkuAndType(skuOuterId, "area")
-            val boxImage = imageRepository.getImageBySkuAndType(skuOuterId, "box")
+            val areaImage = imageRepository.getImageBySkuAndType(skuOuterId, AppConstants.IMAGE_TYPE_AREA)
+            val boxImage = imageRepository.getImageBySkuAndType(skuOuterId, AppConstants.IMAGE_TYPE_BOX)
             val serverUrl = prefs.getString(PrefsKeys.KEY_SERVER_URL, AppConstants.DEFAULT_SERVER_URL)?.trim() ?: AppConstants.DEFAULT_SERVER_URL
             val areaUrl = areaImage?.let { url -> if (serverUrl.isNotEmpty()) "${serverUrl.trimEnd('/')}${url.imageUrl}" else url.imageUrl }
             val boxUrl = boxImage?.let { url -> if (serverUrl.isNotEmpty()) "${serverUrl.trimEnd('/')}${url.imageUrl}" else url.imageUrl }

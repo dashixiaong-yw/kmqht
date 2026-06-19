@@ -1,5 +1,6 @@
 package com.kuaimai.pda.ui.login
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -289,6 +290,7 @@ fun LoginScreen(
 
     // 强制修改密码对话框
     if (showChangePasswordDialog) {
+        BackHandler(enabled = true) { /* 吞掉返回键，必须修改密码 */ }
         AlertDialog(
             onDismissRequest = { /* 不允许关闭，必须修改密码 */ },
             title = { Text("安全提示") },
