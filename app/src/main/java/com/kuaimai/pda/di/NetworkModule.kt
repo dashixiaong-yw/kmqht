@@ -24,10 +24,14 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.security.cert.X509Certificate
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Named
 import javax.inject.Provider
+import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLSocketFactory
+import javax.net.ssl.X509TrustManager
 import javax.inject.Singleton
 
 /**
@@ -41,6 +45,20 @@ object NetworkModule {
     private const val DEFAULT_BASE_URL = AppConstants.KUAIMAI_API_URL
     private const val DEFAULT_SERVER_URL = AppConstants.DEFAULT_SERVER_URL
     private const val TAG = "NetworkModule"
+
+    private val unsafeTrustManager: X509TrustManager by lazy {
+        object : X509TrustManager {
+            override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+            override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+            override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+        }
+    }
+
+    private val unsafeSslSocketFactory: SSLSocketFactory by lazy {
+        val sslContext = SSLContext.getInstance("TLS")
+        sslContext.init(null, arrayOf(unsafeTrustManager), java.security.SecureRandom())
+        sslContext.socketFactory
+    }
 
     /** 加密SharedPreferences，存储API密钥等敏感配置 */
     @Provides
@@ -172,9 +190,13 @@ object NetworkModule {
             serverUrl = "http://localhost:1/"
             Log.w(TAG, "服务器地址未配置，使用占位URL。请在引导页或设置页配置服务器地址")
         }
+        val trustAllClient = client.newBuilder()
+            .hostnameVerifier { _, _ -> true }
+            .sslSocketFactory(unsafeSslSocketFactory, unsafeTrustManager)
+            .build()
         return Retrofit.Builder()
             .baseUrl(serverUrl)
-            .client(client)
+            .client(trustAllClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }

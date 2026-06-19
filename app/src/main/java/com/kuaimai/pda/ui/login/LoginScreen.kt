@@ -31,7 +31,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -59,8 +58,21 @@ fun LoginScreen(
     userRepository: UserRepository,
     onLoginSuccess: () -> Unit
 ) {
-    var username by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    // ↓↓↓ 同步加载本地保存的凭据和历史 ↓↓↓
+    val loadedHistory = remember { userRepository.getLoginHistory() }
+    val loginHistory = remember { mutableStateListOf<String>().apply { addAll(loadedHistory) } }
+    var savePasswordChecked by remember { mutableStateOf(userRepository.isSavePasswordEnabled()) }
+    val savedUser = remember { userRepository.getSavedUsername() }
+    val savedUsername by remember { mutableStateOf(savedUser) }
+
+    var username by remember {
+        mutableStateOf(if (savePasswordChecked && savedUser.isNotEmpty()) savedUser else "")
+    }
+    var password by remember {
+        mutableStateOf(
+            if (savePasswordChecked && savedUser.isNotEmpty()) userRepository.getSavedPassword() else ""
+        )
+    }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
     var showChangePasswordDialog by remember { mutableStateOf(false) }
@@ -68,22 +80,8 @@ fun LoginScreen(
     var confirmPassword by remember { mutableStateOf("") }
     var changePasswordError by remember { mutableStateOf("") }
     var isChangingPassword by remember { mutableStateOf(false) }
-    var savePasswordChecked by remember { mutableStateOf(false) }
-    var savedUsername by remember { mutableStateOf("") }
-    val loginHistory = remember { mutableStateListOf<String>() }
     var dropdownExpanded by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-
-    // 页面加载时读取本地保存的凭据和历史
-    LaunchedEffect(Unit) {
-        savePasswordChecked = userRepository.isSavePasswordEnabled()
-        savedUsername = userRepository.getSavedUsername()
-        if (savePasswordChecked && savedUsername.isNotEmpty()) {
-            username = savedUsername
-            password = userRepository.getSavedPassword()
-        }
-        loginHistory.addAll(userRepository.getLoginHistory())
-    }
 
     Scaffold(
         topBar = {
@@ -126,7 +124,6 @@ fun LoginScreen(
                         if (newValue != savedUsername && password.isNotEmpty()) {
                             password = ""
                         }
-                        dropdownExpanded = newValue.isEmpty() && loginHistory.isNotEmpty()
                     },
                     label = { Text("用户名") },
                     leadingIcon = {
@@ -137,7 +134,9 @@ fun LoginScreen(
                         )
                     },
                     trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = dropdownExpanded)
+                        if (loginHistory.isNotEmpty()) {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = dropdownExpanded)
+                        }
                     },
                     singleLine = true,
                     modifier = Modifier

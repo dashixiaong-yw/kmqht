@@ -1,5 +1,12 @@
 # 快麦取货通 - 变更日志
 
+## 1.60 (2026-06-19)
+
+### 修复
+- SSL信任锚+强制HTTPS：NetworkModule.kt 后端Retrofit独立trust-all OkHttpClient
+- SakuraFRP自动HTTPS证书不在Android信任锚 → OkHttp跳过校验
+- 快麦API Retrofit保持严格SSL校验
+
 ## 1.59 (2026-06-19)
 
 ### 修复
