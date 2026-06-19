@@ -35,7 +35,7 @@ import javax.net.ssl.X509TrustManager
 import javax.inject.Singleton
 
 /**
- * 网络层依赖注入：OkHttp + Retrofit + API Key拦截器 + Token刷新
+ * 网络层依赖注入：OkHttp + Retrofit + Token刷新
  */
 @Module
 @InstallIn(SingletonComponent::class)
