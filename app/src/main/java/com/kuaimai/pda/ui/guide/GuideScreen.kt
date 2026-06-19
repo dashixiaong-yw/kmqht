@@ -15,7 +15,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.kuaimai.pda.scanner.CameraScanScreen
 import com.kuaimai.pda.ui.settings.SettingsViewModel.Companion.KEY_GUIDE_SHOWN
 import com.kuaimai.pda.ui.settings.SettingsViewModel.Companion.KEY_SCAN_METHOD
+import com.kuaimai.pda.util.AppConstants
 import com.kuaimai.pda.util.PrefsKeys
 import com.kuaimai.pda.util.SetupQrParser
 import com.kuaimai.pda.ui.theme.BrandBlue
@@ -50,7 +50,7 @@ fun GuideScreen(
     onFinish: () -> Unit
 ) {
     var currentStep by remember { mutableIntStateOf(0) }
-    var serverUrl by remember { mutableStateOf("") }
+    var serverUrl by remember { mutableStateOf(AppConstants.DEFAULT_SERVER_URL) }
     var apiKey by remember { mutableStateOf("") }
     var selectedScanMethod by remember { mutableIntStateOf(0) }
     var showCameraScan by remember { mutableStateOf(false) }
@@ -98,13 +98,10 @@ fun GuideScreen(
             0 -> StepServerConfig(
                 serverUrl = serverUrl,
                 apiKey = apiKey,
-                onServerUrlChange = { serverUrl = it },
-                onApiKeyChange = { apiKey = it },
                 onScanConfig = { showCameraScan = true },
                 onNext = {
                     encryptedPrefs.edit().putString(PrefsKeys.KEY_SERVER_URL, serverUrl.trim()).apply()
                     if (apiKey.isNotBlank()) {
-                        // API Key保存到加密SharedPreferences
                         encryptedPrefs.edit().putString(PrefsKeys.KEY_API_KEY, apiKey.trim()).apply()
                     }
                     currentStep = 1
@@ -131,14 +128,12 @@ fun GuideScreen(
 }
 
 /**
- * Step 1: 配置服务器地址（支持扫码配置）
+ * Step 1: 服务器配置（预置FRP地址，扫码可切换内网地址）
  */
 @Composable
 private fun StepServerConfig(
     serverUrl: String,
     apiKey: String,
-    onServerUrlChange: (String) -> Unit,
-    onApiKeyChange: (String) -> Unit,
     onScanConfig: () -> Unit,
     onNext: () -> Unit
 ) {
@@ -149,12 +144,25 @@ private fun StepServerConfig(
     )
     Spacer(modifier = Modifier.height(8.dp))
     Text(
-        text = "第1步：配置服务器地址",
+        text = "第1步：服务器配置",
         style = MaterialTheme.typography.titleMedium
     )
     Spacer(modifier = Modifier.height(24.dp))
 
-    // 扫码配置按钮
+    Text(
+        text = "服务器地址已自动配置",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    Text(
+        text = serverUrl,
+        style = MaterialTheme.typography.bodyLarge,
+        color = BrandBlue
+    )
+
+    Spacer(modifier = Modifier.height(24.dp))
+
     Button(
         onClick = onScanConfig,
         modifier = Modifier.fillMaxWidth(),
@@ -165,44 +173,15 @@ private fun StepServerConfig(
     ) {
         Icon(
             Icons.Default.QrCodeScanner,
-            contentDescription = "扫码配置",
+            contentDescription = "扫码切换地址",
             modifier = Modifier.padding(end = 8.dp)
         )
-        Text("扫码配置（推荐）")
+        Text("扫码切换地址（内网部署时使用）")
     }
-
-    Spacer(modifier = Modifier.height(12.dp))
-    Text(
-        text = "或手动输入：",
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
-    Spacer(modifier = Modifier.height(8.dp))
-
-    OutlinedTextField(
-        value = serverUrl,
-        onValueChange = onServerUrlChange,
-        label = { Text("服务器地址") },
-        placeholder = { Text("例如: http://192.168.1.100:8900") },
-        singleLine = true,
-        modifier = Modifier.fillMaxWidth()
-    )
-
-    Spacer(modifier = Modifier.height(8.dp))
-
-    OutlinedTextField(
-        value = apiKey,
-        onValueChange = onApiKeyChange,
-        label = { Text("API Key（可选）") },
-        placeholder = { Text("扫码配置时自动填入") },
-        singleLine = true,
-        modifier = Modifier.fillMaxWidth()
-    )
 
     Spacer(modifier = Modifier.height(32.dp))
     Button(
         onClick = onNext,
-        enabled = serverUrl.startsWith("http://") || serverUrl.startsWith("https://"),
         modifier = Modifier.fillMaxWidth(),
         colors = ButtonDefaults.buttonColors(
             containerColor = PrimaryLightBg,

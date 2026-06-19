@@ -33,6 +33,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -244,6 +245,15 @@ fun LoginScreen(
                             val result = userRepository.login(username, password)
                             isLoading = false
                             if (result.isSuccess) {
+                                // 保存凭据和登录历史（本地加密存储）
+                                if (savePasswordChecked && password.isNotEmpty()) {
+                                    userRepository.saveCredentials(username, password)
+                                } else {
+                                    userRepository.clearSavedCredentials()
+                                }
+                                userRepository.setSavePasswordEnabled(savePasswordChecked)
+                                userRepository.saveToLoginHistory(username)
+
                                 val user = result.getOrNull()
                                 if (user != null) {
                                     // 检查是否需要强制修改密码

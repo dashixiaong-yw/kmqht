@@ -1,5 +1,11 @@
 # 快麦取货通 - 变更日志
 
+## 1.55 (2026-06-19)
+
+### 配置
+- 预置FRP地址到APK：AppConstants.DEFAULT_SERVER_URL = "https://frp-off.com:64623"
+- 简化引导页Step1：只读展示FRP地址，移除手动输入框和API Key输入，保留扫码切换内网地址
+
 ## 1.54 (2026-06-19)
 
 ### 修复
