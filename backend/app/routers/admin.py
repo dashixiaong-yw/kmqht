@@ -39,9 +39,10 @@ def upload_app_version(
     user: dict = Depends(check_permission("settings")),
 ) -> dict:
     """上传新版本 APK（暂存，删除旧文件）"""
-    if not latestVersion.strip():
+    latestVersion = latestVersion.strip()
+    if not latestVersion:
         raise HTTPException(status_code=400, detail="版本号不能为空")
-    if not re.match(r'^\d+\.\d+$', latestVersion.strip()):
+    if not re.match(r'^\d+\.\d+$', latestVersion):
         raise HTTPException(status_code=400, detail="版本号格式错误，仅支持主版本.次版本（如 1.22）")
     if not file.filename.endswith(".apk"):
         raise HTTPException(status_code=400, detail="仅支持 .apk 文件")
@@ -71,6 +72,11 @@ def upload_app_version(
     except Exception as e:
         logger.error(f"保存APK文件失败: {e}")
         raise HTTPException(status_code=500, detail="保存APK文件失败")
+    # 保存后立即验证
+    if not os.path.exists(apk_path) or os.path.getsize(apk_path) != len(content):
+        logger.error(f"APK保存验证失败: path={apk_path} disk_size={os.path.getsize(apk_path) if os.path.exists(apk_path) else 0} expected={len(content)}")
+        raise HTTPException(status_code=500, detail="APK保存失败，请重试")
+    logger.info(f"APK已保存: {apk_path} ({len(content) / 1024 / 1024:.1f}MB)")
     # 更新版本信息 JSON
     info = _load_version_info()
     info["currentVersion"] = latestVersion

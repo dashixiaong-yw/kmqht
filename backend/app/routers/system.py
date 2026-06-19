@@ -121,7 +121,19 @@ def download_apk(request: Request) -> FileResponse:
     if not file_path.startswith(apk_dir_norm):
         raise HTTPException(status_code=403, detail="非法文件名")
     if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="文件不存在")
+        logger.warning(f"APK文件不存在: {file_path}，尝试模糊匹配")
+        if os.path.exists(APK_DIR):
+            candidates = sorted(
+                [f for f in os.listdir(APK_DIR) if f.endswith(".apk")],
+                reverse=True
+            )
+            if candidates:
+                file_path = os.path.normpath(os.path.join(APK_DIR, candidates[0]))
+                logger.info(f"模糊匹配到: {file_path}")
+        if not os.path.exists(file_path):
+            dir_contents = os.listdir(APK_DIR) if os.path.exists(APK_DIR) else "NOT_EXIST"
+            logger.error(f"APK_DIR={APK_DIR} 内容: {dir_contents}")
+            raise HTTPException(status_code=404, detail="文件不存在")
 
     return FileResponse(
         file_path,
