@@ -14,47 +14,54 @@ logger = logging.getLogger(__name__)
 
 async def get_sku_info(sku_outer_id: str) -> Optional[Dict[str, Any]]:
     """
-    获取SKU信息：先查缓存，缓存未命中则调用快麦API并缓存结果
+    比对式缓存获取SKU信息：每次透传调用快麦API获取最新数据，
+    对比modified时间戳决定是否更新缓存。API失败时降级返回缓存。
     :param sku_outer_id: SKU外部编码
     :return: SKU信息字典或None
     """
     db = get_db()
     cursor = db.cursor()
 
-    # 先查缓存
+    # 查缓存用于比对
     cursor.execute(
         "SELECT * FROM sku_cache WHERE sku_outer_id = ?",
         (sku_outer_id,)
     )
     cached = cursor.fetchone()
-    if cached:
-        logger.debug(f"SKU缓存命中: {sku_outer_id}")
-        return _cache_row_to_dict(cached)
 
-    # 缓存未命中，调用快麦API
-    logger.info(f"SKU缓存未命中，查询快麦API: {sku_outer_id}")
+    # 调快麦API获取最新数据
     try:
         sku_data = await get_sku_by_outer_id(sku_outer_id)
-        if not sku_data:
-            logger.info(f"SKU查询首次失败，1秒后重试: {sku_outer_id}")
-            await asyncio.sleep(1)
-            sku_data = await get_sku_by_outer_id(sku_outer_id)
     except Exception as e:
-        logger.error(f"查询快麦API失败: {e}")
+        logger.error(f"查询快麦API失败: {e}, sku={sku_outer_id}")
+        if cached:
+            logger.warning(f"API不可用，降级使用缓存: {sku_outer_id}")
+            return _cache_row_to_dict(cached)
         return None
 
     if not sku_data:
+        if cached:
+            logger.warning(f"快麦API未找到SKU {sku_outer_id}，降级使用缓存")
+            return _cache_row_to_dict(cached)
         logger.warning(f"快麦API未找到SKU: {sku_outer_id}")
         return None
 
-    # 缓存结果
+    api_modified = sku_data.get("modified", 0)
+    cached_modified = cached["cached_modified"] if cached else 0
+
+    if cached and api_modified == cached_modified:
+        logger.debug(f"SKU数据未变更(modified={api_modified})，返回缓存: {sku_outer_id}")
+        return _cache_row_to_dict(cached)
+
+    # 数据已变更或首次缓存，写入新缓存
+    logger.info(f"SKU数据已变更(modified={cached_modified}→{api_modified})，更新缓存: {sku_outer_id}")
     now = beijing_now()
     try:
         cursor.execute(
             """INSERT OR REPLACE INTO sku_cache
                (sku_outer_id, properties_name, pic_path, supplier_name, supplier_code,
-                remark, sys_item_id, sys_sku_id, item_outer_id, cached_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                remark, sys_item_id, sys_sku_id, item_outer_id, cached_modified, cached_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 sku_outer_id,
                 sku_data.get("properties_name", ""),
@@ -65,6 +72,7 @@ async def get_sku_info(sku_outer_id: str) -> Optional[Dict[str, Any]]:
                 sku_data.get("sys_item_id", 0),
                 sku_data.get("sys_sku_id", 0),
                 sku_data.get("item_outer_id", ""),
+                api_modified,
                 format_beijing(now),
             )
         )

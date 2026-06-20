@@ -129,11 +129,11 @@ def _start_scheduler() -> None:
         replace_existing=True,
     )
 
-    # 每小时清理SKU缓存（24小时前）
+    # 每6小时清理30天前的SKU缓存（防废弃SKU表膨胀）
     _scheduler.add_job(
         _cleanup_sku_cache,
         "interval",
-        hours=1,
+        hours=6,
         id="cleanup_sku_cache",
         replace_existing=True,
     )
@@ -246,12 +246,12 @@ def _cleanup_completed_orders() -> None:
 
 
 def _cleanup_sku_cache() -> None:
-    """清理24小时前的SKU缓存"""
+    """清理30天前的SKU缓存（长期未使用的废弃SKU）"""
     try:
         db = get_db()
         cursor = db.cursor()
 
-        cutoff = (beijing_now() - timedelta(hours=24)).strftime("%Y-%m-%d %H:%M:%S")
+        cutoff = (beijing_now() - timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
         cursor.execute(
             "DELETE FROM sku_cache WHERE cached_at < ?",
             (cutoff,)

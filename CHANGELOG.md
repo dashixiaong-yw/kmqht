@@ -1,6 +1,21 @@
 # 快麦取货通 - 变更日志
 
-## 1.80 (2026-06-20)
+## 1.82 (2026-06-20)
+
+### 修复
+- P0: OrderSyncWorker outerId 推导错误(substringBefore) → fetchLatestSkuData() API真值
+- P0: 后端 sku_cache 改为比对式缓存(modified时间戳验证)+API失败降级
+- P0: sku_cache 新增 cached_modified 列 + 30天清理
+- P0: kuaimai_api 返回增加 modified 字段
+- P2: 完成/恢复按钮 height(24dp)→contentPadding(vertical=4dp) 修复文字不显示
+- P2: completeItem/restoreItem 成功后追加 loadOrder() 刷新取货单状态
+- P2: order.status==1 时禁用完成/恢复按钮+全部完成按钮+提示文字
+- P2: refresh() 已有明细同步不可变快麦字段(propertiesName/picPath)
+- P2: PickItemDao 新增 updateItemFields(), PickOrderRepository 新增 updateItemFieldsDirect()
+- P0: SkuItemInfo DTO 增加 propertiesName/skuOuterId 字段
+- P0: OrderSyncWorker 新增 SkuSyncData + getLatestTitle→fetchLatestSkuData
+
+## 1.81 (2026-06-20)
 
 ### 修复
 - P2: PickDetailViewModel.loadSuppliersFromLocal() 空 catch 块 — 加 Log.w 防止供应商提取失败静默吞异常

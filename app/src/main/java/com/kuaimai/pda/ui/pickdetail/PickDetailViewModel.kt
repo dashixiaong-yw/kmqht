@@ -211,12 +211,11 @@ class PickDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                // 在线模式：先API，成功后直接更新本地（不入队）
                 val token = userRepository.getToken()
                 orderApiService.completeItem(token, orderId, itemId)
                 pickOrderRepository.updateItemStatusDirect(itemId, 1, TimeUtils.now())
+                loadOrder()
             } catch (e: Exception) {
-                // API失败，使用乐观更新+入队（离线模式自动走此路径）
                 pickOrderRepository.updateItemStatus(itemId, 1, TimeUtils.now())
                 _errorMessage.value = "完成明细失败: ${e.message}"
             } finally {
@@ -233,12 +232,11 @@ class PickDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                // 在线模式：先API，成功后直接更新本地（不入队）
                 val token = userRepository.getToken()
                 orderApiService.restoreItem(token, orderId, itemId)
                 pickOrderRepository.updateItemStatusDirect(itemId, 0, null)
+                loadOrder()
             } catch (e: Exception) {
-                // API失败，使用乐观更新+入队（离线模式自动走此路径）
                 pickOrderRepository.updateItemStatus(itemId, 0, null)
                 _errorMessage.value = "恢复明细失败: ${e.message}"
             } finally {
@@ -326,7 +324,8 @@ class PickDetailViewModel @Inject constructor(
                         )
                         pickOrderRepository.insertItem(item)
                     } else {
-                        // 已有明细，更新状态（其他PDA可能已完成/恢复了）
+                        // 已有明细，同步快麦字段（仅不可变字段，防止覆盖用户修改）
+                        pickOrderRepository.updateItemFieldsDirect(existing.id, itemResponse.propertiesName, itemResponse.picPath)
                         if (existing.status != itemResponse.status) {
                             val completedAt = TimeUtils.parseBeijingTimeOrNull(itemResponse.completedAt)
                             pickOrderRepository.updateItemStatusDirect(existing.id, itemResponse.status, completedAt)

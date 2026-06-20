@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -209,7 +210,8 @@ fun PickItemRow(
                         onClick = onRestore,
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.textButtonColors(contentColor = TextSecondary),
-                        modifier = Modifier.height(24.dp).defaultMinSize(minWidth = 56.dp)
+                        modifier = Modifier.defaultMinSize(minWidth = 56.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
                     ) {
                         Text("恢复", fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     }
@@ -221,7 +223,8 @@ fun PickItemRow(
                             containerColor = SuccessBg,
                             contentColor = SuccessText
                         ),
-                        modifier = Modifier.height(24.dp).defaultMinSize(minWidth = 56.dp)
+                        modifier = Modifier.defaultMinSize(minWidth = 56.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
                     ) {
                         Text("完成", fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     }

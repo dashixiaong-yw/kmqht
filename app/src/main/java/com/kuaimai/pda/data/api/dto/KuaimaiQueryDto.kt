@@ -25,7 +25,9 @@ data class SkuQueryData(
 data class SkuItemInfo(
     val itemOuterId: String = "",
     val sysItemId: Long = 0,
-    val sysSkuId: Long = 0
+    val sysSkuId: Long = 0,
+    val propertiesName: String = "",
+    val skuOuterId: String = ""
 )
 
 /**

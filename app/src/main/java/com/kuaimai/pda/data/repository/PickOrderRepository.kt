@@ -65,6 +65,8 @@ interface PickOrderRepository {
         skuOuterId: String, sysSkuId: Long, sysItemId: Long,
         propertiesName: String, supplierName: String, supplierCode: String
     )
+    /** refresh() 时更新不可变快麦字段（不入队，仅本地同步） */
+    suspend fun updateItemFieldsDirect(id: Long, propertiesName: String, picPath: String)
 }
 
 /**
@@ -245,6 +247,10 @@ class PickOrderRepositoryImpl @Inject constructor(
             targetId = 0L,
             payload = """{"supplier_name":"${TimeUtils.escapeJson(supplierName)}","supplier_code":"${TimeUtils.escapeJson(supplierCode)}","sys_item_id":$sysItemId,"sys_sku_id":$sysSkuId,"sku_outer_id":"${TimeUtils.escapeJson(skuOuterId)}","properties_name":"${TimeUtils.escapeJson(propertiesName)}"}"""
         )
+    }
+
+    override suspend fun updateItemFieldsDirect(id: Long, propertiesName: String, picPath: String) {
+        pickItemDao.updateItemFields(id, propertiesName, picPath)
     }
 
     override suspend fun deleteOrder(order: PickOrderEntity) {

@@ -239,18 +239,19 @@ class OrderSyncWorker(
         val skuId = extractPayloadValue(op.payload, "sys_sku_id")?.toLongOrNull() ?: return false
         val itemId = extractPayloadValue(op.payload, "sys_item_id")?.toLongOrNull() ?: return false
         val skuOuterId = extractPayloadValue(op.payload, "sku_outer_id") ?: return false
-        val propertiesName = extractPayloadValue(op.payload, "properties_name") ?: return false
-        val outerId = skuOuterId.substringBefore("-")
-        val title = getLatestTitle(kmApi, skuOuterId)
-        if (title == null) {
-            Log.w(TAG, "无法获取商品标题，跳过备注同步: skuOuterId=$skuOuterId")
+        val skuData = fetchLatestSkuData(kmApi, skuOuterId)
+        if (skuData == null) {
+            Log.w(TAG, "无法获取SKU数据，跳过备注同步: skuOuterId=$skuOuterId")
             return false
+        }
+        val propertiesName = skuData.propertiesName.ifBlank {
+            extractPayloadValue(op.payload, "properties_name") ?: ""
         }
         val request = ItemUpdateRequest(
             id = itemId,
             method = "erp.item.general.addorupdate",
-            outerId = outerId,
-            title = title,
+            outerId = skuData.itemOuterId,
+            title = skuData.title,
             skus = listOf(SkuUpdateDto(skuId = skuId, skuOuterId = skuOuterId, skuRemark = remark, skuPropertiesName = propertiesName))
         )
         val response = kmApi.updateItemRemark(request)
@@ -268,19 +269,20 @@ class OrderSyncWorker(
         val itemId = extractPayloadValue(op.payload, "sys_item_id")?.toLongOrNull() ?: return false
         val skuOuterId = extractPayloadValue(op.payload, "sku_outer_id") ?: return false
         val skuId = extractPayloadValue(op.payload, "sys_sku_id")?.toLongOrNull() ?: return false
-        val skuPropertiesName = extractPayloadValue(op.payload, "properties_name") ?: ""
-        val outerId = skuOuterId.substringBefore("-")
-        val title = getLatestTitle(kmApi, skuOuterId)
-        if (title == null) {
-            Log.w(TAG, "无法获取商品标题，跳过供应商同步: skuOuterId=$skuOuterId")
+        val skuData = fetchLatestSkuData(kmApi, skuOuterId)
+        if (skuData == null) {
+            Log.w(TAG, "无法获取SKU数据，跳过供应商同步: skuOuterId=$skuOuterId")
             return false
+        }
+        val skuPropertiesName = skuData.propertiesName.ifBlank {
+            extractPayloadValue(op.payload, "properties_name") ?: ""
         }
         val skuSuppliers = listOf(SupplierUpdateDto(supplierCode = supplierCode, supplierName = supplierName))
         val request = ItemUpdateRequest(
             id = itemId,
             method = "erp.item.general.addorupdate",
-            outerId = outerId,
-            title = title,
+            outerId = skuData.itemOuterId,
+            title = skuData.title,
             skus = listOf(SkuUpdateDto(
                 skuId = skuId, skuOuterId = skuOuterId,
                 skuPropertiesName = skuPropertiesName,
@@ -295,17 +297,29 @@ class OrderSyncWorker(
         return true
     }
 
-    private suspend fun getLatestTitle(kmApi: KuaimaiApiService, skuOuterId: String): String? {
+    private data class SkuSyncData(
+        val title: String,
+        val itemOuterId: String,
+        val propertiesName: String
+    )
+
+    private suspend fun fetchLatestSkuData(kmApi: KuaimaiApiService, skuOuterId: String): SkuSyncData? {
         try {
             val skuResp = kmApi.getSkuInfo(SkuQueryRequest(skuOuterId = skuOuterId))
             val skuList = skuResp.response?.itemSku ?: emptyList()
-            val itemOuterId = skuList.firstOrNull()?.itemOuterId ?: ""
+            val sku = skuList.firstOrNull() ?: return null
+            val itemOuterId = sku.itemOuterId
             if (itemOuterId.isBlank()) return null
             val itemResp = kmApi.getItemDetail(ItemGetRequest(outerId = itemOuterId))
             val title = itemResp.response?.item?.title ?: ""
-            return title.ifBlank { null }
+            if (title.isBlank()) return null
+            return SkuSyncData(
+                title = title,
+                itemOuterId = itemOuterId,
+                propertiesName = sku.propertiesName
+            )
         } catch (e: Exception) {
-            Log.w(TAG, "获取最新title失败: ${e.message}")
+            Log.w(TAG, "获取SKU数据失败: ${e.message}")
             return null
         }
     }

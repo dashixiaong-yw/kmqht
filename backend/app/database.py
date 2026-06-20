@@ -129,6 +129,7 @@ def init_db() -> None:
             sys_item_id INTEGER NOT NULL,
             sys_sku_id INTEGER NOT NULL,
             item_outer_id VARCHAR(64) NOT NULL DEFAULT '',
+            cached_modified BIGINT NOT NULL DEFAULT 0,
             cached_at DATETIME NOT NULL
         )
     """)
@@ -190,6 +191,7 @@ def init_db() -> None:
         "ALTER TABLE pick_orders ADD COLUMN created_by VARCHAR(32) NOT NULL DEFAULT ''",
         "ALTER TABLE pick_orders ADD COLUMN assigned_to VARCHAR(32) NOT NULL DEFAULT ''",
         "ALTER TABLE pick_orders ADD COLUMN visibility VARCHAR(16) NOT NULL DEFAULT 'private'",
+        "ALTER TABLE sku_cache ADD COLUMN cached_modified BIGINT NOT NULL DEFAULT 0",
     ]
     for sql in migrations:
         try:

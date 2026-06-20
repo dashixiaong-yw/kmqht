@@ -87,6 +87,10 @@ interface PickItemDao {
     @Query("UPDATE pick_item SET status = 1, completed_at = :completedAt WHERE order_id = :orderId AND status = 0")
     suspend fun completeAllByOrderId(orderId: Long, completedAt: Long)
 
+    /** refresh() 时更新不可变快麦字段（不含用户可修改的 remark/supplierName/supplierCode） */
+    @Query("UPDATE pick_item SET properties_name = :propertiesName, pic_path = :picPath WHERE id = :id")
+    suspend fun updateItemFields(id: Long, propertiesName: String, picPath: String)
+
     /**
      * 删除取货单下的所有明细
      */

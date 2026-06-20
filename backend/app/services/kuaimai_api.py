@@ -149,6 +149,7 @@ async def get_sku_by_outer_id(sku_outer_id: str) -> Optional[Dict[str, Any]]:
             "item_outer_id": sku_data.get("itemOuterId", ""),
             "supplier_name": "",
             "supplier_code": "",
+            "modified": sku_data.get("modified", 0),
         }
 
         logger.info(f"快麦SKU数据 sku={sku_outer_id}: propertiesName={sku_data.get('propertiesName','')!r}, "

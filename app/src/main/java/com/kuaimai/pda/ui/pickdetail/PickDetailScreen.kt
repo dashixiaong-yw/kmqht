@@ -369,7 +369,7 @@ fun PickDetailScreen(
                         // 全部完成按钮
                         Button(
                             onClick = { viewModel.completeAllItems() },
-                            enabled = completedCount < totalCount && totalCount > 0,
+                            enabled = completedCount < totalCount && totalCount > 0 && order?.status != 1,
                             colors = ButtonDefaults.buttonColors(containerColor = SuccessBg)
                         ) {
                             Text(
@@ -377,6 +377,16 @@ fun PickDetailScreen(
                                 color = SuccessText
                             )
                         }
+                    }
+
+                    // 取货单已完成提示
+                    if (order?.status == 1) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "取货单已完成，不可操作明细",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary
+                        )
                     }
                 }
             }
