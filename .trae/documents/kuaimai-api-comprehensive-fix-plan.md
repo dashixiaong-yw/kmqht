@@ -1,5 +1,7 @@
 # 快麦API集成全面缺陷修复计划（v2 - 含官方文档验证）
 
+> ⚠️ **历史文档声明**：本文档撰写于 v1.77 之前。关于响应格式、字段名、编码方式的**最终权威信息**，请参阅 [kuaimai-api-spec.md](../../.trae/rules/kuaimai-api-spec.md)（v1.81 规则文档）。
+
 ## 摘要
 
 对快麦ERP开放平台API集成相关的17个文件进行了逐行审查，并对照快麦官方文档（open.kuaimai.com）验证了API地址、公共参数、签名算法、请求格式、响应格式。发现 **6个bug**（1个P0、2个P1、2个P2、1个P2新增），以及 **1个架构缺陷**。
@@ -18,7 +20,9 @@
 | 请求格式(通用) | `application/x-www-form-urlencoded` | form-urlencoded | ✅ |
 | 请求格式(刷新会话) | `multipart/form-data` | `application/x-www-form-urlencoded` | ⚠️ 见BUG-6 |
 | erp.item.general.addorupdate | skus/suppliers为array类型 | ItemUpdateRequest包含List字段 | ✅ |
-| open.token.refresh响应 | `{"session": {"accessToken":..., "refreshToken":...}}` | 后端解析逻辑覆盖两种key | ✅ |
+| open.token.refresh响应 | `{"session": {"accessToken":..., "refreshToken":...}}` | 后端解析逻辑覆盖两种key | ⚠️ 见备注 |
+
+> **备注 (v1.81更新)**：实际观察到的 `open.token.refresh` 响应为**扁平结构** `{"success": true, "code": 0}`（multipart 编码的请求响应一律扁平）。`refresh_frequently` 码表示 token 仍有效、短期内无需重复刷新，属正常行为。后端已做兼容处理。详见 [kuaimai-api-spec.md](../../.trae/rules/kuaimai-api-spec.md)。
 
 ## 已确认无缺陷的文件（12个）
 

@@ -122,13 +122,13 @@
 
 - **API地址**：`https://openapi.kuaimai.com/router` — 这可能是旧版地址，如果当前能正常调用API则不修改。如果调用失败再改为官方文档的 `https://gw.superboss.cc/router`
 - **version参数**：同理，当前 `v=2.0` 如果能正常工作则不修改
-- **App端KuaimaiInterceptor**：App端不直接调用快麦API（通过后端中转），不需要修改
+- **App端KuaimaiInterceptor**：App端 `KuaimaiApiService` (BaseURL `https://gw.superboss.cc/`) **直接调用**快麦 API（updateItemRemark/updateItemSupplier/getSkuInfo/getItemDetail），由 KuaimaiInterceptor 签名。无需修改。
 
 ## 假设与决策
 
 1. **刷新频率**：选择每7天自动刷新（30天有效期，7天刷新留足余量，且API近60天无调用会被回收权限，7天刷新也能保持活跃）
 2. **刷新后token值不变**：根据官方文档，刷新成功后 accessToken 和 refreshToken 值不变，仅延长有效期，因此不需要更新 `kuaimai.json` 中的 session 和 refresh_token 值，只需更新 `updated_at`
-3. **App端不直接调快麦API**：所有快麦API调用通过后端中转，App端只需展示状态和触发刷新
+3. **App端调用快麦API方式**：`KuaimaiApiService` 直接调用快麦开放平台（通过 `@Named("kuaimai")` Retrofit + KuaimaiInterceptor 签名），同时也通过后端中转部分接口（SystemApiService）
 4. **手动刷新接口需要登录认证**：防止未授权用户触发刷新
 
 ## 验证步骤
