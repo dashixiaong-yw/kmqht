@@ -56,7 +56,9 @@ import com.kuaimai.pda.ui.theme.AppAlignment
 import com.kuaimai.pda.ui.theme.BorderGray
 import com.kuaimai.pda.ui.theme.BrandBlue
 import com.kuaimai.pda.ui.theme.DangerBg
+import com.kuaimai.pda.ui.theme.DangerText
 import com.kuaimai.pda.ui.theme.PrimaryLightBg
+import com.kuaimai.pda.ui.theme.PrimaryLightText
 import com.kuaimai.pda.ui.theme.SurfaceGray
 import com.kuaimai.pda.ui.theme.SurfaceWhite
 import com.kuaimai.pda.ui.theme.TextPrimary
@@ -251,7 +253,7 @@ fun HomeScreen(
                 title = "取货列表",
                 description = "查看和管理取货单",
                 iconBgColor = PrimaryLightBg,
-                icon = { Text("📋", fontSize = 24.sp) },
+                icon = { Icon(Icons.Default.ListAlt, contentDescription = null, tint = PrimaryLightText, modifier = Modifier.size(24.dp)) },
                 onClick = onNavigateToPickList
             )
 
@@ -261,7 +263,7 @@ fun HomeScreen(
                 title = "商品详情",
                 description = "扫码查看规格信息",
                 iconBgColor = DangerBg,
-                icon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp)) },
+                icon = { Icon(Icons.Default.Search, contentDescription = null, tint = DangerText, modifier = Modifier.size(24.dp)) },
                 onClick = onNavigateToProduct
             )
 

@@ -535,8 +535,8 @@ private fun ImageUploadGrid(
         )
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             // 库区图（有图片时始终显示只读，无图片且无权限时不显示）
             if (areaImageUrl != null || canManageAreaImage) {
@@ -602,7 +602,6 @@ private fun ImageUploadSlot(
     Box(
         modifier = modifier
             .aspectRatio(1f)
-            .heightIn(max = 120.dp)
             .drawBehind {
                 drawRoundRect(
                     color = borderColor,

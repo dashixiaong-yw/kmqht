@@ -209,7 +209,7 @@ fun PickItemRow(
                         onClick = onRestore,
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.textButtonColors(contentColor = TextSecondary),
-                        modifier = Modifier.height(36.dp).defaultMinSize(minWidth = 56.dp)
+                        modifier = Modifier.height(24.dp).defaultMinSize(minWidth = 56.dp)
                     ) {
                         Text("恢复", fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     }
@@ -221,7 +221,7 @@ fun PickItemRow(
                             containerColor = SuccessBg,
                             contentColor = SuccessText
                         ),
-                        modifier = Modifier.height(36.dp).defaultMinSize(minWidth = 56.dp)
+                        modifier = Modifier.height(24.dp).defaultMinSize(minWidth = 56.dp)
                     ) {
                         Text("完成", fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     }

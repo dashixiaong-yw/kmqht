@@ -304,7 +304,7 @@ class ProductViewModel @Inject constructor(
      * 显示供应商选择对话框
      */
     fun showSupplierDialog() {
-        _uiState.value = _uiState.value.copy(showSupplierDialog = true, supplierError = null)
+        _uiState.value = _uiState.value.copy(isLoadingSuppliers = true, supplierError = null)
         loadSuppliers()
     }
 
@@ -327,17 +327,17 @@ class ProductViewModel @Inject constructor(
      */
     private fun loadSuppliers() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoadingSuppliers = true, supplierError = null)
             try {
                 val token = prefs.getString(PrefsKeys.KEY_USER_TOKEN, "") ?: ""
                 val response = systemApiService.getKuaimaiSuppliers(token)
                 _suppliers.value = response.suppliers.map { item ->
                     SupplierDto(supplierName = item.name, supplierCode = item.code, supplierId = item.id)
                 }
-                _uiState.value = _uiState.value.copy(isLoadingSuppliers = false)
+                _uiState.value = _uiState.value.copy(isLoadingSuppliers = false, showSupplierDialog = true)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoadingSuppliers = false,
+                    showSupplierDialog = true,
                     supplierError = "加载失败: ${e.message}"
                 )
             }

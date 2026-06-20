@@ -283,6 +283,7 @@ fun PickDetailScreen(
                             selected = currentSupplier == supplier,
                             onClick = { viewModel.setSupplierFilter(supplier) },
                             label = { Text(supplier, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                            modifier = Modifier.height(28.dp),
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = PrimaryLightBg,
                                 selectedLabelColor = PrimaryLightText
