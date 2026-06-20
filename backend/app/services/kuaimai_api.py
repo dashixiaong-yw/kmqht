@@ -26,7 +26,14 @@ def _get_client() -> httpx.AsyncClient:
     if _client is None:
         with _client_lock:
             if _client is None:
-                _client = httpx.AsyncClient(timeout=_TIMEOUT)
+                _client = httpx.AsyncClient(
+                    timeout=_TIMEOUT,
+                    limits=httpx.Limits(
+                        max_keepalive_connections=5,
+                        max_connections=10,
+                        keepalive_expiry=30.0
+                    )
+                )
     return _client
 
 
@@ -86,10 +93,26 @@ async def _call_api(method: str, extra_params: Optional[Dict[str, Any]] = None) 
     params["sign"] = _sign(params, secret_snapshot)
 
     try:
-        client = _get_client()
-        response = await client.post(KUAIMAI_API_BASE, data=params)
-        response.raise_for_status()
-        result: Dict[str, Any] = response.json()
+        max_retries = 1
+        last_exception = None
+        for attempt in range(max_retries + 1):
+            try:
+                client = _get_client()
+                response = await client.post(KUAIMAI_API_BASE, data=params)
+                response.raise_for_status()
+                result: Dict[str, Any] = response.json()
+                last_exception = None
+                break
+            except httpx.TransportError as e:
+                last_exception = e
+                logger.warning(f"快麦API传输错误(第{attempt+1}次): {e}")
+                if attempt < max_retries:
+                    await asyncio.sleep(0.5)
+                    continue
+                raise
+
+        if last_exception:
+            raise last_exception
 
         # 检查API错误
         if "error_response" in result:

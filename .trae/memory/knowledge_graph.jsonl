@@ -169,6 +169,7 @@
 {"type":"entity","name":"v1.83_PickListScreen_ON_RESUME","entityType":"decision","observations":["DisposableEffect + LifecycleEventObserver 监听 ON_RESUME，返回列表页时刷新"]}
 {"type":"entity","name":"v1.85_UI全面优化","entityType":"version","observations":["版本1.85 全量 UI 优化，基于 Anthropic Frontend Design 技能审核结果","统一 10 处 AlertDialog 为 16dp 圆角","引导页提示条从黄色改为品牌蓝色 PrimaryLightBg","FilterChip 高度从 28dp 提升到 32dp","登录页密码框增加显示/隐藏切换","登录页改为上对齐布局","引导页添加 AnimatedContent 步骤切换动画","引导页完成页添加 CheckCircle 64dp 品牌蓝图标","已完成行透明度从 0.55f 调整到 0.65f","补全 DarkColorScheme 从 8 个到 20 个色槽","全部修改仅涉及视觉属性，零功能改动"]}
 {"type":"entity","name":"UI设计风格_工业实用","entityType":"design_decision","observations":["采用工业实用(Industrial Utility)设计风格","功能优先于装饰，不添加多余视觉元素","品牌色统一使用 BrandBlue #2563EB","弹窗风格统一：16dp 圆角，统一色调"]}
+{"type":"entity","name":"v1.86_Bug修复","entityType":"version","observations":["版本1.86 修复4个Bug+新增日志导出功能","Bug1/2: SkuItemInfo 增加title字段，Worker fetchLatestSkuData增加降级链","Bug1/2: Worker所有退出点增加日志，新增appendLog文件日志","Bug3: 修复httpx连接池 - 配置keepalive_expiry=30 + TransportError重试","Bug4: 供应商筛选项不即时刷新 - API响应直接追加到_suppliers","新增: 设置页\"导出同步日志\"按钮，通过FileProvider分享日志文件"]}
 {"type":"relation","from":"F1_取货单管理","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F2_扫码待办","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F3_取货单自动完成","to":"快麦取货通项目","relationType":"属于"}
@@ -283,3 +284,4 @@
 {"type":"relation","from":"S4_logout清除本地先于API调用","to":"S3_退出登录Loading状态","relationType":"后续修复（同模块v1.64）"}
 {"type":"relation","from":"P0_ApiKey全栈移除","to":"P0_RateLimitInterceptor移除","relationType":"同级优化（同版本v1.65）"}
 {"type":"relation","from":"v1.85_UI全面优化","to":"UI设计风格_工业实用","relationType":"follows"}
+{"type":"relation","from":"v1.86_Bug修复","to":"v1.85_UI全面优化","relationType":"follows"}

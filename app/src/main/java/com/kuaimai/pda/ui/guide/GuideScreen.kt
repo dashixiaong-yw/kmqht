@@ -1,7 +1,6 @@
 package com.kuaimai.pda.ui.guide
 
 import android.content.SharedPreferences
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -93,31 +92,29 @@ fun GuideScreen(
             Spacer(modifier = Modifier.height(12.dp))
         }
 
-        AnimatedContent(targetState = currentStep, label = "guideStep") { step ->
-            when (step) {
-                0 -> StepServerConfig(
-                    serverUrl = serverUrl,
-                    onScanConfig = { showCameraScan = true },
-                    onNext = {
-                        encryptedPrefs.edit().putString(PrefsKeys.KEY_SERVER_URL, serverUrl.trim()).apply()
-                        currentStep = 1
-                    }
-                )
-                1 -> StepScanMethod(
-                    selectedMethod = selectedScanMethod,
-                    onMethodSelected = { selectedScanMethod = it },
-                    onNext = {
-                        prefs.edit().putInt(KEY_SCAN_METHOD, selectedScanMethod).apply()
-                        currentStep = 2
-                    }
-                )
-                2 -> StepComplete(
-                    onFinish = {
-                        prefs.edit().putBoolean(KEY_GUIDE_SHOWN, true).apply()
-                        onFinish()
-                    }
-                )
-            }
+        when (currentStep) {
+            0 -> StepServerConfig(
+                serverUrl = serverUrl,
+                onScanConfig = { showCameraScan = true },
+                onNext = {
+                    encryptedPrefs.edit().putString(PrefsKeys.KEY_SERVER_URL, serverUrl.trim()).apply()
+                    currentStep = 1
+                }
+            )
+            1 -> StepScanMethod(
+                selectedMethod = selectedScanMethod,
+                onMethodSelected = { selectedScanMethod = it },
+                onNext = {
+                    prefs.edit().putInt(KEY_SCAN_METHOD, selectedScanMethod).apply()
+                    currentStep = 2
+                }
+            )
+            2 -> StepComplete(
+                onFinish = {
+                    prefs.edit().putBoolean(KEY_GUIDE_SHOWN, true).apply()
+                    onFinish()
+                }
+            )
         }
     }
 }

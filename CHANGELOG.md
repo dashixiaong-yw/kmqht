@@ -1,5 +1,16 @@
 # 快麦取货通 - 变更日志
 
+## 1.86 (2026-06-21)
+
+### 修复
+- [Bug3] 修复添加商品首次返回 HTTP 404：httpx 连接池配置 keepalive_expiry=30 + TransportError 自动重试
+- [Bug4] 供应商筛选项添加后不即时刷新的问题（从API响应直接追加）
+- [Bug1/2] SkuItemInfo DTO 增加 title 字段，Worker 同步增加 title 降级链（getItemDetail → sku.title）
+- [Bug1/2] Worker 所有关键路径增加日志输出，新增导出同步日志功能
+
+### 新增
+- 设置页增加"导出同步日志"按钮，通过系统分享导出 Worker 同步日志文件
+
 ## 1.85 (2026-06-20)
 
 ### UI改进

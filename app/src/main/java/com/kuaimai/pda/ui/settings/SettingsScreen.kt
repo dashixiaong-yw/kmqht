@@ -38,10 +38,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.kuaimai.pda.BuildConfig
 import com.kuaimai.pda.data.repository.UserRepository
@@ -52,6 +54,7 @@ import com.kuaimai.pda.ui.theme.PrimaryLightText
 import com.kuaimai.pda.ui.theme.SuccessBg
 import com.kuaimai.pda.ui.theme.SuccessText
 import com.kuaimai.pda.ui.theme.SurfaceWhite
+import com.kuaimai.pda.ui.theme.TextSecondary
 import kotlinx.coroutines.launch
 
 /**
@@ -209,6 +212,7 @@ fun SettingsScreen(
             )
         }
     ) { innerPadding ->
+        val appContext = LocalContext.current
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -372,6 +376,26 @@ fun SettingsScreen(
                     .clickable { viewModel.checkForUpdate() },
                 textAlign = TextAlign.Center
             )
+
+            // 导出同步日志
+            TextButton(
+                onClick = {
+                    val logFile = java.io.File(appContext.cacheDir, "sync_log.txt")
+                    if (!logFile.exists()) return@TextButton
+                    val uri = androidx.core.content.FileProvider.getUriForFile(
+                        appContext, "${appContext.packageName}.fileprovider", logFile
+                    )
+                    val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                        addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    appContext.startActivity(android.content.Intent.createChooser(intent, "分享同步日志"))
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("导出同步日志", color = TextSecondary, fontSize = 12.sp)
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
         }

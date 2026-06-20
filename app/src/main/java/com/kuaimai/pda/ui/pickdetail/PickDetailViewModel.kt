@@ -186,6 +186,10 @@ class PickDetailViewModel @Inject constructor(
                     createdAt = TimeUtils.parseBeijingTime(response.createdAt).let { if (it > 0) it else TimeUtils.now() }
                 )
                 pickOrderRepository.insertItem(item)
+                val newSupplier = response.supplierName
+                if (newSupplier.isNotEmpty() && !_suppliers.value.contains(newSupplier)) {
+                    _suppliers.value = _suppliers.value + newSupplier
+                }
                 loadSuppliersFromLocal()
                 loadOrder()
                 _order.value = _order.value?.copy(totalCount = (_order.value?.totalCount ?: 0) + 1)

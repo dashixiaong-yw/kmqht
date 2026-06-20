@@ -46,6 +46,18 @@ class OrderSyncWorker(
     companion object {
         private const val TAG = "OrderSyncWorker"
         private const val MAX_RETRY = 3
+        private const val LOG_FILE = "sync_log.txt"
+
+        fun appendLog(context: Context, message: String) {
+            try {
+                val file = File(context.cacheDir, LOG_FILE)
+                val now = java.text.SimpleDateFormat("MM-dd HH:mm:ss.SSS", java.util.Locale.getDefault()).format(java.util.Date())
+                val line = "[$now] $message\n"
+                val existing = if (file.exists()) file.readLines() else emptyList()
+                val lines = if (existing.size >= 500) existing.drop(existing.size - 250) else existing
+                file.writeText(lines.joinToString("\n") + "\n" + line)
+            } catch (_: Exception) { }
+        }
     }
 
     private val pendingOperationDao: PendingOperationDao? by lazy {
@@ -82,6 +94,7 @@ class OrderSyncWorker(
                     hasWork = false
                     break
                 }
+                appendLog(applicationContext, "Worker启动，共 ${operations.size} 个待处理操作")
 
                 val grouped = operations.groupBy { it.orderId }
                 var loopFailure = false
@@ -92,6 +105,7 @@ class OrderSyncWorker(
                         if (success) {
                             dao.deleteById(op.id)
                             Log.d(TAG, "操作同步成功: ${op.operationType} orderId=$orderId")
+                            appendLog(applicationContext, "操作同步成功: type=${op.operationType}, orderId=$orderId")
                         } else {
                             val current = dao.getById(op.id)
                             if (current == null) continue
@@ -254,14 +268,32 @@ class OrderSyncWorker(
     }
 
     private suspend fun syncRemarkUpdate(op: PendingOperationEntity): Boolean {
-        val kmApi = apiService ?: return false
-        val remark = extractPayloadValue(op.payload, "remark") ?: return false
-        val skuId = extractPayloadValue(op.payload, "sys_sku_id")?.toLongOrNull() ?: return false
-        val itemId = extractPayloadValue(op.payload, "sys_item_id")?.toLongOrNull() ?: return false
-        val skuOuterId = extractPayloadValue(op.payload, "sku_outer_id") ?: return false
+        val kmApi = apiService ?: run {
+            Log.e(TAG, "syncRemarkUpdate: apiService为null")
+            appendLog(applicationContext, "快麦备注同步失败: apiService未初始化")
+            return false
+        }
+        val remark = extractPayloadValue(op.payload, "remark") ?: run {
+            Log.e(TAG, "syncRemarkUpdate: payload缺少remark字段")
+            appendLog(applicationContext, "快麦备注同步失败: payload缺少remark字段")
+            return false
+        }
+        val skuId = extractPayloadValue(op.payload, "sys_sku_id")?.toLongOrNull() ?: run {
+            Log.e(TAG, "syncRemarkUpdate: sys_sku_id无效")
+            return false
+        }
+        val itemId = extractPayloadValue(op.payload, "sys_item_id")?.toLongOrNull() ?: run {
+            Log.e(TAG, "syncRemarkUpdate: sys_item_id无效")
+            return false
+        }
+        val skuOuterId = extractPayloadValue(op.payload, "sku_outer_id") ?: run {
+            Log.e(TAG, "syncRemarkUpdate: sku_outer_id无效")
+            return false
+        }
         val skuData = fetchLatestSkuData(kmApi, skuOuterId, extractPayloadValue(op.payload, "item_outer_id"))
         if (skuData == null) {
             Log.w(TAG, "无法获取SKU数据，跳过备注同步: skuOuterId=$skuOuterId")
+            appendLog(applicationContext, "快麦备注同步失败: 获取SKU数据失败, sku=$skuOuterId")
             return false
         }
         val propertiesName = skuData.propertiesName.ifBlank {
@@ -277,21 +309,43 @@ class OrderSyncWorker(
         val response = kmApi.updateItemRemark(request)
         if (!response.success) {
             Log.w(TAG, "快麦备注更新失败: code=${response.code} msg=${response.msg}")
+            appendLog(applicationContext, "快麦备注同步失败: code=${response.code}, msg=${response.msg}")
             return false
         }
+        appendLog(applicationContext, "快麦备注同步成功: sku=$skuOuterId")
         return true
     }
 
     private suspend fun syncSupplierUpdate(op: PendingOperationEntity): Boolean {
-        val kmApi = apiService ?: return false
-        val supplierName = extractPayloadValue(op.payload, "supplier_name") ?: return false
-        val supplierCode = extractPayloadValue(op.payload, "supplier_code") ?: return false
-        val itemId = extractPayloadValue(op.payload, "sys_item_id")?.toLongOrNull() ?: return false
-        val skuOuterId = extractPayloadValue(op.payload, "sku_outer_id") ?: return false
-        val skuId = extractPayloadValue(op.payload, "sys_sku_id")?.toLongOrNull() ?: return false
+        val kmApi = apiService ?: run {
+            Log.e(TAG, "syncSupplierUpdate: apiService为null")
+            appendLog(applicationContext, "快麦供应商同步失败: apiService未初始化")
+            return false
+        }
+        val supplierName = extractPayloadValue(op.payload, "supplier_name") ?: run {
+            Log.e(TAG, "syncSupplierUpdate: payload缺少supplier_name")
+            return false
+        }
+        val supplierCode = extractPayloadValue(op.payload, "supplier_code") ?: run {
+            Log.e(TAG, "syncSupplierUpdate: payload缺少supplier_code")
+            return false
+        }
+        val itemId = extractPayloadValue(op.payload, "sys_item_id")?.toLongOrNull() ?: run {
+            Log.e(TAG, "syncSupplierUpdate: sys_item_id无效")
+            return false
+        }
+        val skuOuterId = extractPayloadValue(op.payload, "sku_outer_id") ?: run {
+            Log.e(TAG, "syncSupplierUpdate: sku_outer_id无效")
+            return false
+        }
+        val skuId = extractPayloadValue(op.payload, "sys_sku_id")?.toLongOrNull() ?: run {
+            Log.e(TAG, "syncSupplierUpdate: sys_sku_id无效")
+            return false
+        }
         val skuData = fetchLatestSkuData(kmApi, skuOuterId, extractPayloadValue(op.payload, "item_outer_id"))
         if (skuData == null) {
             Log.w(TAG, "无法获取SKU数据，跳过供应商同步: skuOuterId=$skuOuterId")
+            appendLog(applicationContext, "快麦供应商同步失败: 获取SKU数据失败, sku=$skuOuterId")
             return false
         }
         val skuPropertiesName = skuData.propertiesName.ifBlank {
@@ -312,8 +366,10 @@ class OrderSyncWorker(
         val response = kmApi.updateItemSupplier(request)
         if (!response.success) {
             Log.w(TAG, "快麦供应商更新失败: code=${response.code} msg=${response.msg}")
+            appendLog(applicationContext, "快麦供应商同步失败: code=${response.code}, msg=${response.msg}")
             return false
         }
+        appendLog(applicationContext, "快麦供应商同步成功: sku=$skuOuterId, supplier=$supplierName")
         return true
     }
 
@@ -337,33 +393,34 @@ class OrderSyncWorker(
                 // 使用 fallback 跳过 getSkuInfo，直接调 getItemDetail
                 val fallbackResp = kmApi.getItemDetail(ItemGetRequest(outerId = itemOuterIdFallback))
                 val fallbackTitle = fallbackResp.response?.item?.title ?: ""
-                if (fallbackTitle.isBlank()) {
-                    Log.w(TAG, "fetchLatestSkuData: 使用fallback后仍无title: $skuOuterId")
+                val effectiveFallbackTitle = if (fallbackTitle.isNotBlank()) fallbackTitle else sku?.title ?: ""
+                if (effectiveFallbackTitle.isBlank()) {
+                    Log.w(TAG, "fetchLatestSkuData: 使用fallback后仍无title，且sku.title为空: $skuOuterId")
                     return null
                 }
+                Log.d(TAG, "fetchLatestSkuData fallback路径成功: sku=$skuOuterId, title来源=${if (fallbackTitle.isNotBlank()) "getItemDetail" else "sku.title"}")
                 return SkuSyncData(
-                    title = fallbackTitle,
+                    title = effectiveFallbackTitle,
                     itemOuterId = itemOuterIdFallback,
                     propertiesName = sku?.propertiesName ?: ""
                 )
             }
-            if (itemOuterId.isBlank()) {
-                Log.w(TAG, "fetchLatestSkuData: itemOuterId为空: $skuOuterId")
-                return null
-            }
             val itemResp = kmApi.getItemDetail(ItemGetRequest(outerId = itemOuterId))
             val title = itemResp.response?.item?.title ?: ""
-            if (title.isBlank()) {
-                Log.w(TAG, "fetchLatestSkuData: title为空: $skuOuterId")
+            val effectiveTitle = if (title.isNotBlank()) title else sku?.title ?: ""
+            if (effectiveTitle.isBlank()) {
+                Log.w(TAG, "fetchLatestSkuData: getItemDetail和getSkuInfo均无title: $skuOuterId")
                 return null
             }
+            Log.d(TAG, "fetchLatestSkuData成功: sku=$skuOuterId, title来源=${if (title.isNotBlank()) "getItemDetail" else "sku.title"}")
             return SkuSyncData(
-                title = title,
+                title = effectiveTitle,
                 itemOuterId = itemOuterId,
                 propertiesName = sku.propertiesName
             )
         } catch (e: Exception) {
             Log.w(TAG, "获取SKU数据失败: $skuOuterId — ${e.message}")
+            appendLog(applicationContext, "获取SKU数据失败: sku=$skuOuterId, error=${e.message}")
             return null
         }
     }
