@@ -390,7 +390,9 @@ fun SettingsScreen(
                         putExtra(android.content.Intent.EXTRA_STREAM, uri)
                         addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     }
-                    appContext.startActivity(android.content.Intent.createChooser(intent, "分享同步日志"))
+                    appContext.startActivity(
+                        android.content.Intent.createChooser(intent, "分享同步日志").addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                    )
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
