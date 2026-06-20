@@ -1,5 +1,20 @@
 # 快麦取货通 - 变更日志
 
+## 1.77 (2026-06-20)
+
+### 修复
+- P0: 备注/供应商回传失败 — ProductViewModel缓存SkuDetailResponse + 独立扫码直接入队（不依赖Room pick_item行）
+- P0: 供应商列表为空 — kuaimai_api.py get_supplier_list响应解析修复（multipart编码返回扁平结构，误用wrapper key）
+- P1: Worker冲突操作死循环 — 冲突操作(retryCount=-1)加deleteById释放队列，避免while(hasWork)永不退出
+- P2: 首页设置模块图标不可分辨 — iconBgColor SurfaceGray→BorderGray, tint Color.White→TextSecondary
+- P2: 取货单进度圆点靠右 — Spacer(8dp)→Spacer(weight(1f))
+- P2: 完成/恢复按钮紧凑 — 移除自定义contentPadding，改用Modifier.height(36.dp)（参照"+新建"按钮）
+- P2: 新建取货单拣货区闪烁 — loading时隐藏按钮显示CircularProgressIndicator，消除disabled动画引起的全量重组
+
+### 改进
+- PickOrderRepository新增enqueueRemarkUpdateDirect/enqueueSupplierUpdateDirect（独立扫码场景）
+- propertiesName为空时自动填充"-"保护快麦API
+
 ## 1.76 (2026-06-20)
 
 ### 修复

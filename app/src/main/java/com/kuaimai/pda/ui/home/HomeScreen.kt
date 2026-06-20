@@ -270,12 +270,12 @@ fun HomeScreen(
             ModuleCard(
                 title = "设置",
                 description = "扫码方式、反馈开关",
-                iconBgColor = SurfaceGray,
+                iconBgColor = BorderGray,
                 icon = {
                         Icon(
                             Icons.Default.Settings,
                             contentDescription = null,
-                        tint = Color.White,
+                        tint = TextSecondary,
                         modifier = Modifier.size(24.dp)
                     )
                 },

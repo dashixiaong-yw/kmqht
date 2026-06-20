@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,6 +17,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -249,10 +251,17 @@ private fun NewOrderDialog(
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Spacer(modifier = Modifier.height(12.dp))
+                if (isLoading) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    }
+                } else {
                 areas.forEach { area ->
                     Button(
                         onClick = { onConfirm(area) },
-                        enabled = !isLoading,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 4.dp),
@@ -264,7 +273,8 @@ private fun NewOrderDialog(
                         )
                     }
                 }
-                if (areas.isEmpty()) {
+                }
+                if (areas.isEmpty() && !isLoading) {
                     Text(
                         text = "暂无拣货区，请先在设置中配置",
                         style = MaterialTheme.typography.bodySmall,

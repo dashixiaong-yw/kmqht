@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kuaimai.pda.data.api.SystemApiService
 import com.kuaimai.pda.data.api.dto.KuaimaiSupplierItem
+import com.kuaimai.pda.data.api.dto.SkuDetailResponse
 import com.kuaimai.pda.data.api.dto.SupplierDto
 import com.kuaimai.pda.data.db.dao.PickItemDao
 import com.kuaimai.pda.data.db.dao.ProductImageDao
@@ -96,6 +97,9 @@ class ProductViewModel @Inject constructor(
     /** 当前SKU对应的PickItem（可能为null，如果不在取货单中） */
     private var currentItem: PickItemEntity? = null
 
+    /** 缓存API返回的SKU详情（独立扫码入队时使用，不依赖Room） */
+    private var currentSkuDetail: SkuDetailResponse? = null
+
     /** 当前取货单ID（从导航参数获取，用于精确查询当前订单下的SKU） */
     private var currentOrderId: Long = 0L
 
@@ -135,6 +139,13 @@ class ProductViewModel @Inject constructor(
                         remark = detail.remark
                     )
                     loaded = true
+                    currentSkuDetail = detail
+                    val item = if (currentOrderId > 0) {
+                        pickItemDao.getByOrderIdAndSkuOuterId(currentOrderId, skuOuterId)
+                    } else {
+                        pickItemDao.getBySkuOuterId(skuOuterId)
+                    }
+                    currentItem = item
                 } catch (apiError: Exception) {
                     Log.w(TAG, "后端API获取SKU详情失败，降级到本地Room: ${apiError.message}")
                 }
@@ -262,9 +273,14 @@ class ProductViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val item = currentItem
+                val detail = currentSkuDetail
                 if (item != null) {
-                    // 通过Repository更新本地+写入离线队列
                     pickOrderRepository.updateRemarkWithQueue(item.id, confirmType.remark)
+                } else if (detail != null) {
+                    pickOrderRepository.enqueueRemarkUpdateDirect(
+                        detail.skuOuterId, detail.sysSkuId, detail.sysItemId,
+                        detail.propertiesName, confirmType.remark
+                    )
                 }
                 _uiState.value = _uiState.value.copy(isSavingRemark = false)
             } catch (e: Exception) {
@@ -341,9 +357,14 @@ class ProductViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val item = currentItem
+                val detail = currentSkuDetail
                 if (item != null) {
-                    // 通过Repository更新本地+写入离线队列
                     pickOrderRepository.updateSupplierWithQueue(item.id, confirmType.name, confirmType.code)
+                } else if (detail != null) {
+                    pickOrderRepository.enqueueSupplierUpdateDirect(
+                        detail.skuOuterId, detail.sysSkuId, detail.sysItemId,
+                        detail.propertiesName, confirmType.name, confirmType.code
+                    )
                 }
                 _uiState.value = _uiState.value.copy(
                     isSavingSupplier = false,

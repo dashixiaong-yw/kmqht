@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -210,8 +209,7 @@ fun PickItemRow(
                         onClick = onRestore,
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.textButtonColors(contentColor = TextSecondary),
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
-                        modifier = Modifier.defaultMinSize(minWidth = 56.dp)
+                        modifier = Modifier.height(36.dp).defaultMinSize(minWidth = 56.dp)
                     ) {
                         Text("恢复", fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     }
@@ -223,8 +221,7 @@ fun PickItemRow(
                             containerColor = SuccessBg,
                             contentColor = SuccessText
                         ),
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
-                        modifier = Modifier.defaultMinSize(minWidth = 56.dp)
+                        modifier = Modifier.height(36.dp).defaultMinSize(minWidth = 56.dp)
                     ) {
                         Text("完成", fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     }

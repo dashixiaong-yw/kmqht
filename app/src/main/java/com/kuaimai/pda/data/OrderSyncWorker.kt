@@ -96,7 +96,8 @@ class OrderSyncWorker(
                             val current = dao.getById(op.id)
                             if (current == null) continue
                             if (current.retryCount == -1) {
-                                Log.w(TAG, "操作已标记冲突: ${op.operationType} orderId=$orderId")
+                                Log.w(TAG, "操作已标记冲突，删除: ${op.operationType} orderId=$orderId")
+                                dao.deleteById(op.id)
                             } else if (current.retryCount >= MAX_RETRY) {
                                 Log.e(TAG, "操作同步失败超过${MAX_RETRY}次，标记冲突: ${op.operationType}")
                                 dao.updateRetryCount(op.id, -1)

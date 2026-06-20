@@ -162,7 +162,7 @@ fun PickOrderCard(
                         SuccessText else TextSecondary
                 )
                 if (order.totalCount > 0) {
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.weight(1f))
                     val maxDots = minOf(order.totalCount, 20)
                     repeat(maxDots) { index ->
                         Box(

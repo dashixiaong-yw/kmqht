@@ -55,6 +55,16 @@ interface PickOrderRepository {
     suspend fun deleteItemDirect(id: Long)
     /** 图片上传入队（离线模式下图片上传失败时调用） */
     suspend fun enqueueUploadImage(skuOuterId: String, payload: String)
+    /** 直接入队备注更新（独立扫码场景，不依赖Room pick_item行） */
+    suspend fun enqueueRemarkUpdateDirect(
+        skuOuterId: String, sysSkuId: Long, sysItemId: Long,
+        propertiesName: String, remark: String
+    )
+    /** 直接入队供应商更新（独立扫码场景，不依赖Room pick_item行） */
+    suspend fun enqueueSupplierUpdateDirect(
+        skuOuterId: String, sysSkuId: Long, sysItemId: Long,
+        propertiesName: String, supplierName: String, supplierCode: String
+    )
 }
 
 /**
@@ -210,6 +220,32 @@ class PickOrderRepositoryImpl @Inject constructor(
             orderId = 0L,
             targetId = 0L,
             payload = payload
+        )
+    }
+
+    override suspend fun enqueueRemarkUpdateDirect(
+        skuOuterId: String, sysSkuId: Long, sysItemId: Long,
+        propertiesName: String, remark: String
+    ) {
+        val safeProperties = propertiesName.ifBlank { "-" }
+        enqueueOperation(
+            operationType = "update_remark",
+            orderId = 0L,
+            targetId = 0L,
+            payload = """{"remark":"${TimeUtils.escapeJson(remark)}","sys_sku_id":$sysSkuId,"sys_item_id":$sysItemId,"sku_outer_id":"${TimeUtils.escapeJson(skuOuterId)}","properties_name":"${TimeUtils.escapeJson(safeProperties)}"}"""
+        )
+    }
+
+    override suspend fun enqueueSupplierUpdateDirect(
+        skuOuterId: String, sysSkuId: Long, sysItemId: Long,
+        propertiesName: String, supplierName: String, supplierCode: String
+    ) {
+        val safeProperties = propertiesName.ifBlank { "-" }
+        enqueueOperation(
+            operationType = "update_supplier",
+            orderId = 0L,
+            targetId = 0L,
+            payload = """{"supplier_name":"${TimeUtils.escapeJson(supplierName)}","supplier_code":"${TimeUtils.escapeJson(supplierCode)}","sys_item_id":$sysItemId,"sys_sku_id":$sysSkuId,"sku_outer_id":"${TimeUtils.escapeJson(skuOuterId)}","properties_name":"${TimeUtils.escapeJson(safeProperties)}"}"""
         )
     }
 
