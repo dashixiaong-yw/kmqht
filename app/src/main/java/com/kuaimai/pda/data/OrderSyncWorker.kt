@@ -241,7 +241,11 @@ class OrderSyncWorker(
         val skuOuterId = extractPayloadValue(op.payload, "sku_outer_id") ?: return false
         val propertiesName = extractPayloadValue(op.payload, "properties_name") ?: return false
         val outerId = skuOuterId.substringBefore("-")
-        val title = getLatestTitle(kmApi, skuOuterId, propertiesName)
+        val title = getLatestTitle(kmApi, skuOuterId)
+        if (title == null) {
+            Log.w(TAG, "无法获取商品标题，跳过备注同步: skuOuterId=$skuOuterId")
+            return false
+        }
         val request = ItemUpdateRequest(
             id = itemId,
             method = "erp.item.general.addorupdate",
@@ -266,7 +270,11 @@ class OrderSyncWorker(
         val skuId = extractPayloadValue(op.payload, "sys_sku_id")?.toLongOrNull() ?: return false
         val skuPropertiesName = extractPayloadValue(op.payload, "properties_name") ?: ""
         val outerId = skuOuterId.substringBefore("-")
-        val title = getLatestTitle(kmApi, skuOuterId, skuPropertiesName)
+        val title = getLatestTitle(kmApi, skuOuterId)
+        if (title == null) {
+            Log.w(TAG, "无法获取商品标题，跳过供应商同步: skuOuterId=$skuOuterId")
+            return false
+        }
         val skuSuppliers = listOf(SupplierUpdateDto(supplierCode = supplierCode, supplierName = supplierName))
         val request = ItemUpdateRequest(
             id = itemId,
@@ -287,18 +295,18 @@ class OrderSyncWorker(
         return true
     }
 
-    private suspend fun getLatestTitle(kmApi: KuaimaiApiService, skuOuterId: String, fallback: String): String {
+    private suspend fun getLatestTitle(kmApi: KuaimaiApiService, skuOuterId: String): String? {
         try {
             val skuResp = kmApi.getSkuInfo(SkuQueryRequest(skuOuterId = skuOuterId))
             val skuList = skuResp.response?.itemSku ?: emptyList()
             val itemOuterId = skuList.firstOrNull()?.itemOuterId ?: ""
-            if (itemOuterId.isBlank()) return fallback
+            if (itemOuterId.isBlank()) return null
             val itemResp = kmApi.getItemDetail(ItemGetRequest(outerId = itemOuterId))
             val title = itemResp.response?.item?.title ?: ""
-            return title.ifBlank { fallback }
+            return title.ifBlank { null }
         } catch (e: Exception) {
-            Log.w(TAG, "获取最新title失败，使用降级值: ${e.message}")
-            return fallback
+            Log.w(TAG, "获取最新title失败: ${e.message}")
+            return null
         }
     }
 

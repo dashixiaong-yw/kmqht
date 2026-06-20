@@ -227,12 +227,11 @@ class PickOrderRepositoryImpl @Inject constructor(
         skuOuterId: String, sysSkuId: Long, sysItemId: Long,
         propertiesName: String, remark: String
     ) {
-        val safeProperties = propertiesName.ifBlank { "-" }
         enqueueOperation(
             operationType = "update_remark",
             orderId = 0L,
             targetId = 0L,
-            payload = """{"remark":"${TimeUtils.escapeJson(remark)}","sys_sku_id":$sysSkuId,"sys_item_id":$sysItemId,"sku_outer_id":"${TimeUtils.escapeJson(skuOuterId)}","properties_name":"${TimeUtils.escapeJson(safeProperties)}"}"""
+            payload = """{"remark":"${TimeUtils.escapeJson(remark)}","sys_sku_id":$sysSkuId,"sys_item_id":$sysItemId,"sku_outer_id":"${TimeUtils.escapeJson(skuOuterId)}","properties_name":"${TimeUtils.escapeJson(propertiesName)}"}"""
         )
     }
 
@@ -240,12 +239,11 @@ class PickOrderRepositoryImpl @Inject constructor(
         skuOuterId: String, sysSkuId: Long, sysItemId: Long,
         propertiesName: String, supplierName: String, supplierCode: String
     ) {
-        val safeProperties = propertiesName.ifBlank { "-" }
         enqueueOperation(
             operationType = "update_supplier",
             orderId = 0L,
             targetId = 0L,
-            payload = """{"supplier_name":"${TimeUtils.escapeJson(supplierName)}","supplier_code":"${TimeUtils.escapeJson(supplierCode)}","sys_item_id":$sysItemId,"sys_sku_id":$sysSkuId,"sku_outer_id":"${TimeUtils.escapeJson(skuOuterId)}","properties_name":"${TimeUtils.escapeJson(safeProperties)}"}"""
+            payload = """{"supplier_name":"${TimeUtils.escapeJson(supplierName)}","supplier_code":"${TimeUtils.escapeJson(supplierCode)}","sys_item_id":$sysItemId,"sys_sku_id":$sysSkuId,"sku_outer_id":"${TimeUtils.escapeJson(skuOuterId)}","properties_name":"${TimeUtils.escapeJson(propertiesName)}"}"""
         )
     }
 

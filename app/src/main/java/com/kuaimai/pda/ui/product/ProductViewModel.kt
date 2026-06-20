@@ -123,6 +123,8 @@ class ProductViewModel @Inject constructor(
     fun loadSkuInfo(skuOuterId: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            currentSkuDetail = null
+            currentItem = null
             try {
                 // 优先从后端API获取实时快麦数据
                 var loaded = false

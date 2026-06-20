@@ -37,7 +37,7 @@ android {
         minSdk = 24
         targetSdk = 34
         versionCode = 173
-        versionName = "1.77"
+        versionName = "1.78"
 
         resourceConfigurations.add("zh")
 

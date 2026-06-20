@@ -1,5 +1,12 @@
 # 快麦取货通 - 变更日志
 
+## 1.78 (2026-06-20)
+
+### 修复
+- P0: title覆盖风险 — getLatestTitle失败时返回null拒绝同步，避免降级使用propertiesName覆盖商品标题
+- P1: currentSkuDetail/currentItem旧值污染 — loadSkuInfo开头null重置，防止API失败后残留上一条详情数据
+- P2: 去掉独立扫码路径的ifBlank包装 — 与updateRemarkWithQueue路径保持一致
+
 ## 1.77 (2026-06-20)
 
 ### 修复
