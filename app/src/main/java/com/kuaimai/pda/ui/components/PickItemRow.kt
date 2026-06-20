@@ -79,7 +79,7 @@ fun PickItemRow(
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 10.dp)
                 .alpha(contentAlpha),
-            verticalAlignment = Alignment.Top
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
@@ -118,7 +118,7 @@ fun PickItemRow(
                     text = item.supplierName,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = SupplierRed,
+                    color = if (isCompleted) TextMuted else SupplierRed,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     textDecoration = if (isCompleted) TextDecoration.LineThrough else TextDecoration.None
@@ -209,11 +209,14 @@ fun PickItemRow(
                     TextButton(
                         onClick = onRestore,
                         shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.textButtonColors(contentColor = TextSecondary),
-                        modifier = Modifier.defaultMinSize(minWidth = 56.dp),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                        colors = ButtonDefaults.textButtonColors(
+                            containerColor = SurfaceGray,
+                            contentColor = TextSecondary
+                        ),
+                        modifier = Modifier.defaultMinSize(minWidth = 64.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
                     ) {
-                        Text("恢复", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                        Text("↩ 恢复", fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     }
                 } else {
                     TextButton(
@@ -223,10 +226,10 @@ fun PickItemRow(
                             containerColor = SuccessBg,
                             contentColor = SuccessText
                         ),
-                        modifier = Modifier.defaultMinSize(minWidth = 56.dp),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                        modifier = Modifier.defaultMinSize(minWidth = 64.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
                     ) {
-                        Text("完成", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                        Text("✓ 完成", fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     }
                 }
             }

@@ -1,5 +1,15 @@
 # 快麦取货通 - 变更日志
 
+## 1.84 (2026-06-20)
+
+### UI改进
+- PickItemRow: 恢复按钮加灰底(SurfaceGray)，与完成按钮绿底形成对称操作对
+- PickItemRow: 按钮增加 ✓/↩ 图标，匹配原型语义
+- PickItemRow: 已完成行供应商颜色降级为 TextMuted(灰)，传递"已处理"信号
+- PickItemRow: 行内容垂直居中，视觉平衡
+- PickDetailScreen: 筛选芯片选中态改为深蓝底白字(BrandBlue/SurfaceWhite)
+- PickDetailScreen: "全部完成"按钮由绿底改为蓝底(PrimaryLightBg)，与单行完成语义区分
+
 ## 1.83 (2026-06-20)
 
 ### 修复

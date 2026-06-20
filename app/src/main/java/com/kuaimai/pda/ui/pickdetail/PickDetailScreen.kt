@@ -285,8 +285,8 @@ fun PickDetailScreen(
                             label = { Text(supplier, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                             modifier = Modifier.height(28.dp),
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = PrimaryLightBg,
-                                selectedLabelColor = PrimaryLightText
+                                selectedContainerColor = BrandBlue,
+                                selectedLabelColor = SurfaceWhite
                             )
                         )
                     }
@@ -370,11 +370,11 @@ fun PickDetailScreen(
                         Button(
                             onClick = { viewModel.completeAllItems() },
                             enabled = completedCount < totalCount && totalCount > 0 && order?.status != 1,
-                            colors = ButtonDefaults.buttonColors(containerColor = SuccessBg)
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryLightBg)
                         ) {
                             Text(
                                 text = "全部完成",
-                                color = SuccessText
+                                color = PrimaryLightText
                             )
                         }
                     }
