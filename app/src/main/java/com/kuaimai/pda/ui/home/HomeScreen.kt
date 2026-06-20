@@ -182,7 +182,7 @@ fun HomeScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(WarningBg, RoundedCornerShape(8.dp))
+                        .background(PrimaryLightBg, RoundedCornerShape(8.dp))
                         .clickable { onNavigateToSettings() }
                         .padding(12.dp),
                     verticalAlignment = AppAlignment.RowCenter
@@ -190,7 +190,7 @@ fun HomeScreen(
                     Text(
                         text = "首次使用？点击设置配置服务器地址和扫码方式",
                         style = MaterialTheme.typography.bodyMedium.copy(
-                            color = WarningText,
+                            color = PrimaryLightText,
                             fontWeight = FontWeight.Medium
                         ),
                         modifier = Modifier.weight(1f)
@@ -205,7 +205,7 @@ fun HomeScreen(
                         Icon(
                             Icons.Default.Close,
                             contentDescription = "关闭",
-                            tint = WarningText,
+                            tint = PrimaryLightText,
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -289,6 +289,7 @@ fun HomeScreen(
     if (showTokenExpiredDialog) {
         AlertDialog(
             onDismissRequest = { showTokenExpiredDialog = false },
+            shape = RoundedCornerShape(16.dp),
             title = { Text("会话已过期") },
             text = { Text("快麦API会话已过期，请重新授权") },
             confirmButton = {

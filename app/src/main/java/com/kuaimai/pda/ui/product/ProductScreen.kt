@@ -313,6 +313,7 @@ fun ProductScreen(
             val label = if (imageType == AppConstants.IMAGE_TYPE_AREA) "库区图" else "装箱图"
             androidx.compose.material3.AlertDialog(
                 onDismissRequest = { showImageDeleteConfirm = null },
+                shape = RoundedCornerShape(16.dp),
                 title = { Text("确认删除") },
                 text = { Text("确定要删除${label}吗？此操作不可撤销。") },
                 confirmButton = {

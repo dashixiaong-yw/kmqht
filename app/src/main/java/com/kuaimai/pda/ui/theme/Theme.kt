@@ -43,12 +43,27 @@ private val LightColorScheme = lightColorScheme(
 private val DarkColorScheme = darkColorScheme(
     primary = BrandBlue,
     onPrimary = SurfaceWhite,
+    primaryContainer = PrimaryLightBg,
+    onPrimaryContainer = PrimaryLightText,
     secondary = SuccessText,
+    onSecondary = SurfaceWhite,
+    secondaryContainer = SuccessBg,
+    onSecondaryContainer = SuccessText,
     tertiary = DangerText,
+    onTertiary = SurfaceWhite,
+    tertiaryContainer = DangerBg,
+    onTertiaryContainer = DangerText,
     background = TextPrimary,
-    surface = TextPrimary,
     onBackground = SurfaceWhite,
-    onSurface = SurfaceWhite
+    surface = TextPrimary,
+    onSurface = SurfaceWhite,
+    surfaceVariant = TextPrimary,
+    onSurfaceVariant = SurfaceWhite,
+    outline = BorderGray,
+    error = DangerText,
+    onError = SurfaceWhite,
+    errorContainer = DangerBg,
+    onErrorContainer = DangerText
 )
 
 @Composable

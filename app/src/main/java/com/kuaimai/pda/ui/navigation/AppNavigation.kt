@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
@@ -215,6 +216,7 @@ fun AppNavigation(
     if (showSessionExpiredDialog) {
         AlertDialog(
             onDismissRequest = { showSessionExpiredDialog = false; SessionExpiredEvent.reset() },
+            shape = RoundedCornerShape(16.dp),
             title = { Text("快麦会话已过期") },
             text = { Text("快麦API会话已过期，请在Web管理后台重新授权\n（请用电脑浏览器访问管理后台）") },
             confirmButton = {

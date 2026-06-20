@@ -1,7 +1,6 @@
 package com.kuaimai.pda.ui.login
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,9 +10,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -25,6 +27,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -82,6 +85,7 @@ fun LoginScreen(
     var changePasswordError by remember { mutableStateOf("") }
     var isChangingPassword by remember { mutableStateOf(false) }
     var dropdownExpanded by remember { mutableStateOf(false) }
+    var passwordVisible by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     Scaffold(
@@ -100,9 +104,10 @@ fun LoginScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(horizontal = 32.dp),
-            verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Spacer(modifier = Modifier.height(48.dp))
+
             // 标题
             Text(
                 text = "用户登录",
@@ -183,7 +188,15 @@ fun LoginScreen(
                         modifier = Modifier.size(24.dp)
                     )
                 },
-                visualTransformation = PasswordVisualTransformation(),
+                trailingIcon = {
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Icon(
+                            imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                            contentDescription = if (passwordVisible) "隐藏密码" else "显示密码"
+                        )
+                    }
+                },
+                visualTransformation = if (passwordVisible) androidx.compose.ui.text.input.VisualTransformation.None else PasswordVisualTransformation(),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !isLoading
@@ -293,6 +306,7 @@ fun LoginScreen(
         BackHandler(enabled = true) { /* 吞掉返回键，必须修改密码 */ }
         AlertDialog(
             onDismissRequest = { /* 不允许关闭，必须修改密码 */ },
+            shape = RoundedCornerShape(16.dp),
             title = { Text("安全提示") },
             text = {
                 Column {

@@ -1,6 +1,7 @@
 package com.kuaimai.pda.ui.guide
 
 import android.content.SharedPreferences
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,7 +10,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -90,31 +93,31 @@ fun GuideScreen(
             Spacer(modifier = Modifier.height(12.dp))
         }
 
-        when (currentStep) {
-            0 -> StepServerConfig(
-                serverUrl = serverUrl,
-                onScanConfig = { showCameraScan = true },
-                onNext = {
-                    encryptedPrefs.edit().putString(PrefsKeys.KEY_SERVER_URL, serverUrl.trim()).apply()
-                    currentStep = 1
-                }
-            )
-            1 -> StepScanMethod(
-                selectedMethod = selectedScanMethod,
-                onMethodSelected = { selectedScanMethod = it },
-                onNext = {
-                    // 保存扫码方式到SharedPreferences
-                    prefs.edit().putInt(KEY_SCAN_METHOD, selectedScanMethod).apply()
-                    currentStep = 2
-                }
-            )
-            2 -> StepComplete(
-                onFinish = {
-                    // 标记引导已完成
-                    prefs.edit().putBoolean(KEY_GUIDE_SHOWN, true).apply()
-                    onFinish()
-                }
-            )
+        AnimatedContent(targetState = currentStep, label = "guideStep") { step ->
+            when (step) {
+                0 -> StepServerConfig(
+                    serverUrl = serverUrl,
+                    onScanConfig = { showCameraScan = true },
+                    onNext = {
+                        encryptedPrefs.edit().putString(PrefsKeys.KEY_SERVER_URL, serverUrl.trim()).apply()
+                        currentStep = 1
+                    }
+                )
+                1 -> StepScanMethod(
+                    selectedMethod = selectedScanMethod,
+                    onMethodSelected = { selectedScanMethod = it },
+                    onNext = {
+                        prefs.edit().putInt(KEY_SCAN_METHOD, selectedScanMethod).apply()
+                        currentStep = 2
+                    }
+                )
+                2 -> StepComplete(
+                    onFinish = {
+                        prefs.edit().putBoolean(KEY_GUIDE_SHOWN, true).apply()
+                        onFinish()
+                    }
+                )
+            }
         }
     }
 }
@@ -237,6 +240,13 @@ private fun StepScanMethod(
  */
 @Composable
 private fun StepComplete(onFinish: () -> Unit) {
+    Icon(
+        Icons.Default.CheckCircle,
+        contentDescription = "完成",
+        tint = BrandBlue,
+        modifier = Modifier.size(64.dp)
+    )
+    Spacer(modifier = Modifier.height(16.dp))
     Text(
         text = "设置完成！",
         style = MaterialTheme.typography.headlineSmall,

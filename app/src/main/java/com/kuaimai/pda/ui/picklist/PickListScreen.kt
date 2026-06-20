@@ -226,6 +226,7 @@ fun PickListScreen(
     deleteTarget?.let { order ->
         AlertDialog(
             onDismissRequest = { viewModel.cancelDelete() },
+            shape = RoundedCornerShape(16.dp),
             title = { Text("确认删除") },
             text = { Text("确定删除此取货单？") },
             confirmButton = {
@@ -260,6 +261,7 @@ private fun NewOrderDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(16.dp),
         title = { Text("新建取货单") },
         text = {
             Column {

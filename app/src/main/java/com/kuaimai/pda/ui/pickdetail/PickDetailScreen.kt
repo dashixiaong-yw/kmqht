@@ -283,7 +283,7 @@ fun PickDetailScreen(
                             selected = currentSupplier == supplier,
                             onClick = { viewModel.setSupplierFilter(supplier) },
                             label = { Text(supplier, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                            modifier = Modifier.height(28.dp),
+                            modifier = Modifier.height(32.dp),
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = BrandBlue,
                                 selectedLabelColor = SurfaceWhite
@@ -403,6 +403,7 @@ fun PickDetailScreen(
     showDeleteConfirm?.let { item ->
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = null },
+            shape = RoundedCornerShape(16.dp),
             title = { Text("确认删除") },
             text = { Text("确定要删除「${item.propertiesName.ifEmpty { item.skuOuterId }}」吗？") },
             confirmButton = {
@@ -428,6 +429,7 @@ fun PickDetailScreen(
     previewImageUrl?.let { url ->
         AlertDialog(
             onDismissRequest = { previewImageUrl = null },
+            shape = RoundedCornerShape(16.dp),
             title = { Text(previewImageLabel) },
             text = {
                 coil.compose.AsyncImage(

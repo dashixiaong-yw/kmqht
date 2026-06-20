@@ -61,7 +61,7 @@ fun PickItemRow(
     onBoxImageClick: () -> Unit = {}
 ) {
     val isCompleted = item.status == 1
-    val contentAlpha = if (isCompleted) 0.55f else 1f
+    val contentAlpha = if (isCompleted) 0.65f else 1f
 
     Card(
         modifier = Modifier

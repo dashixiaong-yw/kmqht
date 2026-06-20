@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -87,6 +88,7 @@ fun SettingsScreen(
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { if (!isLoggingOut) showLogoutDialog = false },
+            shape = RoundedCornerShape(16.dp),
             title = { Text("退出登录") },
             text = {
                 Text(if (isLoggingOut) "正在退出..." else "确定要退出当前账号吗？")
@@ -124,6 +126,7 @@ fun SettingsScreen(
         is UpdateCheckUiState.Checking -> {
             AlertDialog(
                 onDismissRequest = { viewModel.dismissUpdateCheck() },
+                shape = RoundedCornerShape(16.dp),
                 title = { Text("检查更新") },
                 text = { Text("正在检查更新，请稍候...") },
                 confirmButton = {
@@ -138,6 +141,7 @@ fun SettingsScreen(
                 onDismissRequest = {
                     if (!state.info.forceUpdate) viewModel.dismissUpdateCheck()
                 },
+                shape = RoundedCornerShape(16.dp),
                 title = { Text("发现新版本") },
                 text = {
                     Text("最新版本: v${state.info.latestVersion}\n\n${state.info.updateNotes}")
@@ -162,6 +166,7 @@ fun SettingsScreen(
         is UpdateCheckUiState.NoUpdate -> {
             AlertDialog(
                 onDismissRequest = { viewModel.dismissUpdateCheck() },
+                shape = RoundedCornerShape(16.dp),
                 title = { Text("检查更新") },
                 text = { Text("当前已是最新版本") },
                 confirmButton = {
@@ -174,6 +179,7 @@ fun SettingsScreen(
         is UpdateCheckUiState.Error -> {
             AlertDialog(
                 onDismissRequest = { viewModel.dismissUpdateCheck() },
+                shape = RoundedCornerShape(16.dp),
                 title = { Text("检查更新失败") },
                 text = { Text(state.message) },
                 confirmButton = {
