@@ -120,6 +120,8 @@ def download_apk(request: Request) -> FileResponse:
         raise HTTPException(status_code=404, detail="暂无已分发的版本")
 
     file_name = info.get("apkFileName", "")
+    if not file_name:
+        raise HTTPException(status_code=404, detail="暂无已分发的版本")
     file_path = os.path.normpath(os.path.join(APK_DIR, file_name))
     apk_dir_norm = os.path.normpath(APK_DIR)
     if not file_path.startswith(apk_dir_norm):

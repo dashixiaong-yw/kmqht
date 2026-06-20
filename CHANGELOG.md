@@ -1,5 +1,14 @@
 # 快麦取货通 - 变更日志
 
+## 1.79 (2026-06-20)
+
+### 修复
+- P0: ItemUpdateResponse 缺少快麦API响应包裹层 — 新增 ItemUpdateWrapper 正确解包 erp_item_general_addorupdate_response，修复所有离线备注/供应商同步被误判为失败
+- P1: confirmSaveRemark 直接路径缺失 UI remark 即时反馈 — 补充 `remark = confirmType.remark` 到 _uiState.copy
+- P2: HomeScreen 取货列表/商品详情卡片 emoji 换 Material Icons — 📋→ListAlt, 🔍→Search
+- P2: ProductViewModel confirmSaveRemark/confirmChangeSupplier 加 else 分支 — 双 null 场景设置 error 提示，避免静默丢弃
+- P2: system.py download_apk 加 apkFileName 空值防御 — `if not file_name: raise HTTPException(404, ...)`
+
 ## 1.78 (2026-06-20)
 
 ### 修复

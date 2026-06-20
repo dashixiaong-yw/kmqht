@@ -261,7 +261,7 @@ fun HomeScreen(
                 title = "商品详情",
                 description = "扫码查看规格信息",
                 iconBgColor = DangerBg,
-                icon = { Text("🔍", fontSize = 24.sp) },
+                icon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp)) },
                 onClick = onNavigateToProduct
             )
 

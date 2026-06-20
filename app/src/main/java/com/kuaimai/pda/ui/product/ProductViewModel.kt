@@ -283,8 +283,14 @@ class ProductViewModel @Inject constructor(
                         detail.skuOuterId, detail.sysSkuId, detail.sysItemId,
                         detail.propertiesName, confirmType.remark
                     )
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isSavingRemark = false,
+                        error = "无网络且无本地数据，无法保存备注"
+                    )
+                    return@launch
                 }
-                _uiState.value = _uiState.value.copy(isSavingRemark = false)
+                _uiState.value = _uiState.value.copy(isSavingRemark = false, remark = confirmType.remark)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isSavingRemark = false,
@@ -367,12 +373,15 @@ class ProductViewModel @Inject constructor(
                         detail.skuOuterId, detail.sysSkuId, detail.sysItemId,
                         detail.propertiesName, confirmType.name, confirmType.code
                     )
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isSavingSupplier = false,
+                        error = "无网络且无本地数据，无法切换供应商"
+                    )
+                    return@launch
                 }
-                _uiState.value = _uiState.value.copy(
-                    isSavingSupplier = false,
-                    supplierName = confirmType.name,
-                    supplierCode = confirmType.code
-                )
+                _uiState.value = _uiState.value.copy(isSavingSupplier = false,
+                    supplierName = confirmType.name, supplierCode = confirmType.code)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isSavingSupplier = false,

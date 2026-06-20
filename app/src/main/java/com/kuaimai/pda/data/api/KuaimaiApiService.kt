@@ -3,7 +3,7 @@ package com.kuaimai.pda.data.api
 import com.kuaimai.pda.data.api.dto.ItemGetRequest
 import com.kuaimai.pda.data.api.dto.ItemGetWrapper
 import com.kuaimai.pda.data.api.dto.ItemUpdateRequest
-import com.kuaimai.pda.data.api.dto.ItemUpdateResponse
+import com.kuaimai.pda.data.api.dto.ItemUpdateWrapper
 import com.kuaimai.pda.data.api.dto.SkuQueryRequest
 import com.kuaimai.pda.data.api.dto.SkuQueryWrapper
 import retrofit2.http.Body
@@ -19,13 +19,13 @@ interface KuaimaiApiService {
     @POST("router")
     suspend fun updateItemRemark(
         @Body params: ItemUpdateRequest
-    ): ItemUpdateResponse
+    ): ItemUpdateWrapper
 
     /** 商品供应商更新 erp.item.general.addorupdate (supplier) */
     @POST("router")
     suspend fun updateItemSupplier(
         @Body params: ItemUpdateRequest
-    ): ItemUpdateResponse
+    ): ItemUpdateWrapper
 
     /** SKU查询 erp.item.single.sku.get */
     @POST("router")

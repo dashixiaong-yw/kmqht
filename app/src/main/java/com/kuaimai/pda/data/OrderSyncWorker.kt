@@ -253,9 +253,10 @@ class OrderSyncWorker(
             title = title,
             skus = listOf(SkuUpdateDto(skuId = skuId, skuOuterId = skuOuterId, skuRemark = remark, skuPropertiesName = propertiesName))
         )
-        val response = kmApi.updateItemRemark(request)
-        if (!response.success) {
-            Log.w(TAG, "快麦备注更新失败: code=${response.code} msg=${response.msg}")
+        val wrapper = kmApi.updateItemRemark(request)
+        val response = wrapper.response
+        if (response == null || !response.success) {
+            Log.w(TAG, "快麦备注更新失败: code=${response?.code} msg=${response?.msg}")
             return false
         }
         return true
@@ -287,9 +288,10 @@ class OrderSyncWorker(
                 skuSuppliers = skuSuppliers
             ))
         )
-        val response = kmApi.updateItemSupplier(request)
-        if (!response.success) {
-            Log.w(TAG, "快麦供应商更新失败: code=${response.code} msg=${response.msg}")
+        val wrapper = kmApi.updateItemSupplier(request)
+        val response = wrapper.response
+        if (response == null || !response.success) {
+            Log.w(TAG, "快麦供应商更新失败: code=${response?.code} msg=${response?.msg}")
             return false
         }
         return true
