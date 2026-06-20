@@ -75,9 +75,11 @@ interface PickOrderDao {
     @Query("UPDATE pick_order SET completed_count = :count WHERE id = :id")
     suspend fun updateCompletedCount(id: Long, count: Int)
 
-    /**
-     * 删除所有取货单
-     */
+    /** 删除所有取货单 */
     @Query("DELETE FROM pick_order")
     suspend fun deleteAll()
+
+    /** 清理超过指定时间的已完成取货单 */
+    @Query("DELETE FROM pick_order WHERE status = 1 AND completed_at < :before")
+    suspend fun deleteCompletedOlderThan(before: Long): Int
 }

@@ -43,4 +43,8 @@ interface PendingOperationDao {
     /** 按ID查询操作记录 */
     @Query("SELECT * FROM pending_operation WHERE id = :id")
     suspend fun getById(id: Long): PendingOperationEntity?
+
+    /** 清理超过指定时间的冲突记录 */
+    @Query("DELETE FROM pending_operation WHERE created_at < :before AND retry_count = -1")
+    suspend fun deleteConflictsOlderThan(before: Long): Int
 }

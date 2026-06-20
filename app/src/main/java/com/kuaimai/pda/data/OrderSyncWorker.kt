@@ -15,6 +15,8 @@ import com.kuaimai.pda.data.api.dto.SkuQueryRequest
 import com.kuaimai.pda.data.api.dto.SkuUpdateDto
 import com.kuaimai.pda.data.api.dto.SupplierUpdateDto
 import com.kuaimai.pda.data.db.dao.PendingOperationDao
+import com.kuaimai.pda.data.db.dao.PickItemDao
+import com.kuaimai.pda.data.db.dao.PickOrderDao
 import com.kuaimai.pda.data.db.entity.PendingOperationEntity
 import com.kuaimai.pda.data.repository.UserRepository
 import kotlinx.coroutines.Dispatchers
@@ -82,6 +84,12 @@ class OrderSyncWorker(
     private val systemApiService: SystemApiService? by lazy {
         com.kuaimai.pda.App.OrderSyncWorkerDeps.systemApiService
     }
+    private val pickOrderDao: PickOrderDao? by lazy {
+        com.kuaimai.pda.App.OrderSyncWorkerDeps.pickOrderDao
+    }
+    private val pickItemDao: PickItemDao? by lazy {
+        com.kuaimai.pda.App.OrderSyncWorkerDeps.pickItemDao
+    }
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
@@ -117,6 +125,10 @@ class OrderSyncWorker(
                                 Log.w(TAG, "操作已标记冲突，删除: ${op.operationType} orderId=$orderId")
                                 dao.deleteById(op.id)
                             } else if (current.retryCount >= MAX_RETRY) {
+                                if (op.operationType == "upload_image") {
+                                    val filePath = extractPayloadValue(op.payload, "file_path")
+                                    filePath?.let { File(it).delete() }
+                                }
                                 Log.e(TAG, "操作同步失败超过${MAX_RETRY}次，标记冲突: ${op.operationType}")
                                 dao.updateRetryCount(op.id, -1)
                             } else {
@@ -134,12 +146,30 @@ class OrderSyncWorker(
             }
 
             if (hasFailure) {
-                appendLog(applicationContext, "Worker本轮结束: 有失败操作，返回retry")
-                Result.retry()
-            } else {
-                appendLog(applicationContext, "Worker本轮结束: 全部成功")
-                Result.success()
-            }
+                 appendLog(applicationContext, "Worker本轮结束: 有失败操作，返回retry")
+                 Result.retry()
+             } else {
+                 // 清理超过7天的冲突记录
+                 try {
+                     val oneWeekAgo = java.lang.System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000
+                     val cleaned = dao.deleteConflictsOlderThan(oneWeekAgo)
+                     if (cleaned > 0) appendLog(applicationContext, "清理冲突记录: ${cleaned}条")
+                 } catch (_: Exception) { }
+                 // 清理超过7天的已完成取货单
+                 try {
+                     val oneWeekAgo = java.lang.System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000
+                     val orderDao = pickOrderDao
+                     if (orderDao != null) {
+                         val cleaned = orderDao.deleteCompletedOlderThan(oneWeekAgo)
+                         if (cleaned > 0) {
+                             pickItemDao?.deleteOrphanItems()
+                             appendLog(applicationContext, "清理已完成取货单: ${cleaned}单")
+                         }
+                     }
+                 } catch (_: Exception) { }
+                 appendLog(applicationContext, "Worker本轮结束: 全部成功")
+                 Result.success()
+             }
         } catch (e: Exception) {
             Log.e(TAG, "同步Worker异常: ${e.message}")
             Result.retry()

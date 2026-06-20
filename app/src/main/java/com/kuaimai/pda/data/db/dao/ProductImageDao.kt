@@ -48,11 +48,13 @@ interface ProductImageDao {
     @Query("DELETE FROM product_image WHERE sku_outer_id = :skuOuterId")
     suspend fun deleteBySku(skuOuterId: String)
 
-    /**
-     * 删除所有图片
-     */
+    /** 删除所有图片 */
     @Query("DELETE FROM product_image")
     suspend fun deleteAll()
+
+    /** 清理超过指定时间的图片记录 */
+    @Query("DELETE FROM product_image WHERE created_at < :before")
+    suspend fun deleteOlderThan(before: Long): Int
 
     /** 原子替换指定SKU的图片：先删旧记录再批量插入 */
     @Transaction

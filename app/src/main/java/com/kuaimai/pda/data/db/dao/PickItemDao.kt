@@ -107,9 +107,11 @@ interface PickItemDao {
     @Query("DELETE FROM pick_item WHERE id = :id")
     suspend fun deleteById(id: Long)
 
-    /**
-     * 删除所有明细
-     */
+    /** 删除所有明细 */
     @Query("DELETE FROM pick_item")
     suspend fun deleteAll()
+
+    /** 清理孤立明细（父订单已被删除） */
+    @Query("DELETE FROM pick_item WHERE order_id NOT IN (SELECT id FROM pick_order)")
+    suspend fun deleteOrphanItems(): Int
 }

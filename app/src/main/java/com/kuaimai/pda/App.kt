@@ -8,6 +8,8 @@ import com.kuaimai.pda.data.api.ImageUploadService
 import com.kuaimai.pda.data.api.KuaimaiApiService
 import com.kuaimai.pda.data.api.OrderApiService
 import com.kuaimai.pda.data.api.SystemApiService
+import com.kuaimai.pda.data.db.dao.PickItemDao
+import com.kuaimai.pda.data.db.dao.PickOrderDao
 import com.kuaimai.pda.data.db.dao.PendingOperationDao
 import com.kuaimai.pda.data.db.dao.ProductImageDao
 import com.kuaimai.pda.data.repository.AuthRepository
@@ -48,6 +50,8 @@ class App : Application() {
         @Volatile var userRepository: UserRepository? = null
         @Volatile var productImageDao: ProductImageDao? = null
         @Volatile var systemApiService: SystemApiService? = null
+        @Volatile var pickOrderDao: PickOrderDao? = null
+        @Volatile var pickItemDao: PickItemDao? = null
     }
 
     @Inject lateinit var pendingOperationDao: PendingOperationDao
@@ -58,6 +62,8 @@ class App : Application() {
     @Inject lateinit var userRepository: UserRepository
     @Inject lateinit var productImageDao: ProductImageDao
     @Inject lateinit var systemApiService: SystemApiService
+    @Inject lateinit var pickOrderDao: PickOrderDao
+    @Inject lateinit var pickItemDao: PickItemDao
 
     // ANR检测
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -77,8 +83,17 @@ class App : Application() {
             userRepository = this@App.userRepository
             productImageDao = this@App.productImageDao
             systemApiService = this@App.systemApiService
+            pickOrderDao = this@App.pickOrderDao
+            pickItemDao = this@App.pickItemDao
         }
         startAnrDetection()
+
+        // 启动时清理超过30天的旧图片记录
+        ioScope.launch {
+            try {
+                productImageDao.deleteOlderThan(System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000)
+            } catch (_: Exception) { }
+        }
     }
 
     /**
@@ -132,6 +147,9 @@ class App : Application() {
                 // 写入文件
                 val logDir = File(getExternalFilesDir(null), "anr_logs")
                 if (!logDir.exists()) logDir.mkdirs()
+                // 清理超过7天的旧ANR日志
+                val sevenDaysAgo = System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000
+                logDir.listFiles()?.forEach { if (it.lastModified() < sevenDaysAgo) it.delete() }
                 val dateStr = TimeUtils.formatDate(System.currentTimeMillis())
                 val logFile = File(logDir, "anr_$dateStr.log")
                 FileWriter(logFile, true).use { it.write(logEntry) }
