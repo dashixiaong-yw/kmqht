@@ -133,17 +133,15 @@ class PickDetailViewModel @Inject constructor(
      * 从本地已入库的明细中提取供应商列表（无网络依赖）
      */
     private fun loadSuppliersFromLocal() {
-        viewModelScope.launch {
-            try {
-                val itemList = this@PickDetailViewModel.items.value
-                val suppliers = itemList.map { it.supplierName }
-                    .filter { it.isNotEmpty() }
-                    .distinct()
-                    .sorted()
-                _suppliers.value = listOf(AppConstants.SUPPLIER_ALL_LABEL) + suppliers
-            } catch (e: Exception) {
-                Log.w(TAG, "从本地提取供应商列表失败: ${e.message}")
-            }
+        try {
+            val itemList = items.value
+            val suppliers = itemList.map { it.supplierName }
+                .filter { it.isNotEmpty() }
+                .distinct()
+                .sorted()
+            _suppliers.value = listOf(AppConstants.SUPPLIER_ALL_LABEL) + suppliers
+        } catch (e: Exception) {
+            Log.w(TAG, "从本地提取供应商列表失败: ${e.message}")
         }
     }
 
@@ -190,7 +188,6 @@ class PickDetailViewModel @Inject constructor(
                 if (newSupplier.isNotEmpty() && !_suppliers.value.contains(newSupplier)) {
                     _suppliers.value = _suppliers.value + newSupplier
                 }
-                loadSuppliersFromLocal()
                 loadOrder()
                 _order.value = _order.value?.copy(totalCount = (_order.value?.totalCount ?: 0) + 1)
                 _scanSuccessEvent.emit(Unit)

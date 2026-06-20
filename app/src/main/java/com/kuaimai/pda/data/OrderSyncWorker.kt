@@ -7,6 +7,7 @@ import androidx.work.WorkerParameters
 import com.kuaimai.pda.data.api.ImageUploadService
 import com.kuaimai.pda.data.api.KuaimaiApiService
 import com.kuaimai.pda.data.api.OrderApiService
+import com.kuaimai.pda.data.api.SystemApiService
 import com.kuaimai.pda.data.api.dto.AddOrderItemRequest
 import com.kuaimai.pda.data.api.dto.ItemGetRequest
 import com.kuaimai.pda.data.api.dto.ItemUpdateRequest
@@ -77,6 +78,9 @@ class OrderSyncWorker(
     }
     private val productImageDao: com.kuaimai.pda.data.db.dao.ProductImageDao? by lazy {
         com.kuaimai.pda.App.OrderSyncWorkerDeps.productImageDao
+    }
+    private val systemApiService: SystemApiService? by lazy {
+        com.kuaimai.pda.App.OrderSyncWorkerDeps.systemApiService
     }
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
@@ -290,7 +294,7 @@ class OrderSyncWorker(
             Log.e(TAG, "syncRemarkUpdate: sku_outer_id无效")
             return false
         }
-        val skuData = fetchLatestSkuData(kmApi, skuOuterId, extractPayloadValue(op.payload, "item_outer_id"))
+        val skuData = fetchLatestSkuDataViaBackend(skuOuterId, extractPayloadValue(op.payload, "item_outer_id"))
         if (skuData == null) {
             Log.w(TAG, "无法获取SKU数据，跳过备注同步: skuOuterId=$skuOuterId")
             appendLog(applicationContext, "快麦备注同步失败: 获取SKU数据失败, sku=$skuOuterId")
@@ -342,7 +346,7 @@ class OrderSyncWorker(
             Log.e(TAG, "syncSupplierUpdate: sys_sku_id无效")
             return false
         }
-        val skuData = fetchLatestSkuData(kmApi, skuOuterId, extractPayloadValue(op.payload, "item_outer_id"))
+        val skuData = fetchLatestSkuDataViaBackend(skuOuterId, extractPayloadValue(op.payload, "item_outer_id"))
         if (skuData == null) {
             Log.w(TAG, "无法获取SKU数据，跳过供应商同步: skuOuterId=$skuOuterId")
             appendLog(applicationContext, "快麦供应商同步失败: 获取SKU数据失败, sku=$skuOuterId")
@@ -422,6 +426,23 @@ class OrderSyncWorker(
             Log.w(TAG, "获取SKU数据失败: $skuOuterId — ${e.message}")
             appendLog(applicationContext, "获取SKU数据失败: sku=$skuOuterId, error=${e.message}")
             return null
+        }
+    }
+
+    private suspend fun fetchLatestSkuDataViaBackend(skuOuterId: String, itemOuterIdFallback: String? = null): SkuSyncData? {
+        val userRepo = userRepository ?: return null
+        val api = systemApiService ?: return null
+        val token = userRepo.getToken()
+        return try {
+            val detail = api.getSkuDetail(token, skuOuterId)
+            val title = if (detail.itemTitle.isNotBlank()) detail.itemTitle else return null
+            val itemOuterId = if (detail.itemOuterId.isNotBlank()) detail.itemOuterId else itemOuterIdFallback ?: return null
+            appendLog(applicationContext, "后端SKU查询成功: sku=$skuOuterId, title=$title")
+            SkuSyncData(title = title, itemOuterId = itemOuterId, propertiesName = detail.propertiesName)
+        } catch (e: Exception) {
+            Log.w(TAG, "通过后端获取SKU数据失败: $skuOuterId — ${e.message}")
+            appendLog(applicationContext, "后端SKU查询失败: sku=$skuOuterId, error=${e.message}")
+            null
         }
     }
 

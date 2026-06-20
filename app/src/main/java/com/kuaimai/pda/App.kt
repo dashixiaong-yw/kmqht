@@ -7,6 +7,7 @@ import android.util.Log
 import com.kuaimai.pda.data.api.ImageUploadService
 import com.kuaimai.pda.data.api.KuaimaiApiService
 import com.kuaimai.pda.data.api.OrderApiService
+import com.kuaimai.pda.data.api.SystemApiService
 import com.kuaimai.pda.data.db.dao.PendingOperationDao
 import com.kuaimai.pda.data.db.dao.ProductImageDao
 import com.kuaimai.pda.data.repository.AuthRepository
@@ -46,6 +47,7 @@ class App : Application() {
         @Volatile var imageUploadService: ImageUploadService? = null
         @Volatile var userRepository: UserRepository? = null
         @Volatile var productImageDao: ProductImageDao? = null
+        @Volatile var systemApiService: SystemApiService? = null
     }
 
     @Inject lateinit var pendingOperationDao: PendingOperationDao
@@ -55,6 +57,7 @@ class App : Application() {
     @Inject lateinit var imageUploadService: ImageUploadService
     @Inject lateinit var userRepository: UserRepository
     @Inject lateinit var productImageDao: ProductImageDao
+    @Inject lateinit var systemApiService: SystemApiService
 
     // ANR检测
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -73,6 +76,7 @@ class App : Application() {
             imageUploadService = this@App.imageUploadService
             userRepository = this@App.userRepository
             productImageDao = this@App.productImageDao
+            systemApiService = this@App.systemApiService
         }
         startAnrDetection()
     }

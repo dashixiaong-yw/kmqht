@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -86,6 +87,8 @@ fun SettingsScreen(
     val updateCheckState by viewModel.updateCheckResult.collectAsState()
     var showLogoutDialog by remember { androidx.compose.runtime.mutableStateOf(false) }
     var isLoggingOut by remember { androidx.compose.runtime.mutableStateOf(false) }
+    var showLogDialog by remember { androidx.compose.runtime.mutableStateOf(false) }
+    val appContext = LocalContext.current
 
     // 退出登录确认弹窗
     if (showLogoutDialog) {
@@ -195,6 +198,52 @@ fun SettingsScreen(
         else -> {}
     }
 
+    // 同步日志显示弹窗
+    if (showLogDialog) {
+        val logContent = try {
+            java.io.File(appContext.cacheDir, "sync_log.txt").readText()
+        } catch (_: Exception) { "暂无同步日志" }
+
+        AlertDialog(
+            onDismissRequest = { showLogDialog = false },
+            shape = RoundedCornerShape(16.dp),
+            title = { Text("同步日志") },
+            text = {
+                Column {
+                    Text(
+                        text = logContent,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 400.dp)
+                            .verticalScroll(rememberScrollState())
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "可复制后发送",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showLogDialog = false }) {
+                    Text("关闭")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    val clipboard = appContext.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
+                    clipboard?.setPrimaryClip(android.content.ClipData.newPlainText("sync_log", logContent))
+                    android.widget.Toast.makeText(appContext, "已复制到剪贴板", android.widget.Toast.LENGTH_SHORT).show()
+                }) {
+                    Text("复制")
+                }
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -212,7 +261,6 @@ fun SettingsScreen(
             )
         }
     ) { innerPadding ->
-        val appContext = LocalContext.current
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -377,26 +425,12 @@ fun SettingsScreen(
                 textAlign = TextAlign.Center
             )
 
-            // 导出同步日志
+            // 查看同步日志
             TextButton(
-                onClick = {
-                    val logFile = java.io.File(appContext.cacheDir, "sync_log.txt")
-                    if (!logFile.exists()) return@TextButton
-                    val uri = androidx.core.content.FileProvider.getUriForFile(
-                        appContext, "${appContext.packageName}.fileprovider", logFile
-                    )
-                    val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                        type = "text/plain"
-                        putExtra(android.content.Intent.EXTRA_STREAM, uri)
-                        addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    }
-                    appContext.startActivity(
-                        android.content.Intent.createChooser(intent, "分享同步日志").addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                    )
-                },
+                onClick = { showLogDialog = true },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("导出同步日志", color = TextSecondary, fontSize = 12.sp)
+                Text("查看同步日志", color = TextSecondary, fontSize = 12.sp)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
