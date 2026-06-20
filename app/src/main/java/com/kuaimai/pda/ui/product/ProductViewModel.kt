@@ -281,7 +281,7 @@ class ProductViewModel @Inject constructor(
                 } else if (detail != null) {
                     pickOrderRepository.enqueueRemarkUpdateDirect(
                         detail.skuOuterId, detail.sysSkuId, detail.sysItemId,
-                        detail.propertiesName, confirmType.remark
+                        detail.propertiesName, confirmType.remark, detail.itemOuterId
                     )
                 } else {
                     _uiState.value = _uiState.value.copy(
@@ -371,7 +371,7 @@ class ProductViewModel @Inject constructor(
                 } else if (detail != null) {
                     pickOrderRepository.enqueueSupplierUpdateDirect(
                         detail.skuOuterId, detail.sysSkuId, detail.sysItemId,
-                        detail.propertiesName, confirmType.name, confirmType.code
+                        detail.propertiesName, confirmType.name, confirmType.code, detail.itemOuterId
                     )
                 } else {
                     _uiState.value = _uiState.value.copy(

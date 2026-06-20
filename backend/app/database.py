@@ -192,6 +192,7 @@ def init_db() -> None:
         "ALTER TABLE pick_orders ADD COLUMN assigned_to VARCHAR(32) NOT NULL DEFAULT ''",
         "ALTER TABLE pick_orders ADD COLUMN visibility VARCHAR(16) NOT NULL DEFAULT 'private'",
         "ALTER TABLE sku_cache ADD COLUMN cached_modified BIGINT NOT NULL DEFAULT 0",
+        "ALTER TABLE pick_items ADD COLUMN item_outer_id VARCHAR(64) NOT NULL DEFAULT ''",
     ]
     for sql in migrations:
         try:

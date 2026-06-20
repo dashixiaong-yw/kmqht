@@ -227,8 +227,8 @@ def add_item(order_id: int, req: AddItemRequest, user: dict = Depends(get_curren
 
         cursor.execute(
             """INSERT INTO pick_items (order_id, sku_outer_id, sys_item_id, sys_sku_id,
-               properties_name, pic_path, status, supplier_name, supplier_code, remark, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)""",
+               properties_name, pic_path, status, supplier_name, supplier_code, remark, item_outer_id, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)""",
             (
                 order_id,
                 sku_outer_id,
@@ -239,6 +239,7 @@ def add_item(order_id: int, req: AddItemRequest, user: dict = Depends(get_curren
                 sku_info["supplier_name"],
                 sku_info["supplier_code"],
                 sku_info["remark"],
+                sku_info.get("item_outer_id", ""),
                 format_beijing(now),
             )
         )
@@ -568,6 +569,7 @@ def _row_to_item_response(row: sqlite3.Row) -> ItemResponse:
         supplierName=row["supplier_name"],
         supplierCode=row["supplier_code"],
         remark=row["remark"],
+        itemOuterId=row["item_outer_id"],
         createdAt=row["created_at"],
         completedAt=row["completed_at"],
     )

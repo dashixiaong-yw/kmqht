@@ -58,15 +58,17 @@ interface PickOrderRepository {
     /** 直接入队备注更新（独立扫码场景，不依赖Room pick_item行） */
     suspend fun enqueueRemarkUpdateDirect(
         skuOuterId: String, sysSkuId: Long, sysItemId: Long,
-        propertiesName: String, remark: String
+        propertiesName: String, remark: String, itemOuterId: String
     )
     /** 直接入队供应商更新（独立扫码场景，不依赖Room pick_item行） */
     suspend fun enqueueSupplierUpdateDirect(
         skuOuterId: String, sysSkuId: Long, sysItemId: Long,
-        propertiesName: String, supplierName: String, supplierCode: String
+        propertiesName: String, supplierName: String, supplierCode: String, itemOuterId: String
     )
     /** refresh() 时更新不可变快麦字段（不入队，仅本地同步） */
-    suspend fun updateItemFieldsDirect(id: Long, propertiesName: String, picPath: String)
+    suspend fun updateItemFieldsDirect(id: Long, propertiesName: String, picPath: String, itemOuterId: String)
+    /** 获取指定订单中指定状态的明细数量 */
+    suspend fun getCompletedCount(orderId: Long, status: Int): Int
 }
 
 /**
@@ -154,16 +156,22 @@ class PickOrderRepositoryImpl @Inject constructor(
     }
 
     override suspend fun enqueueCompleteAll(orderId: Long, now: Long) {
+        val order = pickOrderDao.getById(orderId)
+        val totalCount = order?.totalCount ?: 0
         enqueueOperation(
             operationType = "complete_all",
             orderId = orderId,
             targetId = 0L
         )
         pickOrderDao.updateStatus(orderId, 1, now)
+        pickOrderDao.updateCompletedCount(orderId, totalCount)
     }
 
     override suspend fun completeAllItemsDirect(orderId: Long, completedAt: Long) {
         pickItemDao.completeAllByOrderId(orderId, completedAt)
+        val order = pickOrderDao.getById(orderId)
+        val totalCount = order?.totalCount ?: 0
+        pickOrderDao.updateCompletedCount(orderId, totalCount)
         pickOrderDao.updateStatus(orderId, 1, completedAt)
     }
 
@@ -177,7 +185,7 @@ class PickOrderRepositoryImpl @Inject constructor(
                 operationType = "update_remark",
                 orderId = item.orderId,
                 targetId = id,
-                payload = """{"remark":"${TimeUtils.escapeJson(remark)}","sys_sku_id":${item.sysSkuId},"sys_item_id":${item.sysItemId},"sku_outer_id":"${TimeUtils.escapeJson(item.skuOuterId)}","properties_name":"${TimeUtils.escapeJson(item.propertiesName.ifBlank { "-" })}"}"""
+                payload = """{"remark":"${TimeUtils.escapeJson(remark)}","sys_sku_id":${item.sysSkuId},"sys_item_id":${item.sysItemId},"sku_outer_id":"${TimeUtils.escapeJson(item.skuOuterId)}","properties_name":"${TimeUtils.escapeJson(item.propertiesName.ifBlank { "-" })}","item_outer_id":"${TimeUtils.escapeJson(item.itemOuterId)}"}"""
             )
         }
     }
@@ -192,7 +200,7 @@ class PickOrderRepositoryImpl @Inject constructor(
                 operationType = "update_supplier",
                 orderId = item.orderId,
                 targetId = id,
-                payload = """{"supplier_name":"${TimeUtils.escapeJson(supplierName)}","supplier_code":"${TimeUtils.escapeJson(supplierCode)}","sys_item_id":${item.sysItemId},"sys_sku_id":${item.sysSkuId},"sku_outer_id":"${TimeUtils.escapeJson(item.skuOuterId)}","properties_name":"${TimeUtils.escapeJson(item.propertiesName.ifBlank { "-" })}"}"""
+                payload = """{"supplier_name":"${TimeUtils.escapeJson(supplierName)}","supplier_code":"${TimeUtils.escapeJson(supplierCode)}","sys_item_id":${item.sysItemId},"sys_sku_id":${item.sysSkuId},"sku_outer_id":"${TimeUtils.escapeJson(item.skuOuterId)}","properties_name":"${TimeUtils.escapeJson(item.propertiesName.ifBlank { "-" })}","item_outer_id":"${TimeUtils.escapeJson(item.itemOuterId)}"}"""
             )
         }
     }
@@ -227,30 +235,34 @@ class PickOrderRepositoryImpl @Inject constructor(
 
     override suspend fun enqueueRemarkUpdateDirect(
         skuOuterId: String, sysSkuId: Long, sysItemId: Long,
-        propertiesName: String, remark: String
+        propertiesName: String, remark: String, itemOuterId: String
     ) {
         enqueueOperation(
             operationType = "update_remark",
             orderId = 0L,
             targetId = 0L,
-            payload = """{"remark":"${TimeUtils.escapeJson(remark)}","sys_sku_id":$sysSkuId,"sys_item_id":$sysItemId,"sku_outer_id":"${TimeUtils.escapeJson(skuOuterId)}","properties_name":"${TimeUtils.escapeJson(propertiesName.ifBlank { "-" })}"}"""
+            payload = """{"remark":"${TimeUtils.escapeJson(remark)}","sys_sku_id":$sysSkuId,"sys_item_id":$sysItemId,"sku_outer_id":"${TimeUtils.escapeJson(skuOuterId)}","properties_name":"${TimeUtils.escapeJson(propertiesName.ifBlank { "-" })}","item_outer_id":"${TimeUtils.escapeJson(itemOuterId)}"}"""
         )
     }
 
     override suspend fun enqueueSupplierUpdateDirect(
         skuOuterId: String, sysSkuId: Long, sysItemId: Long,
-        propertiesName: String, supplierName: String, supplierCode: String
+        propertiesName: String, supplierName: String, supplierCode: String, itemOuterId: String
     ) {
         enqueueOperation(
             operationType = "update_supplier",
             orderId = 0L,
             targetId = 0L,
-            payload = """{"supplier_name":"${TimeUtils.escapeJson(supplierName)}","supplier_code":"${TimeUtils.escapeJson(supplierCode)}","sys_item_id":$sysItemId,"sys_sku_id":$sysSkuId,"sku_outer_id":"${TimeUtils.escapeJson(skuOuterId)}","properties_name":"${TimeUtils.escapeJson(propertiesName.ifBlank { "-" })}"}"""
+            payload = """{"supplier_name":"${TimeUtils.escapeJson(supplierName)}","supplier_code":"${TimeUtils.escapeJson(supplierCode)}","sys_item_id":$sysItemId,"sys_sku_id":$sysSkuId,"sku_outer_id":"${TimeUtils.escapeJson(skuOuterId)}","properties_name":"${TimeUtils.escapeJson(propertiesName.ifBlank { "-" })}","item_outer_id":"${TimeUtils.escapeJson(itemOuterId)}"}"""
         )
     }
 
-    override suspend fun updateItemFieldsDirect(id: Long, propertiesName: String, picPath: String) {
-        pickItemDao.updateItemFields(id, propertiesName, picPath)
+    override suspend fun updateItemFieldsDirect(id: Long, propertiesName: String, picPath: String, itemOuterId: String) {
+        pickItemDao.updateItemFields(id, propertiesName, picPath, itemOuterId)
+    }
+
+    override suspend fun getCompletedCount(orderId: Long, status: Int): Int {
+        return pickItemDao.getCompletedCount(orderId, status)
     }
 
     override suspend fun deleteOrder(order: PickOrderEntity) {
@@ -297,7 +309,7 @@ class PickOrderRepositoryImpl @Inject constructor(
             .setConstraints(constraints)
             .build()
         WorkManager.getInstance(appContext)
-            .beginUniqueWork("order_sync", ExistingWorkPolicy.KEEP, workRequest)
+            .beginUniqueWork("order_sync", ExistingWorkPolicy.APPEND_OR_REPLACE, workRequest)
             .enqueue()
     }
 }

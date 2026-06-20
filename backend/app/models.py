@@ -60,6 +60,7 @@ class ItemResponse(BaseModel):
     supplierName: str = ""
     supplierCode: str = ""
     remark: str = ""
+    itemOuterId: str = ""
     createdAt: str
     completedAt: Optional[str] = None
 

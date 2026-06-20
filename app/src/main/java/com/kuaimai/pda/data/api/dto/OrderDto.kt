@@ -96,6 +96,7 @@ data class OrderItemResponse(
     val supplierName: String = "",
     val supplierCode: String = "",
     val remark: String = "",
+    val itemOuterId: String = "",
     val createdAt: String = "",
     val completedAt: String? = null
 )

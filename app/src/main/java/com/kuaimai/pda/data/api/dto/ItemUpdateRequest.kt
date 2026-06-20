@@ -20,7 +20,7 @@ data class SkuUpdateDto(
     @SerializedName("outerId") val skuOuterId: String = "",
     @SerializedName("propertiesName") val skuPropertiesName: String = "",
     @SerializedName("remark") val skuRemark: String? = null,
-    @SerializedName("suppliers") val skuSuppliers: List<SupplierUpdateDto> = emptyList()
+    @SerializedName("suppliers") val skuSuppliers: List<SupplierUpdateDto>? = null
 )
 
 /** 供应商更新（V2: code + itemTitle） */

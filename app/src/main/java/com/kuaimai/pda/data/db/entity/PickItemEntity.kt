@@ -60,6 +60,9 @@ data class PickItemEntity(
     /** 备注，NOT NULL，默认空字符串 */
     val remark: String = "",
 
+    @ColumnInfo(name = "item_outer_id")
+    val itemOuterId: String = "",
+
     @ColumnInfo(name = "created_at")
     val createdAt: Long,
 

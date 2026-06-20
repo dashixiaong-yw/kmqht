@@ -159,7 +159,11 @@ class OrderSyncWorker(
         val api = orderApiService ?: return false
         val token = userRepo.getToken()
         return try {
-            api.completeItem(token, op.orderId, op.targetId)
+            val resp = api.completeItem(token, op.orderId, op.targetId)
+            if (!resp.success) {
+                Log.w(TAG, "completeItem业务拒绝: ${resp.message}")
+                return false
+            }
             true
         } catch (e: Exception) {
             Log.w(TAG, "completeItem同步失败: ${e.message}")
@@ -172,7 +176,11 @@ class OrderSyncWorker(
         val api = orderApiService ?: return false
         val token = userRepo.getToken()
         return try {
-            api.restoreItem(token, op.orderId, op.targetId)
+            val resp = api.restoreItem(token, op.orderId, op.targetId)
+            if (!resp.success) {
+                Log.w(TAG, "restoreItem业务拒绝: ${resp.message}")
+                return false
+            }
             true
         } catch (e: Exception) {
             Log.w(TAG, "restoreItem同步失败: ${e.message}")
@@ -199,7 +207,11 @@ class OrderSyncWorker(
         val api = orderApiService ?: return false
         val token = userRepo.getToken()
         return try {
-            api.completeAllItems(token, op.orderId)
+            val resp = api.completeAllItems(token, op.orderId)
+            if (!resp.success) {
+                Log.w(TAG, "completeAll业务拒绝: ${resp.message}")
+                return false
+            }
             true
         } catch (e: Exception) {
             Log.w(TAG, "completeAll同步失败: ${e.message}")
@@ -212,7 +224,11 @@ class OrderSyncWorker(
         val api = orderApiService ?: return false
         val token = userRepo.getToken()
         return try {
-            api.deleteItem(token, op.orderId, op.targetId)
+            val resp = api.deleteItem(token, op.orderId, op.targetId)
+            if (!resp.success) {
+                Log.w(TAG, "deleteItem业务拒绝: ${resp.message}")
+                return false
+            }
             true
         } catch (e: Exception) {
             Log.w(TAG, "deleteItem同步失败: ${e.message}")
@@ -225,7 +241,11 @@ class OrderSyncWorker(
         val api = orderApiService ?: return false
         val token = userRepo.getToken()
         return try {
-            api.deleteOrder(token, op.orderId)
+            val resp = api.deleteOrder(token, op.orderId)
+            if (!resp.success) {
+                Log.w(TAG, "deleteOrder业务拒绝: ${resp.message}")
+                return false
+            }
             true
         } catch (e: Exception) {
             Log.w(TAG, "deleteOrder同步失败: ${e.message}")
@@ -239,7 +259,7 @@ class OrderSyncWorker(
         val skuId = extractPayloadValue(op.payload, "sys_sku_id")?.toLongOrNull() ?: return false
         val itemId = extractPayloadValue(op.payload, "sys_item_id")?.toLongOrNull() ?: return false
         val skuOuterId = extractPayloadValue(op.payload, "sku_outer_id") ?: return false
-        val skuData = fetchLatestSkuData(kmApi, skuOuterId)
+        val skuData = fetchLatestSkuData(kmApi, skuOuterId, extractPayloadValue(op.payload, "item_outer_id"))
         if (skuData == null) {
             Log.w(TAG, "无法获取SKU数据，跳过备注同步: skuOuterId=$skuOuterId")
             return false
@@ -269,7 +289,7 @@ class OrderSyncWorker(
         val itemId = extractPayloadValue(op.payload, "sys_item_id")?.toLongOrNull() ?: return false
         val skuOuterId = extractPayloadValue(op.payload, "sku_outer_id") ?: return false
         val skuId = extractPayloadValue(op.payload, "sys_sku_id")?.toLongOrNull() ?: return false
-        val skuData = fetchLatestSkuData(kmApi, skuOuterId)
+        val skuData = fetchLatestSkuData(kmApi, skuOuterId, extractPayloadValue(op.payload, "item_outer_id"))
         if (skuData == null) {
             Log.w(TAG, "无法获取SKU数据，跳过供应商同步: skuOuterId=$skuOuterId")
             return false
@@ -303,23 +323,47 @@ class OrderSyncWorker(
         val propertiesName: String
     )
 
-    private suspend fun fetchLatestSkuData(kmApi: KuaimaiApiService, skuOuterId: String): SkuSyncData? {
+    private suspend fun fetchLatestSkuData(kmApi: KuaimaiApiService, skuOuterId: String, itemOuterIdFallback: String? = null): SkuSyncData? {
         try {
             val skuResp = kmApi.getSkuInfo(SkuQueryRequest(skuOuterId = skuOuterId))
             val skuList = skuResp.response?.itemSku ?: emptyList()
-            val sku = skuList.firstOrNull() ?: return null
-            val itemOuterId = sku.itemOuterId
-            if (itemOuterId.isBlank()) return null
+            val sku = skuList.firstOrNull()
+            val itemOuterId = sku?.itemOuterId
+            if (itemOuterId.isNullOrBlank()) {
+                if (itemOuterIdFallback.isNullOrBlank()) {
+                    Log.w(TAG, "fetchLatestSkuData: 未从API获取到itemOuterId，且无fallback: $skuOuterId")
+                    return null
+                }
+                // 使用 fallback 跳过 getSkuInfo，直接调 getItemDetail
+                val fallbackResp = kmApi.getItemDetail(ItemGetRequest(outerId = itemOuterIdFallback))
+                val fallbackTitle = fallbackResp.response?.item?.title ?: ""
+                if (fallbackTitle.isBlank()) {
+                    Log.w(TAG, "fetchLatestSkuData: 使用fallback后仍无title: $skuOuterId")
+                    return null
+                }
+                return SkuSyncData(
+                    title = fallbackTitle,
+                    itemOuterId = itemOuterIdFallback,
+                    propertiesName = sku?.propertiesName ?: ""
+                )
+            }
+            if (itemOuterId.isBlank()) {
+                Log.w(TAG, "fetchLatestSkuData: itemOuterId为空: $skuOuterId")
+                return null
+            }
             val itemResp = kmApi.getItemDetail(ItemGetRequest(outerId = itemOuterId))
             val title = itemResp.response?.item?.title ?: ""
-            if (title.isBlank()) return null
+            if (title.isBlank()) {
+                Log.w(TAG, "fetchLatestSkuData: title为空: $skuOuterId")
+                return null
+            }
             return SkuSyncData(
                 title = title,
                 itemOuterId = itemOuterId,
                 propertiesName = sku.propertiesName
             )
         } catch (e: Exception) {
-            Log.w(TAG, "获取SKU数据失败: ${e.message}")
+            Log.w(TAG, "获取SKU数据失败: $skuOuterId — ${e.message}")
             return null
         }
     }

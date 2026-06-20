@@ -135,9 +135,8 @@ class PickDetailViewModel @Inject constructor(
     private fun loadSuppliersFromLocal() {
         viewModelScope.launch {
             try {
-                val items = pickOrderRepository.getItemsByOrderId(orderId)
-                    .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList()).value
-                val suppliers = items.map { it.supplierName }
+                val itemList = this@PickDetailViewModel.items.value
+                val suppliers = itemList.map { it.supplierName }
                     .filter { it.isNotEmpty() }
                     .distinct()
                     .sorted()
@@ -183,10 +182,13 @@ class PickDetailViewModel @Inject constructor(
                     supplierName = response.supplierName,
                     supplierCode = response.supplierCode,
                     remark = response.remark,
+                    itemOuterId = response.itemOuterId,
                     createdAt = TimeUtils.parseBeijingTime(response.createdAt).let { if (it > 0) it else TimeUtils.now() }
                 )
                 pickOrderRepository.insertItem(item)
                 loadSuppliersFromLocal()
+                loadOrder()
+                _order.value = _order.value?.copy(totalCount = (_order.value?.totalCount ?: 0) + 1)
                 _scanSuccessEvent.emit(Unit)
             } catch (e: Exception) {
                 if (e is HttpException && e.code() == 409) {
@@ -214,9 +216,13 @@ class PickDetailViewModel @Inject constructor(
                 val token = userRepository.getToken()
                 orderApiService.completeItem(token, orderId, itemId)
                 pickOrderRepository.updateItemStatusDirect(itemId, 1, TimeUtils.now())
+                val count = pickOrderRepository.getCompletedCount(orderId, 1)
+                pickOrderRepository.updateCompletedCount(orderId, count)
                 loadOrder()
             } catch (e: Exception) {
                 pickOrderRepository.updateItemStatus(itemId, 1, TimeUtils.now())
+                val count = pickOrderRepository.getCompletedCount(orderId, 1)
+                pickOrderRepository.updateCompletedCount(orderId, count)
                 _errorMessage.value = "完成明细失败: ${e.message}"
             } finally {
                 _isLoading.value = false
@@ -235,9 +241,13 @@ class PickDetailViewModel @Inject constructor(
                 val token = userRepository.getToken()
                 orderApiService.restoreItem(token, orderId, itemId)
                 pickOrderRepository.updateItemStatusDirect(itemId, 0, null)
+                val count = pickOrderRepository.getCompletedCount(orderId, 1)
+                pickOrderRepository.updateCompletedCount(orderId, count)
                 loadOrder()
             } catch (e: Exception) {
                 pickOrderRepository.updateItemStatus(itemId, 0, null)
+                val count = pickOrderRepository.getCompletedCount(orderId, 1)
+                pickOrderRepository.updateCompletedCount(orderId, count)
                 _errorMessage.value = "恢复明细失败: ${e.message}"
             } finally {
                 _isLoading.value = false
@@ -319,13 +329,14 @@ class PickDetailViewModel @Inject constructor(
                             supplierName = itemResponse.supplierName,
                             supplierCode = itemResponse.supplierCode,
                             remark = itemResponse.remark,
+                            itemOuterId = itemResponse.itemOuterId,
                             createdAt = TimeUtils.parseBeijingTime(itemResponse.createdAt).let { if (it > 0) it else TimeUtils.now() },
                             completedAt = TimeUtils.parseBeijingTimeOrNull(itemResponse.completedAt)
                         )
                         pickOrderRepository.insertItem(item)
                     } else {
                         // 已有明细，同步快麦字段（仅不可变字段，防止覆盖用户修改）
-                        pickOrderRepository.updateItemFieldsDirect(existing.id, itemResponse.propertiesName, itemResponse.picPath)
+                        pickOrderRepository.updateItemFieldsDirect(existing.id, itemResponse.propertiesName, itemResponse.picPath, itemResponse.itemOuterId)
                         if (existing.status != itemResponse.status) {
                             val completedAt = TimeUtils.parseBeijingTimeOrNull(itemResponse.completedAt)
                             pickOrderRepository.updateItemStatusDirect(existing.id, itemResponse.status, completedAt)
@@ -401,10 +412,12 @@ class PickDetailViewModel @Inject constructor(
                             supplierName = itemResponse.supplierName,
                             supplierCode = itemResponse.supplierCode,
                             remark = itemResponse.remark,
+                            itemOuterId = itemResponse.itemOuterId,
                             createdAt = TimeUtils.parseBeijingTime(itemResponse.createdAt).let { if (it > 0) it else TimeUtils.now() }
                         )
                     )
                 } else {
+                    pickOrderRepository.updateItemFieldsDirect(existing.id, itemResponse.propertiesName, itemResponse.picPath, itemResponse.itemOuterId)
                     val completedAt = TimeUtils.parseBeijingTimeOrNull(itemResponse.completedAt)
                     if (existing.status != itemResponse.status) {
                         pickOrderRepository.updateItemStatusDirect(existing.id, itemResponse.status, completedAt)

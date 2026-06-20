@@ -91,6 +91,9 @@ class PickListViewModel @Inject constructor(
         }
     }
 
+    /** 刷新进行中的取货单列表（供生命周期回调调用） */
+    fun refreshActiveOrders() = loadActiveOrders()
+
     /**
      * 加载拣货区列表
      */

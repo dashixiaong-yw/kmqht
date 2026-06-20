@@ -1,5 +1,24 @@
 # 快麦取货通 - 变更日志
 
+## 1.83 (2026-06-20)
+
+### 修复
+- P0: PickItemEntity/后端pick_items 新增 item_outer_id 列 + Room MIGRATION_3_4
+- P0: OrderSyncWorker fetchLatestSkuData 增加 itemOuterIdFallback 降级，内部 return null 加日志
+- P0: OrderSyncWorker 6 个 sync 方法检查 BaseResponse.success（除 addItem 返回 OrderItemResponse）
+- P0: Payload 4处增加 item_outer_id 字段，enqueueDirect 方法参数追加 itemOuterId
+- P0: triggerSyncWorker + MainActivity KEEP→APPEND_OR_REPLACE
+- P0: SkuUpdateDto skuSuppliers 默认 null（Gson 跳过空数组）
+- P0: loadSuppliersFromLocal() 复用类级 items.value，消除初始空值竞态
+- P0: onBarcodeScanned 追加 loadOrder() + _order.totalCount 同步更新
+- P0: PickItemDao 新增 getCompletedCount 挂起查询 + updateItemFields 增加 itemOuterId
+- P0: completeItem/restoreItem/completeAllItems try+catch 分支补 updateCompletedCount
+- P0: completeAllItemsDirect/enqueueCompleteAll 内部补 updateCompletedCount
+- P0: syncItemsFromBackend 补 updateItemFieldsDirect + itemOuterId 同步
+- P0: PickListScreen 新增 DisposableEffect + LifecycleEventObserver 监听 ON_RESUME
+- P0: PickListViewModel 新增 refreshActiveOrders()
+- P2: ProductViewModel enqueueDirect 调用补传 itemOuterId 参数
+
 ## 1.82 (2026-06-20)
 
 ### 修复

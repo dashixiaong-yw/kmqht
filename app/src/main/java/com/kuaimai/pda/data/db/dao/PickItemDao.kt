@@ -88,8 +88,12 @@ interface PickItemDao {
     suspend fun completeAllByOrderId(orderId: Long, completedAt: Long)
 
     /** refresh() 时更新不可变快麦字段（不含用户可修改的 remark/supplierName/supplierCode） */
-    @Query("UPDATE pick_item SET properties_name = :propertiesName, pic_path = :picPath WHERE id = :id")
-    suspend fun updateItemFields(id: Long, propertiesName: String, picPath: String)
+    @Query("UPDATE pick_item SET properties_name = :propertiesName, pic_path = :picPath, item_outer_id = :itemOuterId WHERE id = :id")
+    suspend fun updateItemFields(id: Long, propertiesName: String, picPath: String, itemOuterId: String)
+
+    /** 获取指定订单中指定状态的明细数量 */
+    @Query("SELECT COUNT(*) FROM pick_item WHERE order_id = :orderId AND status = :status")
+    suspend fun getCompletedCount(orderId: Long, status: Int): Int
 
     /**
      * 删除取货单下的所有明细

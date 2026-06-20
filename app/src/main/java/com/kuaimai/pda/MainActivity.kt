@@ -112,7 +112,7 @@ class MainActivity : ComponentActivity() {
             .setConstraints(constraints)
             .build()
         WorkManager.getInstance(this)
-            .beginUniqueWork("order_sync", ExistingWorkPolicy.KEEP, workRequest)
+            .beginUniqueWork("order_sync", ExistingWorkPolicy.APPEND_OR_REPLACE, workRequest)
             .enqueue()
     }
 }
