@@ -1,5 +1,10 @@
 # 快麦取货通 - 变更日志
 
+## 1.80 (2026-06-20)
+
+### 修复
+- P2: PickDetailViewModel.loadSuppliersFromLocal() 空 catch 块 — 加 Log.w 防止供应商提取失败静默吞异常
+
 ## 1.79 (2026-06-20)
 
 ### 修复

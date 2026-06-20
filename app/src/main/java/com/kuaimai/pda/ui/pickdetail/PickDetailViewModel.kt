@@ -142,7 +142,9 @@ class PickDetailViewModel @Inject constructor(
                     .distinct()
                     .sorted()
                 _suppliers.value = listOf(AppConstants.SUPPLIER_ALL_LABEL) + suppliers
-            } catch (_: Exception) { }
+            } catch (e: Exception) {
+                Log.w(TAG, "从本地提取供应商列表失败: ${e.message}")
+            }
         }
     }
 
