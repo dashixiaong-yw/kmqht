@@ -177,7 +177,7 @@ class PickOrderRepositoryImpl @Inject constructor(
                 operationType = "update_remark",
                 orderId = item.orderId,
                 targetId = id,
-                payload = """{"remark":"${TimeUtils.escapeJson(remark)}","sys_sku_id":${item.sysSkuId},"sys_item_id":${item.sysItemId},"sku_outer_id":"${TimeUtils.escapeJson(item.skuOuterId)}","properties_name":"${TimeUtils.escapeJson(item.propertiesName)}"}"""
+                payload = """{"remark":"${TimeUtils.escapeJson(remark)}","sys_sku_id":${item.sysSkuId},"sys_item_id":${item.sysItemId},"sku_outer_id":"${TimeUtils.escapeJson(item.skuOuterId)}","properties_name":"${TimeUtils.escapeJson(item.propertiesName.ifBlank { "-" })}"}"""
             )
         }
     }
@@ -192,7 +192,7 @@ class PickOrderRepositoryImpl @Inject constructor(
                 operationType = "update_supplier",
                 orderId = item.orderId,
                 targetId = id,
-                payload = """{"supplier_name":"${TimeUtils.escapeJson(supplierName)}","supplier_code":"${TimeUtils.escapeJson(supplierCode)}","sys_item_id":${item.sysItemId},"sys_sku_id":${item.sysSkuId},"sku_outer_id":"${TimeUtils.escapeJson(item.skuOuterId)}","properties_name":"${TimeUtils.escapeJson(item.propertiesName)}"}"""
+                payload = """{"supplier_name":"${TimeUtils.escapeJson(supplierName)}","supplier_code":"${TimeUtils.escapeJson(supplierCode)}","sys_item_id":${item.sysItemId},"sys_sku_id":${item.sysSkuId},"sku_outer_id":"${TimeUtils.escapeJson(item.skuOuterId)}","properties_name":"${TimeUtils.escapeJson(item.propertiesName.ifBlank { "-" })}"}"""
             )
         }
     }
@@ -233,7 +233,7 @@ class PickOrderRepositoryImpl @Inject constructor(
             operationType = "update_remark",
             orderId = 0L,
             targetId = 0L,
-            payload = """{"remark":"${TimeUtils.escapeJson(remark)}","sys_sku_id":$sysSkuId,"sys_item_id":$sysItemId,"sku_outer_id":"${TimeUtils.escapeJson(skuOuterId)}","properties_name":"${TimeUtils.escapeJson(propertiesName)}"}"""
+            payload = """{"remark":"${TimeUtils.escapeJson(remark)}","sys_sku_id":$sysSkuId,"sys_item_id":$sysItemId,"sku_outer_id":"${TimeUtils.escapeJson(skuOuterId)}","properties_name":"${TimeUtils.escapeJson(propertiesName.ifBlank { "-" })}"}"""
         )
     }
 
@@ -245,7 +245,7 @@ class PickOrderRepositoryImpl @Inject constructor(
             operationType = "update_supplier",
             orderId = 0L,
             targetId = 0L,
-            payload = """{"supplier_name":"${TimeUtils.escapeJson(supplierName)}","supplier_code":"${TimeUtils.escapeJson(supplierCode)}","sys_item_id":$sysItemId,"sys_sku_id":$sysSkuId,"sku_outer_id":"${TimeUtils.escapeJson(skuOuterId)}","properties_name":"${TimeUtils.escapeJson(propertiesName)}"}"""
+            payload = """{"supplier_name":"${TimeUtils.escapeJson(supplierName)}","supplier_code":"${TimeUtils.escapeJson(supplierCode)}","sys_item_id":$sysItemId,"sys_sku_id":$sysSkuId,"sku_outer_id":"${TimeUtils.escapeJson(skuOuterId)}","properties_name":"${TimeUtils.escapeJson(propertiesName.ifBlank { "-" })}"}"""
         )
     }
 
