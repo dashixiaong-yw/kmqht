@@ -254,6 +254,7 @@ mcp_kuaimai-memory_search_nodes(query="取货单")
 
 | 文档 | 路径 | 内容 |
 |:-----|:-----|:------|
+| 🔑 快麦API接口规范 | [rules/kuaimai-api-spec.md](kuaimai-api-spec.md) | **必读** — 快麦开放平台所有接口的请求/响应格式、编码差异、常见错误 |
 | 🔑 快麦凭证配置说明 | [docs/快麦凭证配置说明.md](../../docs/快麦凭证配置说明.md) | appKey/appSecret/session 的配置与替换方法，3种修改方式（文件/管理后台/热加载） |
 | 🐳 Docker部署方案 | [.trae/documents/DOCKER_DEPLOYMENT_EXPERIENCE.md](../documents/DOCKER_DEPLOYMENT_EXPERIENCE.md) | Docker部署经验与踩坑记录 |
 | 📦 部署就绪报告 | [.trae/documents/deployment-readiness-report.md](../documents/deployment-readiness-report.md) | 部署前检查清单、完整部署步骤 |
