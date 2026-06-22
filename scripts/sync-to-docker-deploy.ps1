@@ -186,7 +186,7 @@ $configFiles = @(
     @{ Name = ".dockerignore"; Src = (Join-Path $BackendDir ".dockerignore"); Dst = (Join-Path $DockerDeployRoot ".dockerignore") }
     @{ Name = ".env.docker.example"; Src = (Join-Path $BackendDir ".env.docker.example"); Dst = (Join-Path $DockerDeployRoot ".env.docker.example") }
     @{ Name = "kuaimai.example.json"; Src = (Join-Path $BackendDir "kuaimai.example.json"); Dst = (Join-Path $DockerDeployRoot "kuaimai.example.json") }
-    @{ Name = "kuaimai.json"; Src = (Join-Path $BackendDir "kuaimai.json"); Dst = (Join-Path $DockerDeployRoot "kuaimai.json") }
+    @{ Name = "kuaimai.json"; Src = (Join-Path $BackendDir "kuaimai.json"); Dst = (Join-Path $DockerDeployRoot "data/kuaimai.json") }
     @{ Name = "docker-compose.yml"; Src = (Join-Path $BackendDir "docker-compose.yml"); Dst = (Join-Path $DockerDeployRoot "docker-compose.yml") }
     @{ Name = "docker-compose.yaml"; Src = (Join-Path $BackendDir "docker-compose.yml"); Dst = (Join-Path $DockerDeployRoot "docker-compose.yaml") }
 )
