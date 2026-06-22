@@ -22,7 +22,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CameraAlt
+
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -251,23 +251,7 @@ fun PickDetailScreen(
                     shape = RoundedCornerShape(8.dp)
                 )
 
-                Spacer(modifier = Modifier.width(4.dp))
-
-                // 相机扫码按钮（暂未开放）
-                IconButton(
-                    onClick = {
-                        // TODO: 启动CameraScanScreen
-                    },
-                    enabled = false,
-                    modifier = Modifier.padding(start = 4.dp)
-                ) {
-                    Icon(
-                        Icons.Default.CameraAlt,
-                        contentDescription = "相机扫码",
-                        tint = TextSecondary
-                    )
                 }
-            }
 
             Spacer(modifier = Modifier.height(8.dp))
 

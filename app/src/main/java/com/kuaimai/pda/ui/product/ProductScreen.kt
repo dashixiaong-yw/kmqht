@@ -88,6 +88,7 @@ import com.kuaimai.pda.ui.theme.PrimaryLightText
 import com.kuaimai.pda.ui.theme.SuccessBg
 import com.kuaimai.pda.ui.theme.SuccessText
 import com.kuaimai.pda.ui.theme.SupplierRed
+import com.kuaimai.pda.ui.theme.TextMuted
 import com.kuaimai.pda.ui.theme.SurfaceWhite
 import com.kuaimai.pda.ui.theme.TextPrimary
 import com.kuaimai.pda.ui.theme.TextSecondary
@@ -300,10 +301,7 @@ fun ProductScreen(
         uiState.showConfirmDialog?.let { confirmType ->
             ConfirmDialog(
                 confirmType = confirmType,
-                onConfirm = when (confirmType) {
-                    is ConfirmType.Remark -> viewModel::confirmSaveRemark
-                    is ConfirmType.Supplier -> viewModel::confirmChangeSupplier
-                },
+                onConfirm = viewModel::confirmChangeSupplier,
                 onDismiss = viewModel::dismissConfirmDialog
             )
         }
@@ -662,7 +660,7 @@ private fun ImageUploadSlot(
 }
 
 /**
- * 确认对话框
+ * 确认对话框 - 供应商切换确认
  */
 @Composable
 private fun ConfirmDialog(
@@ -675,51 +673,77 @@ private fun ConfirmDialog(
         is ConfirmType.Supplier -> "确认切换供应商"
     }
     val message = when (confirmType) {
-        is ConfirmType.Remark -> "是否保存备注修改？"
-        is ConfirmType.Supplier -> "是否将供应商切换为「${confirmType.name}」？"
-    }
-    val highlightedText = when (confirmType) {
-        is ConfirmType.Remark -> confirmType.remark
-        is ConfirmType.Supplier -> confirmType.name
+        is ConfirmType.Remark -> "确认保存备注修改？"
+        is ConfirmType.Supplier -> "确认将供应商切换为"
     }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(16.dp),
         containerColor = SurfaceWhite,
-        tonalElevation = 6.dp,
+        tonalElevation = 8.dp,
         title = {
             Text(
                 text = title,
-                fontSize = 18.sp,
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimary
+                color = TextPrimary,
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
             )
         },
         text = {
             Column {
+                // 提示文字
                 Text(
                     text = message,
-                    fontSize = 14.sp,
-                    color = TextSecondary
+                    fontSize = 15.sp,
+                    color = TextSecondary,
+                    modifier = Modifier.padding(bottom = 12.dp)
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+                // 高亮内容卡片
                 Card(
                     colors = CardDefaults.cardColors(containerColor = PrimaryLightBg),
                     shape = RoundedCornerShape(8.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        // 供应商名称
+                        val highlightedText = when (confirmType) {
+                            is ConfirmType.Remark -> confirmType.remark
+                            is ConfirmType.Supplier -> confirmType.name
+                        }
+                        Text(
+                            text = highlightedText,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = SupplierRed,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        // 供应商编码
+                        if (confirmType is ConfirmType.Supplier && confirmType.code.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "供应商编码: ${confirmType.code}",
+                                fontSize = 13.sp,
+                                color = PrimaryLightText,
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                // 提示
+                if (confirmType is ConfirmType.Supplier) {
                     Text(
-                        text = highlightedText,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = PrimaryLightText,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp),
-                        textAlign = TextAlign.Center,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        text = "切换后该商品取货时将自动跳转至对应供应商区域",
+                        fontSize = 12.sp,
+                        color = TextMuted,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
@@ -728,17 +752,29 @@ private fun ConfirmDialog(
             Button(
                 onClick = onConfirm,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = PrimaryLightBg,
-                    contentColor = PrimaryLightText
+                    containerColor = BrandBlue,
+                    contentColor = SurfaceWhite
                 ),
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.height(40.dp)
             ) {
-                Text("确认修改", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                Text(
+                    text = when (confirmType) {
+                        is ConfirmType.Remark -> "确认保存"
+                        is ConfirmType.Supplier -> "确认切换"
+                    },
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium
+                )
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消", color = TextSecondary)
+                Text(
+                    "取消",
+                    color = BrandBlue,
+                    fontSize = 15.sp
+                )
             }
         }
     )

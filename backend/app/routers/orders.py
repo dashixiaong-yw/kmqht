@@ -514,7 +514,7 @@ def get_suppliers(order_id: int, user: dict = Depends(get_current_user)) -> List
     cursor = db.cursor()
 
     cursor.execute(
-        "SELECT DISTINCT supplier_name FROM pick_items WHERE order_id = ? AND supplier_name != ''",
+        "SELECT supplier_name FROM pick_items WHERE order_id = ? AND supplier_name != '' GROUP BY supplier_name ORDER BY MIN(supplier_code) ASC",
         (order_id,)
     )
     rows = cursor.fetchall()

@@ -1,6 +1,5 @@
 package com.kuaimai.pda.ui.home
 
-import android.content.SharedPreferences
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -51,7 +50,6 @@ import androidx.compose.ui.unit.sp
 import com.kuaimai.pda.data.repository.AuthRepository
 import com.kuaimai.pda.data.repository.UserRepository
 import com.kuaimai.pda.ui.components.NetworkStatusIndicator
-import com.kuaimai.pda.ui.settings.SettingsViewModel.Companion.KEY_GUIDE_SHOWN
 import com.kuaimai.pda.ui.theme.AppAlignment
 import com.kuaimai.pda.ui.theme.BorderGray
 import com.kuaimai.pda.ui.theme.BrandBlue
@@ -75,7 +73,6 @@ fun HomeScreen(
     onNavigateToProduct: () -> Unit,
     onNavigateToSettings: () -> Unit,
     networkMonitor: NetworkMonitor? = null,
-    prefs: SharedPreferences? = null,
     authRepository: AuthRepository? = null
 ) {
     DisposableEffect(networkMonitor) {
@@ -83,10 +80,6 @@ fun HomeScreen(
         onDispose {
             networkMonitor?.unregister()
         }
-    }
-
-    var showGuide by remember {
-        mutableStateOf(prefs?.getBoolean(KEY_GUIDE_SHOWN, false) != true)
     }
 
     var showSessionWarning by remember { mutableStateOf(false) }
@@ -177,41 +170,6 @@ fun HomeScreen(
             )
 
             Spacer(modifier = Modifier.height(24.dp))
-
-            if (showGuide) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(PrimaryLightBg, RoundedCornerShape(8.dp))
-                        .clickable { onNavigateToSettings() }
-                        .padding(12.dp),
-                    verticalAlignment = AppAlignment.RowCenter
-                ) {
-                    Text(
-                        text = "首次使用？点击设置配置服务器地址和扫码方式",
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            color = PrimaryLightText,
-                            fontWeight = FontWeight.Medium
-                        ),
-                        modifier = Modifier.weight(1f)
-                    )
-                    IconButton(
-                        onClick = {
-                            showGuide = false
-                            prefs?.edit()?.putBoolean(KEY_GUIDE_SHOWN, true)?.apply()
-                        },
-                        modifier = Modifier.size(56.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Close,
-                            contentDescription = "关闭",
-                            tint = PrimaryLightText,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-            }
 
             if (showSessionWarning) {
                 Row(

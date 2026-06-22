@@ -325,12 +325,6 @@ fun SettingsScreen(
                         Text("PDA硬件扫码", modifier = Modifier.clickable { viewModel.setScanMethod(0) })
                         Spacer(modifier = Modifier.width(16.dp))
                         RadioButton(
-                            selected = scanMethod == 1,
-                            onClick = { viewModel.setScanMethod(1) }
-                        )
-                        Text("相机扫码", modifier = Modifier.clickable { viewModel.setScanMethod(1) })
-                        Spacer(modifier = Modifier.width(16.dp))
-                        RadioButton(
                             selected = scanMethod == 2,
                             onClick = { viewModel.setScanMethod(2) }
                         )

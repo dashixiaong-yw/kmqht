@@ -255,33 +255,22 @@ class ProductViewModel @Inject constructor(
     }
 
     /**
-     * 请求保存备注（弹出确认对话框）
+     * 保存备注（直接保存，无需确认弹窗）
      */
     fun requestSaveRemark() {
         val remark = _uiState.value.remark
-        _uiState.value = _uiState.value.copy(
-            showConfirmDialog = ConfirmType.Remark(remark)
-        )
-    }
-
-    /**
-     * 确认保存备注
-     */
-    fun confirmSaveRemark() {
-        val state = _uiState.value
-        val confirmType = state.showConfirmDialog as? ConfirmType.Remark ?: return
-        _uiState.value = state.copy(isSavingRemark = true, showConfirmDialog = null)
+        _uiState.value = _uiState.value.copy(isSavingRemark = true)
 
         viewModelScope.launch {
             try {
                 val item = currentItem
                 val detail = currentSkuDetail
                 if (item != null) {
-                    pickOrderRepository.updateRemarkWithQueue(item.id, confirmType.remark)
+                    pickOrderRepository.updateRemarkWithQueue(item.id, remark)
                 } else if (detail != null) {
                     pickOrderRepository.enqueueRemarkUpdateDirect(
                         detail.skuOuterId, detail.sysSkuId, detail.sysItemId,
-                        detail.propertiesName, confirmType.remark, detail.itemOuterId
+                        detail.propertiesName, remark, detail.itemOuterId
                     )
                 } else {
                     _uiState.value = _uiState.value.copy(
@@ -290,7 +279,7 @@ class ProductViewModel @Inject constructor(
                     )
                     return@launch
                 }
-                _uiState.value = _uiState.value.copy(isSavingRemark = false, remark = confirmType.remark)
+                _uiState.value = _uiState.value.copy(isSavingRemark = false, remark = remark)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isSavingRemark = false,

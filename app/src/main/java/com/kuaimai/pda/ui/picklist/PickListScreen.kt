@@ -1,7 +1,10 @@
 package com.kuaimai.pda.ui.picklist
 
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,6 +21,8 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -42,6 +48,7 @@ import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
@@ -49,12 +56,17 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.kuaimai.pda.data.db.entity.PickOrderEntity
 import com.kuaimai.pda.ui.components.PickOrderCard
+import com.kuaimai.pda.ui.theme.BorderGray
 import com.kuaimai.pda.ui.theme.BrandBlue
 import com.kuaimai.pda.ui.theme.DangerText
 import com.kuaimai.pda.ui.theme.PrimaryLightBg
 import com.kuaimai.pda.ui.theme.PrimaryLightText
+import com.kuaimai.pda.ui.theme.SurfaceGray
 import com.kuaimai.pda.ui.theme.SurfaceWhite
+import com.kuaimai.pda.ui.theme.TextPrimary
 import com.kuaimai.pda.ui.theme.TextSecondary
+import com.kuaimai.pda.ui.theme.WarningBg
+import com.kuaimai.pda.ui.theme.WarningText
 
 /**
  * 取货列表页面
@@ -249,8 +261,7 @@ fun PickListScreen(
 }
 
 /**
- * 新建取货单弹窗
- * 拣货区选择 → 自动生成order_no
+ * 新建取货单弹窗 — 拣货区选择（原型风格网格布局）
  */
 @Composable
 private fun NewOrderDialog(
@@ -262,50 +273,101 @@ private fun NewOrderDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(16.dp),
-        title = { Text("新建取货单") },
+        containerColor = SurfaceWhite,
+        tonalElevation = 8.dp,
+        title = {
+            Text(
+                text = "选择拣货区",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
+        },
         text = {
             Column {
-                Text(
-                    text = "选择拣货区：",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Spacer(modifier = Modifier.height(12.dp))
                 if (isLoading) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().height(48.dp),
-                        contentAlignment = Alignment.Center
+                    // 加载状态
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                    }
-                } else {
-                areas.forEach { area ->
-                    Button(
-                        onClick = { onConfirm(area) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryLightBg)
-                    ) {
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = area,
-                            color = PrimaryLightText
+                            text = "加载中…",
+                            fontSize = 14.sp,
+                            color = TextSecondary
                         )
                     }
-                }
-                }
-                if (areas.isEmpty() && !isLoading) {
-                    Text(
-                        text = "暂无拣货区，请先在设置中配置",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary
-                    )
+                } else if (areas.isEmpty()) {
+                    // 空状态
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = WarningBg),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = "暂无拣货区，请先在设置中配置",
+                            fontSize = 14.sp,
+                            color = WarningText,
+                            modifier = Modifier.padding(12.dp),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                } else {
+                    // 拣货区网格（原型风格：2列网格）
+                    areas.chunked(2).forEach { rowAreas ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            rowAreas.forEach { area ->
+                                Button(
+                                    onClick = { onConfirm(area) },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(44.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = SurfaceWhite,
+                                        contentColor = TextPrimary,
+                                        disabledContainerColor = SurfaceWhite
+                                    ),
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = androidx.compose.foundation.BorderStroke(2.dp, BorderGray)
+                                ) {
+                                    Text(
+                                        text = area,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                    }
                 }
             }
         },
         confirmButton = {},
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
+            if (!isLoading) {
+                Button(
+                    onClick = onDismiss,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = SurfaceGray,
+                        contentColor = TextSecondary
+                    ),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.defaultMinSize(minWidth = 80.dp).height(36.dp)
+                ) {
+                    Text(
+                        text = "取消",
+                        fontSize = 14.sp
+                    )
+                }
             }
         }
     )

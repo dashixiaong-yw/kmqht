@@ -44,5 +44,5 @@
 -dontwarn retrofit2.KotlinExtensions
 -dontwarn retrofit2.KotlinExtensions$*
 
-# ---- CameraX ----
--keep class androidx.camera.** { *; }
+# ---- Tink（加密库）----
+-dontwarn com.google.errorprone.annotations.**

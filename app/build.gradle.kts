@@ -37,7 +37,7 @@ android {
         minSdk = 24
         targetSdk = 34
         versionCode = 173
-        versionName = "1.86"
+        versionName = "1.87"
 
         resourceConfigurations.add("zh")
 
@@ -71,8 +71,6 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
-        // 全局opt-in：CameraX ExperimentalGetImage
-        freeCompilerArgs += listOf("-opt-in=androidx.camera.core.ExperimentalGetImage")
     }
 
     buildFeatures {
@@ -151,15 +149,6 @@ dependencies {
     // WorkManager
     implementation("androidx.work:work-runtime-ktx:2.9.1")
     // hilt-work 已移除（@HiltWorker 改用手动注入方式）
-
-    // CameraX
-    implementation("androidx.camera:camera-core:1.3.4")
-    implementation("androidx.camera:camera-camera2:1.3.4")
-    implementation("androidx.camera:camera-lifecycle:1.3.4")
-    implementation("androidx.camera:camera-view:1.3.4")
-
-    // ML Kit 条码扫描
-    implementation("com.google.mlkit:barcode-scanning:17.3.0")
 
     // Core
     implementation("androidx.core:core-ktx:1.13.1")

@@ -31,13 +31,12 @@ class SettingsViewModel @Inject constructor(
         const val KEY_SCAN_METHOD = "scan_method"
         const val KEY_SOUND_ENABLED = "sound_enabled"
         const val KEY_VIBRATION_ENABLED = "vibration_enabled"
-        const val KEY_GUIDE_SHOWN = "guide_shown"
     }
 
     private var isDownloadingUpdate = false
     private var downloadJob: Job? = null
 
-    /** 扫码方式 (0=PDA硬件, 1=相机, 2=手动) */
+    /** 扫码方式 (0=PDA硬件, 1=手动) */
     private val _scanMethod = MutableStateFlow(
         prefs.getInt(KEY_SCAN_METHOD, 0)
     )

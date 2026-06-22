@@ -24,7 +24,6 @@ import com.kuaimai.pda.util.NetworkMonitor
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import javax.inject.Named
 
 /**
  * 单Activity架构，承载Compose导航
@@ -35,13 +34,6 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var userRepository: UserRepository
-
-    @Inject
-    lateinit var prefs: SharedPreferences
-
-    @Inject
-    @field:Named("encrypted")
-    lateinit var encryptedPrefs: SharedPreferences
 
     @Inject
     lateinit var authRepository: AuthRepository
@@ -62,8 +54,6 @@ class MainActivity : ComponentActivity() {
             KuaimaiTheme {
                 AppNavigation(
                     userRepository = userRepository,
-                    prefs = prefs,
-                    encryptedPrefs = encryptedPrefs,
                     authRepository = authRepository,
                     networkMonitor = networkMonitor
                 )
