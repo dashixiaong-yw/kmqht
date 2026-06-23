@@ -69,7 +69,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            KuaimaiTheme {
+                KuaimaiTheme {
                 // 启动时自动检查更新弹窗状态
                 var showUpdateDialog by remember { mutableStateOf(false) }
                 var updateInfo by remember { mutableStateOf<AppVersionResponse?>(null) }

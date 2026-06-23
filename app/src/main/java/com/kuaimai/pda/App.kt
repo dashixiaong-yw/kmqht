@@ -4,6 +4,10 @@ import android.app.Application
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import coil.ImageLoader
+import coil.ImageLoaderFactory
+import coil.disk.DiskCache
+import coil.memory.MemoryCache
 import com.kuaimai.pda.data.api.ImageUploadService
 import com.kuaimai.pda.data.api.KuaimaiApiService
 import com.kuaimai.pda.data.api.OrderApiService
@@ -20,9 +24,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
 import java.io.File
 import java.io.FileWriter
 import javax.inject.Inject
+import javax.inject.Named
 
 /**
  * 快麦取货通 Application
@@ -30,7 +36,7 @@ import javax.inject.Inject
  * 集成ACRA崩溃上报 + ANR检测
  */
 @HiltAndroidApp
-class App : Application() {
+class App : Application(), ImageLoaderFactory {
 
     companion object {
         private const val TAG = "App"
@@ -64,6 +70,27 @@ class App : Application() {
     @Inject lateinit var systemApiService: SystemApiService
     @Inject lateinit var pickOrderDao: PickOrderDao
     @Inject lateinit var pickItemDao: PickItemDao
+
+    @Inject
+    @field:Named("trustAll")
+    lateinit var trustAllClient: OkHttpClient
+
+    override fun newImageLoader(): ImageLoader {
+        return ImageLoader.Builder(this)
+            .okHttpClient { trustAllClient }
+            .memoryCache {
+                MemoryCache.Builder(this)
+                    .maxSizePercent(0.1)
+                    .build()
+            }
+            .diskCache {
+                DiskCache.Builder()
+                    .directory(cacheDir.resolve("coil_cache"))
+                    .maxSizePercent(0.02)
+                    .build()
+            }
+            .build()
+    }
 
     // ANR检测
     private val mainHandler = Handler(Looper.getMainLooper())
