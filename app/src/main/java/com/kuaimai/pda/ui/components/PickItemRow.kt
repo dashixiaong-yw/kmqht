@@ -84,7 +84,7 @@ fun PickItemRow(
             Box(
                 modifier = Modifier
                     .clickable { onImageClick() }
-                    .size(width = 52.dp, height = 52.dp)
+                    .size(width = 90.dp, height = 90.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(SurfaceGray),
                 contentAlignment = Alignment.Center
