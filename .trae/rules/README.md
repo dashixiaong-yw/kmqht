@@ -11,11 +11,22 @@
 1. **所有代码修改必须在项目 `app/` 目录进行，切勿修改 `prototype/` 等非代码产物（除非明确要求更新原型）**
 2. **Android 项目禁止手动修改 `build/`、`.gradle/` 等构建产物目录**
 3. **修改前必须查阅本项目专用知识图谱（kuaimai-memory MCP），确保不遗漏已确认的设计决策**
-4. **项目文档索引见下方「十一、项目文档索引」章节，AI 首次进入项目时优先查阅此索引**
+4. **项目文档索引见下方「十二、项目文档索引」章节，AI 首次进入项目时优先查阅此索引**
 
 ---
 
-## 二、开发修改流程
+## 二、计划模式（Plan Mode）衔接规范
+
+> 本节说明 AI 在 Plan Mode（系统提示词中的/plan指令）结束后，如何正确接入下方的开发修改流程。
+
+1. **Plan Mode 结束 = 进入执行阶段**：用户批准的方案锁定全部需求。批准后 AI 自动转入「三、开发修改流程」的 Step 1，严格遵守 8 步流程，禁止跳过任何一步
+2. **方案批准后禁止新增需求**：收尾阶段（Step 5-8）禁止再修改任何代码。若用户提出新需求，必须完成当前版本收尾，再以新版本号重新走完整流程
+3. **版本号递增**：不论变更规模（即使 1 行代码），进入执行阶段后必须先递增版本号再走完整流程。`git commit` 必须使用 `v版本号:` 前缀
+4. **Plan Mode 生成的方案文档需包含完整流程规划**：方案中必须体现 8 步流程（知识图谱查阅、代码修改、lint/预构建验证、版本号、构建、知识图谱更新、同步、Git 提交）
+
+---
+
+## 三、开发修改流程
 
 ```
 [查阅知识图谱] → [修改代码(可循环)] → [lint验证] → [更新版本号] → 全部完成 → [构建APK → 更新知识图谱 → 同步docker-deploy → Git提交推送]
@@ -62,7 +73,7 @@
 
 ---
 
-## 三、版本号管理
+## 四、版本号管理
 
 **格式**：`主版本.次版本`，次版本 1-99，满 99 后主版本+1、次版本归 1
 
@@ -98,7 +109,7 @@
 
 ---
 
-## 四、Git 操作
+## 五、Git 操作
 
 **远程仓库**：`https://github.com/dashixiaong-yw/kmqht`
 **默认分支**：`master`
@@ -202,7 +213,7 @@
 
 ---
 
-## 八、开发命令
+## 九、开发命令
 
 | 命令 | 说明 |
 |------|------|
@@ -225,7 +236,7 @@ mcp_kuaimai-memory_search_nodes(query="取货单")
 
 ---
 
-## 十、验证清单（每次修改后检查）
+## 十一、验证清单（每次修改后检查）
 
 **开发阶段**：
 
@@ -246,7 +257,7 @@ mcp_kuaimai-memory_search_nodes(query="取货单")
 
 ---
 
-## 十一、项目文档索引
+## 十二、项目文档索引
 
 > 以下文档供 AI 和开发者查阅，首次进入项目时按需浏览。
 
@@ -260,3 +271,9 @@ mcp_kuaimai-memory_search_nodes(query="取货单")
 | 📦 部署就绪报告 | [.trae/documents/deployment-readiness-report.md](../documents/deployment-readiness-report.md) | 部署前检查清单、完整部署步骤 |
 | 📐 docker-compose说明 | [.trae/documents/DOCKER_COMPOSE_YML_VS_YAML.md](../documents/DOCKER_COMPOSE_YML_VS_YAML.md) | docker-compose.yml 与 .yaml 区别说明 |
 | 📋 权限审计 | [.trae/documents/user-permission-review-v4.md](../documents/user-permission-review-v4.md) | 用户权限审计与锁定 |
+
+### 流程改进
+
+| 文档 | 路径 | 内容 |
+|:-----|:-----|:------|
+| 🔄 流程审查与改进 | [.trae/documents/项目规则流程审查与改进方案.md](../documents/项目规则流程审查与改进方案.md) | Plan Mode衔接规范的必要性与分析 |
