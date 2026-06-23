@@ -290,7 +290,7 @@ async def get_sku_detail(sku_outer_id: str, user: dict = Depends(get_current_use
             except Exception as e:
                 logger.warning(f"获取商品标题失败，使用propertiesName: {e}")
         return SkuDetailResponse(
-            skuOuterId=sku_outer_id,
+            skuOuterId=sku_info.get("sku_outer_id", sku_outer_id),
             propertiesName=sku_info.get("properties_name", ""),
             picPath=sku_info.get("pic_path", ""),
             remark=sku_info.get("remark", ""),

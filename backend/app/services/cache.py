@@ -128,7 +128,7 @@ def _cache_row_to_dict(row: sqlite3.Row) -> Dict[str, Any]:
 def _api_data_to_dict(sku_outer_id: str, data: Dict[str, Any]) -> Dict[str, Any]:
     """API响应转字典"""
     return {
-        "sku_outer_id": sku_outer_id,
+        "sku_outer_id": data.get("sku_outer_id", sku_outer_id),
         "properties_name": data.get("properties_name", ""),
         "pic_path": data.get("pic_path", ""),
         "supplier_name": data.get("supplier_name", ""),

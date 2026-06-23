@@ -173,6 +173,12 @@
 {"type":"entity","name":"v1.86_Worker后端中转","entityType":"fix","observations":["Worker的fetchLatestSkuData直连快麦API全部失败","改为通过后端 GET /api/sku/{skuOuterId} 中转获取SKU数据","后端返回itemTitle+itemOuterId+propertiesName用于构造ItemUpdateRequest","App.kt 增加 SystemApiService 注入+OrderSyncWorkerDeps","OrderSyncWorker.kt 新增 fetchLatestSkuDataViaBackend 方法","替换 syncRemarkUpdate 和 syncSupplierUpdate 中的调用"]}
 {"type":"entity","name":"v1.87 弹窗重新设计","entityType":"版本变更","observations":["重新设计ConfirmDialog二次确认弹窗：品牌蓝底白字确认按钮、增加供应商编码展示、加大间距","重新设计NewOrderDialog新建取货单弹窗：原型风格2列网格布局、bordered button、独立取消按钮","ConfirmDialog使用20sp Bold标题、浅蓝底16dp内边距高亮卡片、品牌蓝确认按钮","NewOrderDialog使用18sp Bold居中标题、2列网格chunked(2)布局、SurfaceWhite透明底区域按钮"]}
 {"type":"entity","name":"v1.87 功能清理","entityType":"版本变更","observations":["移除引导页GuideScreen及关联的SetupQrParser工具类","移除相机扫码CameraScanScreen及CameraX/MLKit全部依赖","移除SettingsViewModel中KEY_GUIDE_SHOWN常量","移除HomeScreen中首次使用横幅","移除AppNavigation中GUIDE路由和encryptedPrefs参数","移除MainActivity中encryptedPrefs字段注入","移除build.gradle.kts中CameraX 4个依赖和MLKit 1个依赖","移除proguard-rules.pro中CameraX keep规则","供应商筛选按supplier_code排序：后端SQL改为GROUP BY + MIN(code) ASC","规格备注修改不再需要确认弹窗，直接保存"]}
+{"type":"entity","name":"商家编码大小写修复","entityType":"feature","observations":["v1.90修复：手动输入小写编码回传备注/供应商时不再覆盖快麦原有的大写编码","修改了4个文件共5处改动","核心设计：Worker同步时先fetchLatestSkuData获取快麦API返回的正确大小写"]}
+{"type":"entity","name":"get_sku_by_outer_id mapped","entityType":"function","observations":["kuaimai_api.py L173: mapped字典追加sku_outer_id字段","直接从快麦API响应获取正确大写编码"]}
+{"type":"entity","name":"get_sku_info cache覆盖","entityType":"function","observations":["cache.py L52-59: 缓存命中时用API返回的sku_outer_id覆盖缓存值"]}
+{"type":"entity","name":"_api_data_to_dict","entityType":"function","observations":["cache.py L131: 改为data.get('sku_outer_id', sku_outer_id)","优先用API返回值，失败时降级"]}
+{"type":"entity","name":"system.py skuOuterId","entityType":"function","observations":["system.py L293: 改为sku_info.get('sku_outer_id', sku_outer_id)"]}
+{"type":"entity","name":"Worker correctSkuOuterId","entityType":"function","observations":["OrderSyncWorker.kt: syncRemarkUpdate和syncSupplierUpdate使用correctSkuOuterId","SkuSyncData新增skuOuterId字段，两个fetch路径均填充"]}
 {"type":"relation","from":"F1_取货单管理","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F2_扫码待办","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F3_取货单自动完成","to":"快麦取货通项目","relationType":"属于"}
@@ -291,3 +297,12 @@
 {"type":"relation","from":"v1.86_Worker后端中转","to":"v1.86_Bug修复","relationType":"part_of"}
 {"type":"relation","from":"v1.87 弹窗重新设计","to":"快麦取货通项目","relationType":"属于版本"}
 {"type":"relation","from":"v1.87 功能清理","to":"快麦取货通项目","relationType":"属于版本"}
+{"type":"relation","from":"商家编码大小写修复","to":"get_sku_by_outer_id mapped","relationType":"includes"}
+{"type":"relation","from":"商家编码大小写修复","to":"get_sku_info cache覆盖","relationType":"includes"}
+{"type":"relation","from":"商家编码大小写修复","to":"_api_data_to_dict","relationType":"includes"}
+{"type":"relation","from":"商家编码大小写修复","to":"system.py skuOuterId","relationType":"includes"}
+{"type":"relation","from":"商家编码大小写修复","to":"Worker correctSkuOuterId","relationType":"includes"}
+{"type":"relation","from":"get_sku_by_outer_id mapped","to":"get_sku_info cache覆盖","relationType":"depends_on"}
+{"type":"relation","from":"get_sku_info cache覆盖","to":"_api_data_to_dict","relationType":"depends_on"}
+{"type":"relation","from":"get_sku_info cache覆盖","to":"system.py skuOuterId","relationType":"depends_on"}
+{"type":"relation","from":"system.py skuOuterId","to":"Worker correctSkuOuterId","relationType":"depends_on"}

@@ -170,6 +170,7 @@ async def get_sku_by_outer_id(sku_outer_id: str) -> Optional[Dict[str, Any]]:
             "sys_item_id": sku_data.get("sysItemId", 0),
             "sys_sku_id": sku_data.get("sysSkuId", 0),
             "item_outer_id": sku_data.get("itemOuterId", ""),
+            "sku_outer_id": sku_data.get("skuOuterId", ""),
             "supplier_name": "",
             "supplier_code": "",
             "modified": sku_data.get("modified", 0),

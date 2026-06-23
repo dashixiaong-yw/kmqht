@@ -404,12 +404,13 @@ class OrderSyncWorker(
         val propertiesName = skuData.propertiesName.ifBlank {
             extractPayloadValue(op.payload, "properties_name") ?: ""
         }
+        val correctSkuOuterId = if (skuData.skuOuterId.isNotBlank()) skuData.skuOuterId else skuOuterId
         val request = ItemUpdateRequest(
             id = itemId,
             method = "erp.item.general.addorupdate",
             outerId = skuData.itemOuterId,
             title = skuData.title,
-            skus = listOf(SkuUpdateDto(skuId = skuId, skuOuterId = skuOuterId, skuRemark = remark, skuPropertiesName = propertiesName))
+            skus = listOf(SkuUpdateDto(skuId = skuId, skuOuterId = correctSkuOuterId, skuRemark = remark, skuPropertiesName = propertiesName))
         )
         val response = kmApi.updateItemRemark(request)
         if (!response.success) {
@@ -457,13 +458,14 @@ class OrderSyncWorker(
             extractPayloadValue(op.payload, "properties_name") ?: ""
         }
         val skuSuppliers = listOf(SupplierUpdateDto(supplierCode = supplierCode, supplierName = supplierName))
+        val correctSkuOuterId = if (skuData.skuOuterId.isNotBlank()) skuData.skuOuterId else skuOuterId
         val request = ItemUpdateRequest(
             id = itemId,
             method = "erp.item.general.addorupdate",
             outerId = skuData.itemOuterId,
             title = skuData.title,
             skus = listOf(SkuUpdateDto(
-                skuId = skuId, skuOuterId = skuOuterId,
+                skuId = skuId, skuOuterId = correctSkuOuterId,
                 skuPropertiesName = skuPropertiesName,
                 skuSuppliers = skuSuppliers
             ))
@@ -481,7 +483,8 @@ class OrderSyncWorker(
     private data class SkuSyncData(
         val title: String,
         val itemOuterId: String,
-        val propertiesName: String
+        val propertiesName: String,
+        val skuOuterId: String = ""
     )
 
     private suspend fun fetchLatestSkuData(kmApi: KuaimaiApiService, skuOuterId: String, itemOuterIdFallback: String? = null): SkuSyncData? {
@@ -507,7 +510,8 @@ class OrderSyncWorker(
                 return SkuSyncData(
                     title = effectiveFallbackTitle,
                     itemOuterId = itemOuterIdFallback,
-                    propertiesName = sku?.propertiesName ?: ""
+                    propertiesName = sku?.propertiesName ?: "",
+                    skuOuterId = sku?.skuOuterId ?: ""
                 )
             }
             val itemResp = kmApi.getItemDetail(ItemGetRequest(outerId = itemOuterId))
@@ -521,7 +525,8 @@ class OrderSyncWorker(
             return SkuSyncData(
                 title = effectiveTitle,
                 itemOuterId = itemOuterId,
-                propertiesName = sku.propertiesName
+                propertiesName = sku.propertiesName,
+                skuOuterId = sku.skuOuterId
             )
         } catch (e: Exception) {
             Log.w(TAG, "获取SKU数据失败: $skuOuterId — ${e.message}")
@@ -539,7 +544,7 @@ class OrderSyncWorker(
             val title = if (detail.itemTitle.isNotBlank()) detail.itemTitle else return null
             val itemOuterId = if (detail.itemOuterId.isNotBlank()) detail.itemOuterId else itemOuterIdFallback ?: return null
             appendLog(applicationContext, "后端SKU查询成功: sku=$skuOuterId, title=$title")
-            SkuSyncData(title = title, itemOuterId = itemOuterId, propertiesName = detail.propertiesName)
+            SkuSyncData(title = title, itemOuterId = itemOuterId, propertiesName = detail.propertiesName, skuOuterId = detail.skuOuterId)
         } catch (e: Exception) {
             Log.w(TAG, "通过后端获取SKU数据失败: $skuOuterId — ${e.message}")
             appendLog(applicationContext, "后端SKU查询失败: sku=$skuOuterId, error=${e.message}")
