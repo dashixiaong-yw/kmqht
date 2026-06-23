@@ -158,6 +158,11 @@ function Sync-File {
 
         if ($shouldCopy) {
             try {
+                # 确保目标目录存在
+                $targetDir = Split-Path -Parent $TargetFile
+                if (-not (Test-Path -LiteralPath $targetDir)) {
+                    New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
+                }
                 Copy-Item -LiteralPath $SourceFile -Destination $TargetFile -Force
                 Write-Host "OK: $Label"
                 $script:syncCount++

@@ -183,6 +183,8 @@
 {"type":"entity","name":"cameraLauncher","entityType":"function","observations":["ProductScreen.kt L155: TakePicture类型的ActivityResultLauncher","拍照成功时调用viewModel.uploadImage(file, type)上传"]}
 {"type":"entity","name":"pendingCameraFile","entityType":"variable","observations":["ProductScreen.kt L139: mutableStateOf<File?>","记录相机拍照的临时文件路径"]}
 {"type":"entity","name":"createTempImageFile","entityType":"function","observations":["ProductScreen.kt L880: 创建临时JPG文件用于相机拍照保存","文件创建在context.cacheDir，带时间戳命名"]}
+{"type":"entity","name":"v1.92_取货单详情自动同步","entityType":"版本变更","observations":["修复同一账号切换PDA后取货单详情商品不显示的bug","PickDetailViewModel.init添加syncItemsFromBackend()自动同步","syncItemsFromBackend新增order保存（insertOrder REPLACE语义）和_order.value直接设置","确保他人领取公共订单时订单信息和商品明细完整显示"]}
+{"type":"entity","name":"v1.92_取货单列表下拉刷新","entityType":"版本变更","observations":["PickListScreen新增PullToRefreshBox包裹进行中列表","PickListViewModel.loadActiveOrders()增加_isLoading状态管理","用户可手动下拉刷新获取新发布的公共订单"]}
 {"type":"relation","from":"F1_取货单管理","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F2_扫码待办","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F3_取货单自动完成","to":"快麦取货通项目","relationType":"属于"}
@@ -315,3 +317,8 @@
 {"type":"relation","from":"图片上传优先摄像头","to":"createTempImageFile","relationType":"includes"}
 {"type":"relation","from":"cameraLauncher","to":"pendingCameraFile","relationType":"depends_on"}
 {"type":"relation","from":"createTempImageFile","to":"pendingCameraFile","relationType":"creates"}
+{"type":"relation","from":"快麦取货通项目","to":"v1.92_取货单详情自动同步","relationType":"包含了版本"}
+{"type":"relation","from":"快麦取货通项目","to":"v1.92_取货单列表下拉刷新","relationType":"包含了版本"}
+{"type":"relation","from":"v1.92_取货单详情自动同步","to":"PickDetailViewModel","relationType":"修改了"}
+{"type":"relation","from":"v1.92_取货单列表下拉刷新","to":"PickListViewModel","relationType":"修改了"}
+{"type":"relation","from":"v1.92_取货单列表下拉刷新","to":"PickListScreen","relationType":"修改了"}
