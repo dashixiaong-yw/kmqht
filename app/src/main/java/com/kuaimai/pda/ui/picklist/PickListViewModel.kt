@@ -70,7 +70,6 @@ class PickListViewModel @Inject constructor(
 
     init {
         loadAreas()
-        loadActiveOrders()
         loadCompletedOrders()
     }
 
