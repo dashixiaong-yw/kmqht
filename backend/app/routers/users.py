@@ -176,6 +176,10 @@ def create_user(
         if perm not in VALID_PERMISSIONS:
             raise HTTPException(status_code=400, detail=f"无效的权限代码: {perm}")
 
+    # 自动添加 settings 权限（默认必选，避免 PDA Worker 凭据同步失败）
+    if "settings" not in req.permissions:
+        req.permissions.insert(0, "settings")
+
     db = get_db()
     cursor = db.cursor()
 
