@@ -147,24 +147,6 @@ fun PickItemRow(
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop
                             )
-                        } else {
-                            Text(text = "库区", fontSize = 9.sp, color = TextMuted)
-                        }
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(18.dp)
-                                .background(SurfaceGray.copy(alpha = 0.8f))
-                                .align(Alignment.BottomCenter),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "库区",
-                                fontSize = 10.sp,
-                                color = TextSecondary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
                         }
                     }
 
@@ -182,24 +164,6 @@ fun PickItemRow(
                                 contentDescription = "装箱图",
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Text(text = "箱图", fontSize = 9.sp, color = TextMuted)
-                        }
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(18.dp)
-                                .background(SurfaceGray.copy(alpha = 0.8f))
-                                .align(Alignment.BottomCenter),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "箱图",
-                                fontSize = 10.sp,
-                                color = TextSecondary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }

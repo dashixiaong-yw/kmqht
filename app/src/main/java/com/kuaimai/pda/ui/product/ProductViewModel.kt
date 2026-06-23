@@ -205,10 +205,10 @@ class ProductViewModel @Inject constructor(
                     val boxImage = images.find { it.imageType == AppConstants.IMAGE_TYPE_BOX }
                     _uiState.value = _uiState.value.copy(
                         areaImageUrl = areaImage?.let { url ->
-                            if (serverUrl.isNotEmpty()) "${serverUrl.trimEnd('/')}${url.imageUrl}" else url.imageUrl
+                            if (serverUrl.isNotEmpty()) "${serverUrl.trimEnd('/')}/${url.imageUrl}" else url.imageUrl
                         },
                         boxImageUrl = boxImage?.let { url ->
-                            if (serverUrl.isNotEmpty()) "${serverUrl.trimEnd('/')}${url.imageUrl}" else url.imageUrl
+                            if (serverUrl.isNotEmpty()) "${serverUrl.trimEnd('/')}/${url.imageUrl}" else url.imageUrl
                         }
                     )
                 }
@@ -410,7 +410,7 @@ class ProductViewModel @Inject constructor(
                 imageRepository.saveImage(entity)
 
                 val serverUrl = prefs.getString(PrefsKeys.KEY_SERVER_URL, DEFAULT_SERVER_URL) ?: DEFAULT_SERVER_URL
-                val fullUrl = if (serverUrl.isNotEmpty()) "${serverUrl.trimEnd('/')}$imageUrl" else imageUrl
+                val fullUrl = if (serverUrl.isNotEmpty()) "${serverUrl.trimEnd('/')}/$imageUrl" else imageUrl
                 _uiState.value = if (imageType == AppConstants.IMAGE_TYPE_AREA) {
                     _uiState.value.copy(areaImageUrl = fullUrl)
                 } else {
