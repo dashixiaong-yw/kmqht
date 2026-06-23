@@ -95,6 +95,12 @@ import com.kuaimai.pda.ui.theme.TextSecondary
 import com.kuaimai.pda.ui.theme.WarningYellow
 import kotlinx.coroutines.flow.collectLatest
 
+import android.content.ActivityNotFoundException
+import android.content.pm.PackageManager
+import androidx.activity.result.contract.ActivityResultContracts.TakePicture
+import androidx.core.content.FileProvider
+import java.io.File
+
 /**
  * 商品详情页面
  * 包含：扫码输入、SKU信息卡、备注编辑、图片上传、供应商切换
@@ -129,6 +135,8 @@ fun ProductScreen(
 
     // 图片上传：记录待上传的图片类型
     var pendingImageType by remember { mutableStateOf<String?>(null) }
+    // 相机拍照的临时文件 —— 优先拍照时使用
+    var pendingCameraFile by remember { mutableStateOf<File?>(null) }
 
     // 图片选择器
     val pickImageLauncher = rememberLauncherForActivityResult(
@@ -142,6 +150,21 @@ fun ProductScreen(
             }
             pendingImageType = null
         }
+    }
+
+    // 相机拍照 Launcher（优先于图库）
+    val cameraLauncher = rememberLauncherForActivityResult(
+        TakePicture()
+    ) { success: Boolean ->
+        if (success) {
+            val file = pendingCameraFile
+            val type = pendingImageType
+            if (file != null && type != null) {
+                viewModel.uploadImage(file, type)
+            }
+        }
+        pendingCameraFile = null
+        pendingImageType = null
     }
 
     // 权限检查
@@ -223,12 +246,48 @@ fun ProductScreen(
                     isUploading = uiState.isUploading,
                     uploadProgress = uiState.uploadProgress,
                     onUploadArea = {
-                        pendingImageType = AppConstants.IMAGE_TYPE_AREA
-                        pickImageLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                        val pm = context.packageManager
+                        if (pm.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) {
+                            try {
+                                val photoFile = createTempImageFile(context)
+                                pendingImageType = AppConstants.IMAGE_TYPE_AREA
+                                pendingCameraFile = photoFile
+                                cameraLauncher.launch(
+                                    FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", photoFile)
+                                )
+                            } catch (_: ActivityNotFoundException) {
+                                pendingImageType = AppConstants.IMAGE_TYPE_AREA
+                                pickImageLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                            } catch (_: Exception) {
+                                pendingImageType = AppConstants.IMAGE_TYPE_AREA
+                                pickImageLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                            }
+                        } else {
+                            pendingImageType = AppConstants.IMAGE_TYPE_AREA
+                            pickImageLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                        }
                     },
                     onUploadBox = {
-                        pendingImageType = AppConstants.IMAGE_TYPE_BOX
-                        pickImageLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                        val pm = context.packageManager
+                        if (pm.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) {
+                            try {
+                                val photoFile = createTempImageFile(context)
+                                pendingImageType = AppConstants.IMAGE_TYPE_BOX
+                                pendingCameraFile = photoFile
+                                cameraLauncher.launch(
+                                    FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", photoFile)
+                                )
+                            } catch (_: ActivityNotFoundException) {
+                                pendingImageType = AppConstants.IMAGE_TYPE_BOX
+                                pickImageLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                            } catch (_: Exception) {
+                                pendingImageType = AppConstants.IMAGE_TYPE_BOX
+                                pickImageLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                            }
+                        } else {
+                            pendingImageType = AppConstants.IMAGE_TYPE_BOX
+                            pickImageLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                        }
                     },
                     onDeleteArea = { showImageDeleteConfirm = AppConstants.IMAGE_TYPE_AREA },
                     onDeleteBox = { showImageDeleteConfirm = AppConstants.IMAGE_TYPE_BOX },
@@ -813,4 +872,12 @@ private fun uriToFile(uri: Uri, context: Context): java.io.File? {
     } catch (e: Exception) {
         null
     }
+}
+
+/**
+ * 创建临时图片文件（用于相机拍照保存）
+ */
+private fun createTempImageFile(context: Context): File {
+    val timeStamp = System.currentTimeMillis()
+    return File.createTempFile("capture_${timeStamp}_", ".jpg", context.cacheDir)
 }

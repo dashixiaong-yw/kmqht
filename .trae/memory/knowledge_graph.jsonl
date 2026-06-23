@@ -179,6 +179,10 @@
 {"type":"entity","name":"_api_data_to_dict","entityType":"function","observations":["cache.py L131: 改为data.get('sku_outer_id', sku_outer_id)","优先用API返回值，失败时降级"]}
 {"type":"entity","name":"system.py skuOuterId","entityType":"function","observations":["system.py L293: 改为sku_info.get('sku_outer_id', sku_outer_id)"]}
 {"type":"entity","name":"Worker correctSkuOuterId","entityType":"function","observations":["OrderSyncWorker.kt: syncRemarkUpdate和syncSupplierUpdate使用correctSkuOuterId","SkuSyncData新增skuOuterId字段，两个fetch路径均填充"]}
+{"type":"entity","name":"图片上传优先摄像头","entityType":"feature","observations":["v1.91新增：库区图和装箱图上传优先调用系统摄像头拍照","无摄像头时回退到图库选择（PickVisualMedia）","仅修改ProductScreen.kt一个文件"]}
+{"type":"entity","name":"cameraLauncher","entityType":"function","observations":["ProductScreen.kt L155: TakePicture类型的ActivityResultLauncher","拍照成功时调用viewModel.uploadImage(file, type)上传"]}
+{"type":"entity","name":"pendingCameraFile","entityType":"variable","observations":["ProductScreen.kt L139: mutableStateOf<File?>","记录相机拍照的临时文件路径"]}
+{"type":"entity","name":"createTempImageFile","entityType":"function","observations":["ProductScreen.kt L880: 创建临时JPG文件用于相机拍照保存","文件创建在context.cacheDir，带时间戳命名"]}
 {"type":"relation","from":"F1_取货单管理","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F2_扫码待办","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F3_取货单自动完成","to":"快麦取货通项目","relationType":"属于"}
@@ -306,3 +310,8 @@
 {"type":"relation","from":"get_sku_info cache覆盖","to":"_api_data_to_dict","relationType":"depends_on"}
 {"type":"relation","from":"get_sku_info cache覆盖","to":"system.py skuOuterId","relationType":"depends_on"}
 {"type":"relation","from":"system.py skuOuterId","to":"Worker correctSkuOuterId","relationType":"depends_on"}
+{"type":"relation","from":"图片上传优先摄像头","to":"cameraLauncher","relationType":"includes"}
+{"type":"relation","from":"图片上传优先摄像头","to":"pendingCameraFile","relationType":"includes"}
+{"type":"relation","from":"图片上传优先摄像头","to":"createTempImageFile","relationType":"includes"}
+{"type":"relation","from":"cameraLauncher","to":"pendingCameraFile","relationType":"depends_on"}
+{"type":"relation","from":"createTempImageFile","to":"pendingCameraFile","relationType":"creates"}
