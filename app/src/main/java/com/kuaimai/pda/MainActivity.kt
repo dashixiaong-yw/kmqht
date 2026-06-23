@@ -5,6 +5,23 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
@@ -12,6 +29,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.lifecycle.lifecycleScope
 import androidx.work.WorkManager
 import com.kuaimai.pda.data.OrderSyncWorker
+import com.kuaimai.pda.data.api.dto.AppVersionResponse
 import com.kuaimai.pda.data.repository.AuthRepository
 import com.kuaimai.pda.data.repository.UserRepository
 import com.kuaimai.pda.scanner.ScannerManager
@@ -52,6 +70,88 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             KuaimaiTheme {
+                // 启动时自动检查更新弹窗状态
+                var showUpdateDialog by remember { mutableStateOf(false) }
+                var updateInfo by remember { mutableStateOf<AppVersionResponse?>(null) }
+                var isDownloading by remember { mutableStateOf(false) }
+
+                // 启动时自动检查更新
+                LaunchedEffect(Unit) {
+                    when (val result = appUpdateManager.checkForUpdate()) {
+                        is CheckResult.HasUpdate -> {
+                            updateInfo = result.info
+                            showUpdateDialog = true
+                        }
+                        else -> {}
+                    }
+                }
+
+                // 更新弹窗
+                if (showUpdateDialog && updateInfo != null) {
+                    val info = updateInfo!!
+                    AlertDialog(
+                        onDismissRequest = {
+                            if (!info.forceUpdate && !isDownloading) {
+                                showUpdateDialog = false
+                                updateInfo = null
+                            }
+                        },
+                        shape = RoundedCornerShape(16.dp),
+                        title = { Text("发现新版本") },
+                        text = {
+                            Column {
+                                Text("最新版本: v${info.latestVersion}")
+                                if (info.updateNotes.isNotBlank()) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(info.updateNotes)
+                                }
+                                if (isDownloading) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text("正在下载更新...", style = MaterialTheme.typography.bodySmall)
+                                }
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    if (!isDownloading) {
+                                        isDownloading = true
+                                        appUpdateManager.downloadApk(info)
+                                        lifecycleScope.launch {
+                                            appUpdateManager.downloadState.collect { state ->
+                                                if (state is DownloadState.Completed) {
+                                                    appUpdateManager.installApk(state.file)
+                                                    showUpdateDialog = false
+                                                    updateInfo = null
+                                                } else if (state is DownloadState.Failed) {
+                                                    isDownloading = false
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                enabled = !isDownloading
+                            ) {
+                                Text(if (isDownloading) "下载中..." else "立即更新")
+                            }
+                        },
+                        dismissButton = {
+                            if (!info.forceUpdate) {
+                                TextButton(
+                                    onClick = {
+                                        showUpdateDialog = false
+                                        updateInfo = null
+                                    }
+                                ) {
+                                    Text("稍后再说")
+                                }
+                            }
+                        }
+                    )
+                }
+
                 AppNavigation(
                     userRepository = userRepository,
                     authRepository = authRepository,
@@ -61,23 +161,6 @@ class MainActivity : ComponentActivity() {
         }
         // 启动时触发离线同步Worker（网络恢复后自动重试）
         enqueueSyncWorker()
-
-        // 启动时自动检查应用更新
-        lifecycleScope.launch {
-            when (val result = appUpdateManager.checkForUpdate()) {
-                is CheckResult.HasUpdate -> {
-                    appUpdateManager.downloadApk(result.info)
-                    launch {
-                        appUpdateManager.downloadState.collect { state ->
-                            if (state is DownloadState.Completed) {
-                                appUpdateManager.installApk(state.file)
-                            }
-                        }
-                    }
-                }
-                else -> {}
-            }
-        }
     }
 
     override fun onResume() {
