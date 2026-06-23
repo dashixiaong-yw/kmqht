@@ -100,6 +100,9 @@ class PickDetailViewModel @Inject constructor(
     init {
         loadOrder()
         loadSuppliers()
+        viewModelScope.launch {
+            syncItemsFromBackend()
+        }
     }
 
     /**
@@ -397,6 +400,26 @@ class PickDetailViewModel @Inject constructor(
         try {
             val token = userRepository.getToken()
             val detail = orderApiService.getOrderDetail(token, orderId)
+
+            // 同步order信息（_order是MutableStateFlow，需同时保存Room和设置StateFlow）
+            val orderEntity = PickOrderEntity(
+                id = detail.id,
+                orderNo = detail.orderNo,
+                status = detail.status,
+                completionType = detail.completionType,
+                totalCount = detail.totalCount,
+                completedCount = detail.completedCount,
+                createdAt = TimeUtils.parseBeijingTime(detail.createdAt).let { if (it > 0) it else TimeUtils.now() },
+                completedAt = TimeUtils.parseBeijingTimeOrNull(detail.completedAt),
+                expireAt = TimeUtils.parseBeijingTime(detail.expireAt).let { if (it > 0) it else TimeUtils.now() + TimeUtils.DEFAULT_EXPIRE_MS },
+                createdBy = detail.createdBy,
+                assignedTo = detail.assignedTo,
+                visibility = detail.visibility
+            )
+            pickOrderRepository.insertOrder(orderEntity) // insertOrder (REPLACE) 兼容不存在和已存在
+            _order.value = orderEntity // 直接设置StateFlow，让UI立即响应
+
+            // 同步明细数据（items由Room Flow自动驱动，无需手动设置）
             detail.items.forEach { itemResponse ->
                 val existing = pickOrderRepository.getItemByOrderIdAndSkuOuterId(orderId, itemResponse.skuOuterId)
                 if (existing == null) {

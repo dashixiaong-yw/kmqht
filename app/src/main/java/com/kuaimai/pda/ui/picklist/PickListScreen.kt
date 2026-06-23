@@ -35,6 +35,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -159,66 +160,73 @@ fun PickListScreen(
             }
         } else {
             // 进行中列表
-            Column(
+            PullToRefreshBox(
+                isRefreshing = isLoading,
+                onRefresh = { viewModel.refreshActiveOrders() },
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
-                if (activeOrders.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .weight(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "暂无进行中的取货单\n点击右上角[+ 新建]新建",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = TextSecondary
-                        )
-                    }
-                } else {
-                    // F24: 按拣货区分组排序
-                    val sortedActiveOrders = activeOrders.sortedWith(
-                        compareBy<PickOrderEntity> {
-                            // 从orderNo中提取拣货区名称（格式: 拣货区-yyyyMMdd-X）
-                            it.orderNo.substringBefore("-", "未知")
-                        }.thenByDescending { it.createdAt }
-                    )
-
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .weight(1f)
-                    ) {
-                        items(
-                            items = sortedActiveOrders,
-                            key = { it.id }
-                        ) { order ->
-                            PickOrderCard(
-                                order = order,
-                                onClick = { onNavigateToDetail(order.id) },
-                                onDelete = { viewModel.requestDelete(order) },
-                                onPublish = if (order.visibility == "private" && order.assignedTo == order.createdBy)
-                                    { { viewModel.publishOrder(order.id) } } else null,
-                                onClaim = if (order.visibility == "public")
-                                    { { viewModel.claimOrder(order.id) } } else null
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                ) {
+                    if (activeOrders.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "暂无进行中的取货单\n点击右上角[+ 新建]新建",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = TextSecondary
                             )
                         }
-                    }
-                }
+                    } else {
+                        // F24: 按拣货区分组排序
+                        val sortedActiveOrders = activeOrders.sortedWith(
+                            compareBy<PickOrderEntity> {
+                                // 从orderNo中提取拣货区名称（格式: 拣货区-yyyyMMdd-X）
+                                it.orderNo.substringBefore("-", "未知")
+                            }.thenByDescending { it.createdAt }
+                        )
 
-                // 查看已完成入口
-                TextButton(
-                    onClick = { viewModel.showCompletedList() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Text(
-                        text = "查看已完成 (${completedOrders.size})",
-                        color = PrimaryLightText
-                    )
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .weight(1f)
+                        ) {
+                            items(
+                                items = sortedActiveOrders,
+                                key = { it.id }
+                            ) { order ->
+                                PickOrderCard(
+                                    order = order,
+                                    onClick = { onNavigateToDetail(order.id) },
+                                    onDelete = { viewModel.requestDelete(order) },
+                                    onPublish = if (order.visibility == "private" && order.assignedTo == order.createdBy)
+                                        { { viewModel.publishOrder(order.id) } } else null,
+                                    onClaim = if (order.visibility == "public")
+                                        { { viewModel.claimOrder(order.id) } } else null
+                                )
+                            }
+                        }
+                    }
+
+                    // 查看已完成入口
+                    TextButton(
+                        onClick = { viewModel.showCompletedList() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            text = "查看已完成 (${completedOrders.size})",
+                            color = PrimaryLightText
+                        )
+                    }
                 }
             }
         }

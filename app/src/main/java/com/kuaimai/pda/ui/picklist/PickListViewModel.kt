@@ -79,6 +79,7 @@ class PickListViewModel @Inject constructor(
      */
     fun loadActiveOrders() {
         viewModelScope.launch {
+            _isLoading.value = true
             try {
                 val token = userRepository.getToken()
                 val response = orderApiService.listOrders(token, status = 0)
@@ -87,6 +88,8 @@ class PickListViewModel @Inject constructor(
                 Log.e("PickListViewModel", "加载取货单列表失败: ${e.message}", e)
                 _errorMessage.value = "加载取货单列表失败: ${e.message?.take(80) ?: "未知错误"}"
                 _activeOrders.value = emptyList()
+            } finally {
+                _isLoading.value = false
             }
         }
     }
