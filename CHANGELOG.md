@@ -1,5 +1,10 @@
 # 快麦取货通 - 变更日志
 
+## 1.95 (2026-06-23)
+
+### 修复
+- Android 6.0 (API 23) PDA 登录提示凭证过期：EncryptedSharedPreferences 创建失败时自动删除重建，兼容 Keystore 不稳定的国产 PDA 设备
+
 ## 1.94 (2026-06-23)
 
 ### 修复
