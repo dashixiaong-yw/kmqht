@@ -5,6 +5,7 @@
 ### 修复
 - 修复同一账号切换 PDA 后取货单详情商品无法显示的 bug（init 自动同步后端明细 + order 信息）
 - syncItemsFromBackend 新增 order 保存与 _order.value 推送，确保他人领取公共订单时完整显示
+- 修复 SKU 编码大小写缓存问题：cache.py 缓存写入使用快麦 API 返回的正确大小写，确保回传时大小写一致
 
 ### 新增
 - 取货单列表页增加下拉刷新功能（PullToRefreshBox），便于获取新发布的公共订单

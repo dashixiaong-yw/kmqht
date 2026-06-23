@@ -62,8 +62,8 @@ async def get_sku_info(sku_outer_id: str) -> Optional[Dict[str, Any]]:
                (sku_outer_id, properties_name, pic_path, supplier_name, supplier_code,
                 remark, sys_item_id, sys_sku_id, item_outer_id, cached_modified, cached_at)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (
-                sku_outer_id,
+                (
+                    sku_data.get("sku_outer_id", sku_outer_id),  # 快麦API返回的正确大小写
                 sku_data.get("properties_name", ""),
                 sku_data.get("pic_path", ""),
                 sku_data.get("supplier_name", ""),
