@@ -77,7 +77,7 @@ fun PickItemRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp)
+                .padding(horizontal = 12.dp, vertical = 4.dp)
                 .alpha(contentAlpha),
             verticalAlignment = Alignment.CenterVertically
         ) {
