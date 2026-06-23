@@ -22,23 +22,29 @@ object TimeUtils {
     private val beijingZone: TimeZone = TimeZone.getTimeZone(BEIJING_ZONE_ID)
 
     /** 日期时间格式（使用ThreadLocal保证线程安全） */
-    private val dateTimeFormat = ThreadLocal.withInitial {
-        SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.CHINA).apply {
-            timeZone = beijingZone
+    private val dateTimeFormat = object : ThreadLocal<SimpleDateFormat>() {
+        override fun initialValue(): SimpleDateFormat {
+            return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.CHINA).apply {
+                timeZone = beijingZone
+            }
         }
     }
 
     /** 日期格式 */
-    private val dateFormat = ThreadLocal.withInitial {
-        SimpleDateFormat("yyyy-MM-dd", Locale.CHINA).apply {
-            timeZone = beijingZone
+    private val dateFormat = object : ThreadLocal<SimpleDateFormat>() {
+        override fun initialValue(): SimpleDateFormat {
+            return SimpleDateFormat("yyyy-MM-dd", Locale.CHINA).apply {
+                timeZone = beijingZone
+            }
         }
     }
 
     /** 时间格式 */
-    private val timeFormat = ThreadLocal.withInitial {
-        SimpleDateFormat("HH:mm:ss", Locale.CHINA).apply {
-            timeZone = beijingZone
+    private val timeFormat = object : ThreadLocal<SimpleDateFormat>() {
+        override fun initialValue(): SimpleDateFormat {
+            return SimpleDateFormat("HH:mm:ss", Locale.CHINA).apply {
+                timeZone = beijingZone
+            }
         }
     }
 

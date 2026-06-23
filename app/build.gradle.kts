@@ -34,10 +34,10 @@ android {
 
     defaultConfig {
         applicationId = "com.kuaimai.pda"
-        minSdk = 24
+        minSdk = 23
         targetSdk = 34
         versionCode = 173
-        versionName = "1.93"
+        versionName = "1.94"
 
         resourceConfigurations.add("zh")
 
