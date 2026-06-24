@@ -187,25 +187,28 @@ fun AppNavigation(
         }
     }
 
-    // 快麦Session过期弹窗
+    // 登录过期弹窗
     if (showSessionExpiredDialog) {
         AlertDialog(
-            onDismissRequest = { showSessionExpiredDialog = false; SessionExpiredEvent.reset() },
-            shape = RoundedCornerShape(16.dp),
-            title = { Text("快麦会话已过期") },
-            text = { Text("快麦API会话已过期，请在Web管理后台重新授权\n（请用电脑浏览器访问管理后台）") },
-            confirmButton = {
-                TextButton(onClick = { showSessionExpiredDialog = false; SessionExpiredEvent.reset() }) {
-                    Text("知道了")
+            onDismissRequest = {
+                showSessionExpiredDialog = false
+                SessionExpiredEvent.reset()
+                navController.navigate(Routes.LOGIN) {
+                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
                 }
             },
-            dismissButton = {
+            shape = RoundedCornerShape(16.dp),
+            title = { Text("登录过期") },
+            text = { Text("当前登录已失效，请重新登录") },
+            confirmButton = {
                 TextButton(onClick = {
                     showSessionExpiredDialog = false
                     SessionExpiredEvent.reset()
-                    navController.navigate(Routes.SETTINGS)
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                    }
                 }) {
-                    Text("前往设置")
+                    Text("重新登录")
                 }
             }
         )
