@@ -293,13 +293,13 @@ fun PickDetailScreen(
             ) {
                 items(
                     items = filteredItems,
-                    key = { it.id }
+                    key = { "${it.status}_${it.id}" }
                 ) { item ->
                     // GAP-01: 查询SKU图片URL
-                    var areaImageUrl by remember { mutableStateOf<String?>(null) }
-                    var boxImageUrl by remember { mutableStateOf<String?>(null) }
-                    var areaThumbUrl by remember { mutableStateOf<String?>(null) }
-                    var boxThumbUrl by remember { mutableStateOf<String?>(null) }
+                    var areaImageUrl by remember(item.skuOuterId) { mutableStateOf<String?>(null) }
+                    var boxImageUrl by remember(item.skuOuterId) { mutableStateOf<String?>(null) }
+                    var areaThumbUrl by remember(item.skuOuterId) { mutableStateOf<String?>(null) }
+                    var boxThumbUrl by remember(item.skuOuterId) { mutableStateOf<String?>(null) }
                     LaunchedEffect(item.skuOuterId) {
                         val urls = viewModel.getImageUrls(item.skuOuterId)
                         areaImageUrl = urls.areaUrl
