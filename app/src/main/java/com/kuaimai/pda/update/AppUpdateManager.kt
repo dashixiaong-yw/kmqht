@@ -1,13 +1,19 @@
 package com.kuaimai.pda.update
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.os.Handler
+import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
+import androidx.core.app.NotificationCompat
 import androidx.core.content.FileProvider
 import com.kuaimai.pda.BuildConfig
 import com.kuaimai.pda.data.api.SystemApiService
@@ -49,6 +55,9 @@ class AppUpdateManager @Inject constructor(
 ) {
     companion object {
         private const val TAG = "AppUpdateManager"
+        private const val NOTIFICATION_ID = 1001
+        private const val CHANNEL_ID = "apk_download"
+        private const val INSTALL_REQUEST_CODE = 1002
     }
 
     private val systemApi = retrofit.create(SystemApiService::class.java)
@@ -56,6 +65,25 @@ class AppUpdateManager @Inject constructor(
     private val _isDownloading = AtomicBoolean(false)
     private val _downloadState = MutableStateFlow<DownloadState>(DownloadState.Idle)
     val downloadState: StateFlow<DownloadState> = _downloadState.asStateFlow()
+
+    private val notificationManager: NotificationManager by lazy {
+        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    }
+
+    private val mainHandler = Handler(Looper.getMainLooper())
+
+    init {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                "应用更新下载",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "新版本 APK 下载进度通知"
+            }
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
 
     suspend fun checkForUpdate(): CheckResult {
         return withContext(Dispatchers.IO) {
@@ -71,7 +99,7 @@ class AppUpdateManager @Inject constructor(
                     CheckResult.NoUpdate
                 }
             } catch (e: Exception) {
-                Log.w("AppUpdateManager", "检查更新失败: ${e.message}")
+                Log.w(TAG, "检查更新失败: ${e.message}")
                 CheckResult.CheckError(e.message ?: "检查更新失败")
             }
         }
@@ -89,16 +117,20 @@ class AppUpdateManager @Inject constructor(
                     val apkFile = File(dir, "快麦取货通-${info.latestVersion}.apk")
                     if (apkFile.exists() && info.apkSize > 0 && apkFile.length() == info.apkSize) {
                         _downloadState.value = DownloadState.Completed(apkFile)
+                        showNotificationCompleted(apkFile, info.latestVersion)
                         return@Thread
                     }
                     val request = Request.Builder().url(info.downloadUrl).build()
                     val response = trustAllClient.newCall(request).execute()
                     if (!response.isSuccessful) {
-                        _downloadState.value = DownloadState.Failed("下载失败: HTTP ${response.code}")
+                        val msg = "下载失败: HTTP ${response.code}"
+                        _downloadState.value = DownloadState.Failed(msg)
+                        showNotificationFailed(msg)
                         return@Thread
                     }
                     val body = response.body ?: run {
                         _downloadState.value = DownloadState.Failed("响应体为空")
+                        showNotificationFailed("响应体为空")
                         return@Thread
                     }
                     val totalBytes = body.contentLength()
@@ -113,6 +145,7 @@ class AppUpdateManager @Inject constructor(
                                 if (totalBytes > 0) {
                                     val progress = downloadedBytes.toFloat() / totalBytes
                                     _downloadState.value = DownloadState.Downloading(progress, downloadedBytes, totalBytes)
+                                    showNotificationProgress(progress, info.latestVersion)
                                 }
                             }
                         }
@@ -120,13 +153,17 @@ class AppUpdateManager @Inject constructor(
                     if (info.apkSize > 0 && apkFile.length() != info.apkSize) {
                         apkFile.delete()
                         _downloadState.value = DownloadState.Failed("文件大小不匹配")
+                        showNotificationFailed("文件大小不匹配")
                         return@Thread
                     }
                     saveToPublicDownloads(apkFile, info.latestVersion)
                     _downloadState.value = DownloadState.Completed(apkFile)
+                    showNotificationCompleted(apkFile, info.latestVersion)
                 } catch (e: IOException) {
-                    Log.e("AppUpdateManager", "下载APK失败", e)
-                    _downloadState.value = DownloadState.Failed("下载失败: ${e.message}")
+                    Log.e(TAG, "下载APK失败", e)
+                    val msg = e.message ?: "未知错误"
+                    _downloadState.value = DownloadState.Failed(msg)
+                    showNotificationFailed(msg)
                 }
             } finally {
                 _isDownloading.set(false)
@@ -152,10 +189,62 @@ class AppUpdateManager @Inject constructor(
         }
     }
 
-    /**
-     * 下载完成后尝试复制到系统公共Downloads目录。
-     * 让用户在文件管理器中能找到APK，即使自动安装失败。
-     */
+    private fun showNotificationProgress(progress: Float, version: String) {
+        mainHandler.post {
+            try {
+                val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+                    .setSmallIcon(android.R.drawable.stat_sys_download)
+                    .setContentTitle("正在下载快麦取货通 v${version}")
+                    .setContentText("${(progress * 100).toInt()}%")
+                    .setProgress(100, (progress * 100).toInt(), false)
+                    .setOngoing(true)
+                    .setSilent(true)
+                    .build()
+                notificationManager.notify(NOTIFICATION_ID, notification)
+            } catch (_: Exception) {}
+        }
+    }
+
+    private fun showNotificationCompleted(apkFile: File, version: String) {
+        mainHandler.post {
+            try {
+                val installIntent = Intent(context, ApkInstallReceiver::class.java).apply {
+                    putExtra("apk_path", apkFile.absolutePath)
+                }
+                val pendingIntent = PendingIntent.getBroadcast(
+                    context,
+                    INSTALL_REQUEST_CODE,
+                    installIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+                    .setSmallIcon(android.R.drawable.stat_sys_download_done)
+                    .setContentTitle("快麦取货通 v${version} 下载完成")
+                    .setContentText("点击安装更新")
+                    .setContentIntent(pendingIntent)
+                    .setAutoCancel(true)
+                    .setSilent(false)
+                    .build()
+                notificationManager.notify(NOTIFICATION_ID, notification)
+            } catch (_: Exception) {}
+        }
+    }
+
+    private fun showNotificationFailed(message: String) {
+        mainHandler.post {
+            try {
+                val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+                    .setSmallIcon(android.R.drawable.stat_sys_warning)
+                    .setContentTitle("下载失败")
+                    .setContentText(message.take(60))
+                    .setAutoCancel(true)
+                    .setSilent(false)
+                    .build()
+                notificationManager.notify(NOTIFICATION_ID, notification)
+            } catch (_: Exception) {}
+        }
+    }
+
     private fun saveToPublicDownloads(file: File, version: String) {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

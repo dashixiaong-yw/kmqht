@@ -68,6 +68,12 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // Android 13+ 请求通知权限（APK下载进度）
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 100)
+        }
+
         setContent {
                 KuaimaiTheme {
                 // 启动时自动检查更新弹窗状态
@@ -121,12 +127,26 @@ class MainActivity : ComponentActivity() {
                                         appUpdateManager.downloadApk(info)
                                         lifecycleScope.launch {
                                             appUpdateManager.downloadState.collect { state ->
-                                                if (state is DownloadState.Completed) {
-                                                    appUpdateManager.installApk(state.file)
-                                                    showUpdateDialog = false
-                                                    updateInfo = null
-                                                } else if (state is DownloadState.Failed) {
-                                                    isDownloading = false
+                                                when (state) {
+                                                    is DownloadState.Completed -> {
+                                                        appUpdateManager.installApk(state.file)
+                                                        showUpdateDialog = false
+                                                        updateInfo = null
+                                                        android.widget.Toast.makeText(
+                                                            this@MainActivity,
+                                                            "APK已保存到系统下载目录，可手动安装",
+                                                            android.widget.Toast.LENGTH_LONG
+                                                        ).show()
+                                                    }
+                                                    is DownloadState.Failed -> {
+                                                        isDownloading = false
+                                                        android.widget.Toast.makeText(
+                                                            this@MainActivity,
+                                                            "下载失败: ${state.message}",
+                                                            android.widget.Toast.LENGTH_LONG
+                                                        ).show()
+                                                    }
+                                                    else -> {}
                                                 }
                                             }
                                         }

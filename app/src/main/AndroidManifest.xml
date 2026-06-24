@@ -18,6 +18,9 @@
     <!-- 振动权限（扫码反馈） -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- Android 13+ 通知权限（APK下载进度） -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:name=".App"
         android:allowBackup="false"
@@ -48,6 +51,10 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+        <receiver
+            android:name="com.kuaimai.pda.update.ApkInstallReceiver"
+            android:exported="false" />
 
     </application>
 
