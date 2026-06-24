@@ -219,7 +219,7 @@ async def refresh_kuaimai_session(user: dict = Depends(check_permission("setting
 
 
 @router.get("/api/kuaimai/credentials", response_model=KuaimaiCredentialsResponse)
-def get_kuaimai_credentials(user: dict = Depends(check_permission("settings"))) -> KuaimaiCredentialsResponse:
+def get_kuaimai_credentials(user: dict = Depends(get_current_user)) -> KuaimaiCredentialsResponse:
     """获取快麦凭证（PDA端登录后同步使用）"""
     return KuaimaiCredentialsResponse(
         appKey=kuaimai_creds.app_key,
