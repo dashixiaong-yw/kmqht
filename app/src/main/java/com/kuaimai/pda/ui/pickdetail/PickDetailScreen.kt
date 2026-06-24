@@ -112,6 +112,8 @@ fun PickDetailScreen(
     var previewImageUrl by remember { mutableStateOf<String?>(null) }
     var previewImageLabel by remember { mutableStateOf("") }
     var previewPicImageUrl by remember { mutableStateOf<String?>(null) }
+    var showDuplicateTip by remember { mutableStateOf(false) }
+    var duplicateTipText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
 
     // GAP-05: 屏幕常亮
@@ -126,11 +128,12 @@ fun PickDetailScreen(
         }
     }
 
-    // GAP-08: 重复扫码反馈（振动+声音+滚动到该行）
+    // GAP-08: 重复扫码反馈 + 居中弹窗提示
     LaunchedEffect(duplicateScan) {
         if (duplicateScan) {
             viewModel.provideFeedback(context, ScanFeedbackType.DUPLICATE)
-            snackbarHostState.showSnackbar("重复扫码！该SKU已在当前取货单中")
+            showDuplicateTip = true
+            duplicateTipText = "该商品已在列表中"
             // 滚动到重复行
             val duplicateSku = viewModel.lastScannedSku
             if (duplicateSku.isNotEmpty()) {
@@ -139,16 +142,19 @@ fun PickDetailScreen(
                     listState.animateScrollToItem(duplicateIndex)
                 }
             }
+            kotlinx.coroutines.delay(1500)
+            showDuplicateTip = false
             viewModel.clearDuplicateScan()
         }
     }
 
-    // 扫码成功反馈 + 清空输入框并重新聚焦
+    // 扫码成功反馈 + 清空输入框并重新聚焦 + 滚到顶部
     LaunchedEffect(Unit) {
         viewModel.scanSuccessEvent.collectLatest {
             viewModel.provideFeedback(context, ScanFeedbackType.SUCCESS)
             scanInput = ""
             focusRequester.requestFocus()
+            listState.animateScrollToItem(0)
         }
     }
 
@@ -418,6 +424,28 @@ fun PickDetailScreen(
                     Text("取消")
                 }
             }
+        )
+    }
+
+    // 重复添加提示 - 居中弹窗，1.5秒后自动消失
+    if (showDuplicateTip) {
+        AlertDialog(
+            onDismissRequest = { },
+            shape = RoundedCornerShape(16.dp),
+            title = null,
+            text = {
+                Column(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("✓", fontSize = 36.sp, color = SuccessText)
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(duplicateTipText, fontSize = 16.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Medium)
+                }
+            },
+            confirmButton = {}
         )
     }
 

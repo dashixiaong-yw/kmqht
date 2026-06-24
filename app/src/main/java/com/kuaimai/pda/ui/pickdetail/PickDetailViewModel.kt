@@ -487,11 +487,11 @@ class PickDetailViewModel @Inject constructor(
         }
     }
 
-    /** 从完整URL构造缩略图URL（在扩展名前插入 _thumb） */
+    /** 从完整URL构造缩略图URL（始终替换为 _thumb.jpg，后端统一JPEG输出） */
     private fun buildThumbUrl(fullUrl: String?): String? {
         if (fullUrl == null) return null
         val dot = fullUrl.lastIndexOf('.')
-        return if (dot > 0) "${fullUrl.substring(0, dot)}_thumb${fullUrl.substring(dot)}" else fullUrl
+        return if (dot > 0) "${fullUrl.substring(0, dot)}_thumb.jpg" else "$fullUrl._thumb.jpg"
     }
 }
 
