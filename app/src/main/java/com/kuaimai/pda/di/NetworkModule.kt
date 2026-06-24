@@ -27,9 +27,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.io.File
 import java.security.cert.X509Certificate
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Named
-import javax.inject.Provider
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLSocketFactory
 import javax.net.ssl.X509TrustManager
@@ -119,14 +117,11 @@ object NetworkModule {
         }
     }
 
-    /** Token刷新认证器：使用Provider避免循环依赖 */
+    /** Token刷新认证器 */
     @Provides
     @Singleton
-    fun provideTokenAuthenticator(
-        systemApiServiceProvider: Provider<SystemApiService>,
-        @Named("encrypted") prefs: SharedPreferences
-    ): TokenAuthenticator {
-        return TokenAuthenticator(systemApiServiceProvider, prefs)
+    fun provideTokenAuthenticator(): TokenAuthenticator {
+        return TokenAuthenticator()
     }
 
     /** OkHttp客户端 */
@@ -247,78 +242,21 @@ object NetworkModule {
 
 /**
  * Token刷新认证器
- * 检测401响应 → 通过后端API刷新快麦session → 成功后重试原请求
- * 失败则通知UI显示"会话已过期"对话框
- * 使用Provider<SystemApiService>避免循环依赖，通过后端中转刷新
+ * 检测401响应 → 通知UI"会话已过期"对话框
+ * 用户重新登录后可恢复，不走自动刷新（用户token 7天到期，重新登录即可）
  */
-class TokenAuthenticator(
-    private val systemApiServiceProvider: Provider<SystemApiService>,
-    private val prefs: SharedPreferences
-) : okhttp3.Authenticator {
+class TokenAuthenticator() : okhttp3.Authenticator {
 
     companion object {
         private const val TAG = "TokenAuthenticator"
     }
 
-    /** 防止并发刷新 */
-    private val isRefreshing = AtomicBoolean(false)
-
     override fun authenticate(
         route: okhttp3.Route?,
         response: okhttp3.Response
     ): okhttp3.Request? {
-        // 只对401响应处理
         if (response.code != 401) return null
-
-        // 防止无限重试
-        val retryCount = response.request.header("X-Retry-Count")?.toIntOrNull() ?: 0
-        if (retryCount >= 2) {
-            Log.w(TAG, "Token刷新重试次数已达上限")
-            notifySessionExpired()
-            return null
-        }
-
-        // 防止并发刷新
-        if (!isRefreshing.compareAndSet(false, true)) {
-            return null
-        }
-
-        try {
-            val systemApiService = systemApiServiceProvider.get()
-            val userToken = prefs.getString(PrefsKeys.KEY_USER_TOKEN, "") ?: ""
-
-            // 通过后端中转刷新快麦session
-            // runBlocking 在 OkHttp 分发线程中执行，PDA 单用户场景风险可控
-            val refreshResult = kotlinx.coroutines.runBlocking {
-                try {
-                    systemApiService.refreshSession(userToken)
-                } catch (e: Exception) {
-                    Log.e(TAG, "刷新session失败: ${e.message}")
-                    null
-                }
-            }
-
-            if (refreshResult != null && refreshResult.success) {
-                Log.i(TAG, "Token刷新成功")
-                // 重试原请求
-                return response.request.newBuilder()
-                    .header("X-Retry-Count", (retryCount + 1).toString())
-                    .build()
-            } else {
-                // 刷新失败，通知UI
-                Log.w(TAG, "Token刷新失败，通知UI")
-                notifySessionExpired()
-                return null
-            }
-        } finally {
-            isRefreshing.set(false)
-        }
-    }
-
-    /**
-     * 通知UI会话已过期
-     */
-    private fun notifySessionExpired() {
         SessionExpiredEvent.notifyExpired()
+        return null
     }
 }
