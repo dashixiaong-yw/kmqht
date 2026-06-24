@@ -111,6 +111,7 @@ fun PickDetailScreen(
     var showDeleteConfirm by remember { mutableStateOf<PickItemEntity?>(null) }
     var previewImageUrl by remember { mutableStateOf<String?>(null) }
     var previewImageLabel by remember { mutableStateOf("") }
+    var previewPicImageUrl by remember { mutableStateOf<String?>(null) }
     val listState = rememberLazyListState()
 
     // GAP-05: 屏幕常亮
@@ -291,10 +292,14 @@ fun PickDetailScreen(
                     // GAP-01: 查询SKU图片URL
                     var areaImageUrl by remember { mutableStateOf<String?>(null) }
                     var boxImageUrl by remember { mutableStateOf<String?>(null) }
+                    var areaThumbUrl by remember { mutableStateOf<String?>(null) }
+                    var boxThumbUrl by remember { mutableStateOf<String?>(null) }
                     LaunchedEffect(item.skuOuterId) {
                         val urls = viewModel.getImageUrls(item.skuOuterId)
-                        areaImageUrl = urls.first
-                        boxImageUrl = urls.second
+                        areaImageUrl = urls.areaUrl
+                        boxImageUrl = urls.boxUrl
+                        areaThumbUrl = urls.areaThumbUrl
+                        boxThumbUrl = urls.boxThumbUrl
                     }
 
                     PickItemRow(
@@ -302,9 +307,16 @@ fun PickDetailScreen(
                         onComplete = { viewModel.completeItem(item.id) },
                         onRestore = { viewModel.restoreItem(item.id) },
                         onLongPress = { showDeleteConfirm = item },
-                        onImageClick = { onNavigateToProduct(item.skuOuterId) },
+                        onSkuNameClick = { onNavigateToProduct(item.skuOuterId) },
+                        onSkuImageClick = {
+                            if (item.picPath.isNotEmpty()) {
+                                previewPicImageUrl = item.picPath
+                            }
+                        },
                         areaImageUrl = areaImageUrl,
                         boxImageUrl = boxImageUrl,
+                        areaThumbUrl = areaThumbUrl,
+                        boxThumbUrl = boxThumbUrl,
                         onAreaImageClick = {
                             if (areaImageUrl != null) {
                                 previewImageUrl = areaImageUrl
@@ -425,6 +437,28 @@ fun PickDetailScreen(
             },
             confirmButton = {
                 TextButton(onClick = { previewImageUrl = null }) {
+                    Text("关闭")
+                }
+            }
+        )
+    }
+
+    // SKU图大图预览
+    previewPicImageUrl?.let { url ->
+        AlertDialog(
+            onDismissRequest = { previewPicImageUrl = null },
+            shape = RoundedCornerShape(16.dp),
+            title = { Text("SKU图") },
+            text = {
+                coil.compose.AsyncImage(
+                    model = url,
+                    contentDescription = "SKU图",
+                    modifier = Modifier.fillMaxWidth(),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { previewPicImageUrl = null }) {
                     Text("关闭")
                 }
             }

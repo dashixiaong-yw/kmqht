@@ -126,6 +126,9 @@ class UserRepositoryImpl @Inject constructor(
     /** 最近一次登录结果 */
     private var _lastLoginResult: LoginResponse? = null
 
+    /** Token内存缓存，避免EncryptedSharedPreferences异步写入时序问题 */
+    private var _cachedToken: String = ""
+
     private val _loginRequired = MutableSharedFlow<Unit>()
     override val loginRequired: SharedFlow<Unit> = _loginRequired
 
@@ -150,6 +153,7 @@ class UserRepositoryImpl @Inject constructor(
                 )
                 // 保存到本地（含session过期时间，供HomeScreen预警使用）
                 val expireTime = System.currentTimeMillis() + TOKEN_EXPIRE_MS
+                _cachedToken = response.token
                 prefs.edit()
                     .putString(PrefsKeys.KEY_USER_TOKEN, response.token)
                     .putLong(PrefsKeys.KEY_USER_ID, response.userId)
@@ -191,6 +195,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override fun getToken(): String {
+        if (_cachedToken.isNotEmpty()) return _cachedToken
         return prefs.getString(PrefsKeys.KEY_USER_TOKEN, "") ?: ""
     }
 
@@ -307,6 +312,7 @@ class UserRepositoryImpl @Inject constructor(
         val permissions = prefs.getStringSet(PrefsKeys.KEY_USER_PERMISSIONS, emptySet()) ?: emptySet()
 
         if (token.isNotEmpty() && username.isNotEmpty()) {
+            _cachedToken = token
             _currentUser.value = UserResponse(
                 id = userId,
                 username = username,
@@ -336,6 +342,7 @@ class UserRepositoryImpl @Inject constructor(
 
     /** 清除本地用户数据 */
     private fun clearLocalUser() {
+        _cachedToken = ""
         prefs.edit()
             .remove(PrefsKeys.KEY_USER_TOKEN)
             .remove(PrefsKeys.KEY_USER_ID)

@@ -464,21 +464,41 @@ class PickDetailViewModel @Inject constructor(
     }
 
     /**
-     * 获取SKU的库区图和装箱图URL
+     * 获取SKU的库区图和装箱图URL（含缩略图URL）
      * @param skuOuterId SKU外部编码
-     * @return Pair(areaImageUrl, boxImageUrl)
+     * @return ImageUrls(完整URL + 缩略图URL)
      */
-    suspend fun getImageUrls(skuOuterId: String): Pair<String?, String?> {
+    suspend fun getImageUrls(skuOuterId: String): ImageUrls {
         return try {
             val areaImage = imageRepository.getImageBySkuAndType(skuOuterId, AppConstants.IMAGE_TYPE_AREA)
             val boxImage = imageRepository.getImageBySkuAndType(skuOuterId, AppConstants.IMAGE_TYPE_BOX)
             val serverUrl = prefs.getString(PrefsKeys.KEY_SERVER_URL, AppConstants.DEFAULT_SERVER_URL)?.trim() ?: AppConstants.DEFAULT_SERVER_URL
             val areaUrl = areaImage?.let { url -> if (serverUrl.isNotEmpty()) "${serverUrl.trimEnd('/')}/${url.imageUrl}" else url.imageUrl }
             val boxUrl = boxImage?.let { url -> if (serverUrl.isNotEmpty()) "${serverUrl.trimEnd('/')}/${url.imageUrl}" else url.imageUrl }
-            Pair(areaUrl, boxUrl)
+            ImageUrls(
+                areaUrl = areaUrl,
+                boxUrl = boxUrl,
+                areaThumbUrl = buildThumbUrl(areaUrl),
+                boxThumbUrl = buildThumbUrl(boxUrl)
+            )
         } catch (e: Exception) {
             Log.w("PickDetailViewModel", "获取图片URL失败: ${e.message}")
-            Pair(null, null)
+            ImageUrls(null, null, null, null)
         }
     }
+
+    /** 从完整URL构造缩略图URL（在扩展名前插入 _thumb） */
+    private fun buildThumbUrl(fullUrl: String?): String? {
+        if (fullUrl == null) return null
+        val dot = fullUrl.lastIndexOf('.')
+        return if (dot > 0) "${fullUrl.substring(0, dot)}_thumb${fullUrl.substring(dot)}" else fullUrl
+    }
 }
+
+/** SKU图片URL集合（完整URL + 缩略图URL） */
+data class ImageUrls(
+    val areaUrl: String?,
+    val boxUrl: String?,
+    val areaThumbUrl: String?,
+    val boxThumbUrl: String?
+)

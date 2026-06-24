@@ -6,10 +6,11 @@ import sqlite3
 import threading
 import time
 import uuid
-from typing import Dict, List
+from typing import Dict, List, Optional
 from urllib.parse import urlparse
 
 import httpx
+from PIL import Image
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from starlette.responses import Response
 
@@ -50,6 +51,19 @@ def _check_upload_rate(user_id: int) -> None:
         if len(_upload_counts.get(user_id, [])) >= _UPLOAD_RATE_LIMIT:
             raise HTTPException(status_code=429, detail="上传过于频繁，请稍后重试")
         _upload_counts.setdefault(user_id, []).append(now)
+
+
+def _generate_thumbnail(file_path: str) -> None:
+    """生成200px缩略图，失败不影响主流程"""
+    try:
+        img = Image.open(file_path)
+        img.thumbnail((200, 200), Image.LANCZOS)
+        base, _ = os.path.splitext(file_path)
+        thumb_path = f"{base}_thumb.jpg"
+        img.convert("RGB").save(thumb_path, "JPEG", quality=50)
+        logger.info(f"缩略图生成成功: {os.path.basename(thumb_path)}")
+    except Exception as e:
+        logger.warning(f"生成缩略图失败: {e}")
 
 
 @router.post("/upload", response_model=ImageResponse)
@@ -111,6 +125,9 @@ def upload_image(
             raise HTTPException(status_code=400, detail=f"文件大小超过限制（最大2MB），当前{len(content) // 1024}KB")
         with open(file_path, "wb") as f:
             f.write(content)
+
+        # 生成缩略图（失败不影响主流程）
+        _generate_thumbnail(file_path)
     except HTTPException:
         raise
     except Exception as e:

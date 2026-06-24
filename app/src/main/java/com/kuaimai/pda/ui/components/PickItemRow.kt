@@ -54,9 +54,12 @@ fun PickItemRow(
     onComplete: () -> Unit,
     onRestore: () -> Unit,
     onLongPress: () -> Unit,
-    onImageClick: () -> Unit = {},
+    onSkuImageClick: () -> Unit = {},
+    onSkuNameClick: () -> Unit = {},
     areaImageUrl: String? = null,
     boxImageUrl: String? = null,
+    areaThumbUrl: String? = null,
+    boxThumbUrl: String? = null,
     onAreaImageClick: () -> Unit = {},
     onBoxImageClick: () -> Unit = {}
 ) {
@@ -83,7 +86,7 @@ fun PickItemRow(
         ) {
             Box(
                 modifier = Modifier
-                    .clickable { onImageClick() }
+                    .clickable { onSkuImageClick() }
                     .size(width = 90.dp, height = 90.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(SurfaceGray),
@@ -103,7 +106,7 @@ fun PickItemRow(
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            Column(modifier = Modifier.weight(1f)) {
+            Column(modifier = Modifier.weight(1f).clickable { onSkuNameClick() }) {
                 Text(
                     text = item.propertiesName.ifEmpty { item.skuOuterId },
                     fontSize = 16.sp,
@@ -142,7 +145,7 @@ fun PickItemRow(
                     ) {
                         if (!areaImageUrl.isNullOrEmpty()) {
                             AsyncImage(
-                                model = areaImageUrl,
+                                model = areaThumbUrl,
                                 contentDescription = "库区图",
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop
@@ -160,7 +163,7 @@ fun PickItemRow(
                     ) {
                         if (!boxImageUrl.isNullOrEmpty()) {
                             AsyncImage(
-                                model = boxImageUrl,
+                                model = boxThumbUrl,
                                 contentDescription = "装箱图",
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop
