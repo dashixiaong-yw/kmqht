@@ -152,6 +152,9 @@ def _build_admin_html(base_url: str) -> str:
 
     api_key_status = "已配置" if API_KEY else '<span style="color:#dc2626">未配置</span>'
 
+    version_info = _load_version_info()
+    build_version = version_info.get("currentVersion", "") if version_info else ""
+
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -224,6 +227,7 @@ input:focus,select:focus {{ border-color:#2563eb; }}
 .checkbox-group {{ display:flex; flex-wrap:wrap; gap:8px; }}
 .checkbox-item {{ display:flex; align-items:center; gap:4px; font-size:13px; }}
 .checkbox-item input {{ width:auto; }}
+.footer {{ text-align:center; padding:20px; font-size:12px; color:#999; border-top:1px solid #e5e7eb; margin-top:24px; }}
 </style>
 </head>
 <body>
@@ -830,5 +834,6 @@ if (apiKey) {{
   doLogin();
 }}
 </script>
+<div class="footer">快麦取货通 v{build_version}</div>
 </body>
 </html>"""
