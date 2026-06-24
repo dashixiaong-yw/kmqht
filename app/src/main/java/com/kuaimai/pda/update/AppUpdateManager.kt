@@ -1,8 +1,12 @@
 package com.kuaimai.pda.update
 
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.util.Log
 import androidx.core.content.FileProvider
 import com.kuaimai.pda.BuildConfig
@@ -43,6 +47,10 @@ class AppUpdateManager @Inject constructor(
     @Named("trustAll") private val trustAllClient: OkHttpClient,
     @ApplicationContext private val context: Context,
 ) {
+    companion object {
+        private const val TAG = "AppUpdateManager"
+    }
+
     private val systemApi = retrofit.create(SystemApiService::class.java)
 
     private val _isDownloading = AtomicBoolean(false)
@@ -75,7 +83,8 @@ class AppUpdateManager @Inject constructor(
         Thread {
             try {
                 try {
-                    val dir = File(context.cacheDir, "update")
+                    val dir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+                        ?: File(context.cacheDir, "update")
                     dir.mkdirs()
                     val apkFile = File(dir, "快麦取货通-${info.latestVersion}.apk")
                     if (apkFile.exists() && info.apkSize > 0 && apkFile.length() == info.apkSize) {
@@ -113,6 +122,7 @@ class AppUpdateManager @Inject constructor(
                         _downloadState.value = DownloadState.Failed("文件大小不匹配")
                         return@Thread
                     }
+                    saveToPublicDownloads(apkFile, info.latestVersion)
                     _downloadState.value = DownloadState.Completed(apkFile)
                 } catch (e: IOException) {
                     Log.e("AppUpdateManager", "下载APK失败", e)
@@ -138,7 +148,42 @@ class AppUpdateManager @Inject constructor(
             }
             context.startActivity(intent)
         } catch (e: Exception) {
-            Log.e("AppUpdateManager", "安装APK失败", e)
+            Log.e(TAG, "安装APK失败", e)
+        }
+    }
+
+    /**
+     * 下载完成后尝试复制到系统公共Downloads目录。
+     * 让用户在文件管理器中能找到APK，即使自动安装失败。
+     */
+    private fun saveToPublicDownloads(file: File, version: String) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.Downloads.DISPLAY_NAME, "快麦取货通-${version}.apk")
+                    put(MediaStore.Downloads.MIME_TYPE, "application/vnd.android.package-archive")
+                    put(MediaStore.Downloads.IS_PENDING, 0)
+                }
+                val uri = context.contentResolver.insert(
+                    MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues
+                )
+                if (uri != null) {
+                    context.contentResolver.openOutputStream(uri)?.use { output ->
+                        file.inputStream().use { input -> input.copyTo(output) }
+                    }
+                    Log.i(TAG, "APK已保存到系统Downloads (MediaStore)")
+                }
+            } else {
+                val publicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                publicDir.mkdirs()
+                val dest = File(publicDir, "快麦取货通-${version}.apk")
+                file.inputStream().use { input ->
+                    dest.outputStream().use { output -> input.copyTo(output) }
+                }
+                Log.i(TAG, "APK已保存到: ${dest.absolutePath}")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "保存到公共Downloads失败（不影响安装）: ${e.message}")
         }
     }
 

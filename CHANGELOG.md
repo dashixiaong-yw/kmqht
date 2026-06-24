@@ -1,5 +1,14 @@
 # 快麦取货通 - 变更日志
 
+## 2.2 (2026-06-24)
+
+### 修复
+- APK强制更新下载后保存到应用外部存储（不再依赖cacheDir），并同时复制到系统公共Downloads目录；即使自动安装未触发，用户也可在"文件管理→下载"中找到APK手动安装
+
+### 修改
+- 下载目录从 `cacheDir/update/` 改为 `getExternalFilesDir(Download/)`，避免被系统清理
+- 下载完成后自动复制到公共Downloads（Android 10+ 用 MediaStore，Android 6-9 直接写目录）
+
 ## 2.1 (2026-06-24)
 
 ### 新增
