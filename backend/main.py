@@ -68,12 +68,21 @@ async def startup_event() -> None:
     # 确保数据目录存在
     os.makedirs(IMAGE_DIR, exist_ok=True)
 
-    # 初始化数据库
-    init_db()
-    logger.info("数据库初始化完成")
+    # 初始化快麦凭证文件（如果不存在，从本地配置文件创建）
+    if not os.path.exists(KUAIMAI_CONFIG_PATH):
+        import shutil
+        for src in ["kuaimai.json", "kuaimai.example.json"]:
+            if os.path.exists(src):
+                shutil.copy(src, KUAIMAI_CONFIG_PATH)
+                logger.info(f"已从 {src} 初始化 {KUAIMAI_CONFIG_PATH}")
+                break
 
     # 加载快麦凭证
     load_kuaimai_config()
+
+    # 初始化数据库
+    init_db()
+    logger.info("数据库初始化完成")
 
     # 启动配置文件热重载
     start_config_watcher()
