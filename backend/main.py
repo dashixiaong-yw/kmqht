@@ -14,6 +14,7 @@ from app.config import (
     APK_DIR,
     CORS_ORIGINS,
     IMAGE_DIR,
+    KUAIMAI_CONFIG_PATH,
     SERVER_PORT,
     check_session_warning,
     load_kuaimai_config,
