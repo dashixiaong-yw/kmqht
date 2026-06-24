@@ -227,12 +227,12 @@ def _check_order_timeout() -> None:
 
 
 def _cleanup_completed_orders() -> None:
-    """清理30天前已完成的取货单"""
+    """清理24小时前已完成的取货单"""
     try:
         db = get_db()
         cursor = db.cursor()
 
-        cutoff = (beijing_now() - timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
+        cutoff = (beijing_now() - timedelta(hours=24)).strftime("%Y-%m-%d %H:%M:%S")
         cursor.execute(
             "DELETE FROM pick_orders WHERE status = 1 AND completed_at < ?",
             (cutoff,)
@@ -240,7 +240,7 @@ def _cleanup_completed_orders() -> None:
         deleted = cursor.rowcount
         db.commit()
         if deleted > 0:
-            logger.info(f"已清理{deleted}条30天前的已完成取货单")
+            logger.info(f"已清理{deleted}条24小时前的已完成取货单")
     except Exception as e:
         logger.error(f"清理已完成取货单失败: {e}")
 

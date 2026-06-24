@@ -61,7 +61,8 @@ fun PickItemRow(
     areaThumbUrl: String? = null,
     boxThumbUrl: String? = null,
     onAreaImageClick: () -> Unit = {},
-    onBoxImageClick: () -> Unit = {}
+    onBoxImageClick: () -> Unit = {},
+    orderCompleted: Boolean = false
 ) {
     val isCompleted = item.status == 1
     val contentAlpha = if (isCompleted) 0.65f else 1f
@@ -172,7 +173,9 @@ fun PickItemRow(
                     }
                 }
 
-                if (isCompleted) {
+                if (isCompleted && orderCompleted) {
+                    Text("已完成", fontSize = 13.sp, color = TextMuted)
+                } else if (isCompleted) {
                     TextButton(
                         onClick = onRestore,
                         shape = RoundedCornerShape(8.dp),

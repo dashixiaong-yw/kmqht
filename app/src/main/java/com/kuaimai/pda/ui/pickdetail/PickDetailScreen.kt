@@ -312,7 +312,8 @@ fun PickDetailScreen(
                         item = item,
                         onComplete = { viewModel.completeItem(item.id) },
                         onRestore = { viewModel.restoreItem(item.id) },
-                        onLongPress = { showDeleteConfirm = item },
+                        onLongPress = { if (order?.status != 1) showDeleteConfirm = item },
+                        orderCompleted = order?.status == 1,
                         onSkuNameClick = { onNavigateToProduct(item.skuOuterId) },
                         onSkuImageClick = {
                             if (item.picPath.isNotEmpty()) {

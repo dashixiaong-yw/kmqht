@@ -186,6 +186,7 @@
 {"type":"entity","name":"v1.92_取货单详情自动同步","entityType":"版本变更","observations":["修复同一账号切换PDA后取货单详情商品不显示的bug","PickDetailViewModel.init添加syncItemsFromBackend()自动同步","syncItemsFromBackend新增order保存（insertOrder REPLACE语义）和_order.value直接设置","确保他人领取公共订单时订单信息和商品明细完整显示"]}
 {"type":"entity","name":"v1.92_取货单列表下拉刷新","entityType":"版本变更","observations":["PickListScreen新增PullToRefreshBox包裹进行中列表","PickListViewModel.loadActiveOrders()增加_isLoading状态管理","用户可手动下拉刷新获取新发布的公共订单"]}
 {"type":"entity","name":"v2.7_完成商品滚动修复","entityType":"版本","observations":["取货单详情页完成商品后LazyColumn不会跟随已完成的商品滚动到底部","修改：PickDetailScreen.kt LazyColumn items() key 从 { it.id } 改为 { \"${it.status}_${it.id}\" }","修改：PickDetailScreen.kt 4 处 remember 添加 item.skuOuterId 作为 key，防止缩略图状态丢失","原理：完成商品后 status 0→1，key 变化为 \"1_xxx\"，旧 key 在 index 0 消失，LazyColumn 不追踪消失的 key，视口自然停在 index 0","涉及文件：app/src/main/java/com/kuaimai/pda/ui/pickdetail/PickDetailScreen.kt","版本号：v2.7"]}
+{"type":"entity","name":"v2.8_全部完成后隐藏恢复按钮+长按删除+24h清理","entityType":"版本","observations":["取货单全部完成后明细恢复按钮隐藏，显示「已完成」灰色文字","取货单全部完成后长按删除不弹出确认弹窗","后端已完成取货单自动清理阈值从30天改为24小时","修改：PickItemRow.kt 新增 orderCompleted 参数控制恢复按钮显示","修改：PickDetailScreen.kt onLongPress 添加 order.status 检查，传递 orderCompleted 参数","修改：backend/main.py _cleanup_completed_orders 阈值从 days=30 改为 hours=24","涉及文件：PickItemRow.kt, PickDetailScreen.kt, backend/main.py","版本号：v2.8"]}
 {"type":"relation","from":"F1_取货单管理","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F2_扫码待办","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F3_取货单自动完成","to":"快麦取货通项目","relationType":"属于"}
@@ -325,3 +326,6 @@
 {"type":"relation","from":"v1.92_取货单列表下拉刷新","to":"PickListScreen","relationType":"修改了"}
 {"type":"relation","from":"v2.7_完成商品滚动修复","to":"PickDetailScreen","relationType":"修改了"}
 {"type":"relation","from":"v2.7_完成商品滚动修复","to":"快麦取货通项目","relationType":"属于"}
+{"type":"relation","from":"v2.8_全部完成后隐藏恢复按钮+长按删除+24h清理","to":"PickItemRow","relationType":"修改了"}
+{"type":"relation","from":"v2.8_全部完成后隐藏恢复按钮+长按删除+24h清理","to":"PickDetailScreen","relationType":"修改了"}
+{"type":"relation","from":"v2.8_全部完成后隐藏恢复按钮+长按删除+24h清理","to":"快麦取货通项目","relationType":"属于"}
