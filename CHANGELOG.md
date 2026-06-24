@@ -1,5 +1,11 @@
 # 快麦取货通 - 变更日志
 
+## 2.15 (2026-06-24)
+
+### 修复
+- 修复 .dockerignore 排除 kuaimai.json 导致容器内无凭证文件、每次部署覆盖清空 refresh_token 的问题
+- 移除 .dockerignore 中 kuaimai.json 排除规则
+
 ## 2.14 (2026-06-24)
 
 ### 修复
