@@ -201,6 +201,7 @@ fun PickDetailScreen(
 
     val completedCount = items.count { it.status == 1 }
     val totalCount = items.size
+    val allCompleted = completedCount >= totalCount && totalCount > 0
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -354,8 +355,8 @@ fun PickDetailScreen(
                         item = item,
                         onComplete = { viewModel.completeItem(item.id) },
                         onRestore = { viewModel.restoreItem(item.id) },
-                        onLongPress = { if (order?.status != 1) showDeleteConfirm = item },
-                        orderCompleted = order?.status == 1,
+                        onLongPress = { if (order?.status != 1 && !allCompleted) showDeleteConfirm = item },
+                        orderCompleted = order?.status == 1 || allCompleted,
                         onSkuNameClick = { onNavigateToProduct(item.skuOuterId) },
                         onSkuImageClick = {
                             if (item.picPath.isNotEmpty()) {
