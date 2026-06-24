@@ -320,6 +320,15 @@ input:focus,select:focus {{ border-color:#2563eb; }}
           </button>
         </div>
         <div class="card">
+          <h3>自动刷新诊断</h3>
+          <div id="diagnoseResult" style="font-size:13px;margin-bottom:8px">
+            点击下方按钮测试自动刷新链路
+          </div>
+          <button class="btn btn-warning" onclick="diagnoseKuaimaiRefresh()" id="btnDiagnose">
+            执行自动刷新测试
+          </button>
+        </div>
+        <div class="card">
           <h3>手动更新凭证</h3>
           <div class="form-group"><label>App Key</label><input id="kmAppKey" style="width:100%" /></div>
           <div class="form-group"><label>App Secret</label><input id="kmAppSecret" style="width:100%" /></div>
@@ -671,6 +680,37 @@ async function refreshKuaimaiSession() {{
     loadKuaimai();
   }} catch(e) {{ alert('刷新失败: ' + e.message); }}
   finally {{ btn.disabled = false; btn.textContent = '刷新Session'; }}
+}}
+
+async function diagnoseKuaimaiRefresh() {{
+  const btn = document.getElementById('btnDiagnose');
+  const resultDiv = document.getElementById('diagnoseResult');
+  btn.disabled = true; btn.textContent = '测试中...';
+  resultDiv.innerHTML = '<span style="color:#666">正在执行自动刷新测试...</span>';
+
+  try {{
+    const r = await api('/api/kuaimai/diagnose-refresh');
+    const d = r.data || r;
+    const lines = [
+      '<b>自动刷新诊断结果：</b>',
+      '• Refresh Token: ' + (d.hasRefreshToken ? '✅ 已配置' : '❌ 未配置'),
+      d.hasRefreshToken ? '' : '  <span style="color:#dc2626">→ 自动刷新功能不可用，请在kuaimai.json中配置refresh_token</span>',
+      '• 刷新前更新时间: ' + (d.updatedAt || '-'),
+      '• 刷新前剩余天数: ' + (d.daysLeft !== null ? d.daysLeft + '天' : '-'),
+      '• 刷新调用: ' + (d.refreshCalled ? '✅ 已调用' : '❌ 未调用'),
+      '• 刷新结果: ' + (d.refreshSuccess ? '✅ 成功' : '❌ 失败'),
+      d.refreshSuccess ? '' : '  <span style="color:#dc2626">→ 请检查refreshToken是否有效或快麦API是否可达</span>',
+      '• 刷新后更新时间: ' + (d.updatedAtAfter || '-'),
+      '• 刷新后剩余天数: ' + (d.daysLeftAfter !== null ? d.daysLeftAfter + '天' : '-'),
+      d.refreshSuccess ? '<br><span style="color:#16a34a">✅ 自动刷新机制正常工作</span>' : ''
+    ];
+    resultDiv.innerHTML = lines.filter(l => l !== '').join('<br>') +
+      '<br><br><span style="color:#666">（后端每24小时自动执行一次同样的操作）</span>';
+  }} catch(e) {{
+    resultDiv.innerHTML = '<span style="color:#dc2626">诊断失败: ' + e.message + '</span>';
+  }} finally {{
+    btn.disabled = false; btn.textContent = '执行自动刷新测试';
+  }}
 }}
 
 async function updateKuaimaiCreds() {{

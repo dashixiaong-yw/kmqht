@@ -232,6 +232,19 @@ class KuaimaiRefreshResponse(BaseModel):
     daysLeft: Optional[int] = None
 
 
+class KuaimaiDiagnoseResponse(BaseModel):
+    """快麦session自动刷新诊断响应"""
+    success: bool = True
+    message: str = "操作成功"
+    hasRefreshToken: bool = False
+    updatedAt: str = ""
+    daysLeft: Optional[int] = None
+    refreshCalled: bool = False
+    refreshSuccess: bool = False
+    updatedAtAfter: str = ""
+    daysLeftAfter: Optional[int] = None
+
+
 class KuaimaiCredentialsRequest(BaseModel):
     """快麦凭证更新请求"""
     app_key: str = Field(..., min_length=1, description="快麦App Key")

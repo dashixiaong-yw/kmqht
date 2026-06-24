@@ -16,6 +16,7 @@ from app.models import (
     HealthResponse,
     KuaimaiCredentialsRequest,
     KuaimaiCredentialsResponse,
+    KuaimaiDiagnoseResponse,
     KuaimaiRefreshResponse,
     KuaimaiSessionStatusResponse,
     KuaimaiSupplierItem,
@@ -173,6 +174,30 @@ def get_kuaimai_session_status(user: dict = Depends(check_permission("settings")
         daysLeft=days_left,
         updatedAt=kuaimai_creds.updated_at,
         hasRefreshToken=kuaimai_creds.has_refresh_token(),
+    )
+
+
+@router.get("/api/kuaimai/diagnose-refresh", response_model=KuaimaiDiagnoseResponse)
+async def diagnose_kuaimai_refresh(user: dict = Depends(check_permission("settings"))) -> KuaimaiDiagnoseResponse:
+    """诊断快麦session自动刷新链路全流程"""
+    from app.services.kuaimai_api import refresh_session
+
+    has_refresh = kuaimai_creds.has_refresh_token()
+    days_left = kuaimai_creds.get_days_left()
+    updated_at = kuaimai_creds.updated_at
+
+    refresh_success = False
+    if has_refresh:
+        refresh_success = await refresh_session()
+
+    return KuaimaiDiagnoseResponse(
+        hasRefreshToken=has_refresh,
+        updatedAt=updated_at,
+        daysLeft=days_left,
+        refreshCalled=has_refresh,
+        refreshSuccess=refresh_success,
+        updatedAtAfter=kuaimai_creds.updated_at,
+        daysLeftAfter=kuaimai_creds.get_days_left(),
     )
 
 
