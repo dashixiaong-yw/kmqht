@@ -122,7 +122,7 @@ class ProductViewModel @Inject constructor(
      */
     fun loadSkuInfo(skuOuterId: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            _uiState.value = _uiState.value.copy(isLoading = false, error = null, skuOuterId = skuOuterId)
             currentSkuDetail = null
             currentItem = null
             try {
@@ -132,7 +132,6 @@ class ProductViewModel @Inject constructor(
                     val token = prefs.getString(PrefsKeys.KEY_USER_TOKEN, "") ?: ""
                     val detail = systemApiService.getSkuDetail(token, skuOuterId)
                     _uiState.value = _uiState.value.copy(
-                        isLoading = false,
                         skuOuterId = skuOuterId,
                         propertiesName = detail.propertiesName,
                         picPath = detail.picPath,

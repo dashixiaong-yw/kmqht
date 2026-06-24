@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
@@ -97,11 +98,30 @@ class PickDetailViewModel @Inject constructor(
     private val _scanFailureEvent = MutableSharedFlow<String>()
     val scanFailureEvent = _scanFailureEvent.asSharedFlow()
 
+    /** 待处理的扫码添加（API返回前显示的占位行） */
+    private val _pendingItems = MutableStateFlow<List<String>>(emptyList())
+    val pendingItems: StateFlow<List<String>> = _pendingItems.asStateFlow()
+
+    /** SKU图片URL缓存映射（批量加载，减少LaunchedEffect开销） */
+    private val _imageUrlsMap = MutableStateFlow<Map<String, ImageUrls>>(emptyMap())
+    val imageUrlsMap: StateFlow<Map<String, ImageUrls>> = _imageUrlsMap.asStateFlow()
+
     init {
         loadOrder()
         loadSuppliers()
         viewModelScope.launch {
             syncItemsFromBackend()
+        }
+        // 监听 items 变化，批量预加载图片URL
+        viewModelScope.launch {
+            items.collectLatest { itemList ->
+                val skus = itemList.map { it.skuOuterId }.distinct()
+                val current = _imageUrlsMap.value
+                val newSkus = skus.filter { it !in current }
+                if (newSkus.isEmpty()) return@collectLatest
+                val map = newSkus.associateWith { sku -> getImageUrls(sku) }
+                _imageUrlsMap.value = current + map
+            }
         }
     }
 
@@ -154,57 +174,66 @@ class PickDetailViewModel @Inject constructor(
      */
     fun onBarcodeScanned(barcode: String) {
         viewModelScope.launch {
-            _isLoading.value = true
             lastScannedSku = barcode
             try {
-                // 检查重复扫码（精确查询当前订单下的SKU）
+                // 检查重复：Room + 待处理列表双查重
                 val existing = pickOrderRepository.getItemByOrderIdAndSkuOuterId(orderId, barcode)
-                if (existing != null) {
+                val pending = _pendingItems.value.contains(barcode)
+                if (existing != null || pending) {
                     _duplicateScan.value = true
                     return@launch
                 }
 
-                val token = userRepository.getToken()
-                val response = orderApiService.addItem(
-                    token,
-                    orderId,
-                    AddOrderItemRequest(barcode)
-                )
-                // 同步到本地数据库
-                val item = PickItemEntity(
-                    id = response.id,
-                    orderId = orderId,
-                    skuOuterId = response.skuOuterId,
-                    sysItemId = response.sysItemId,
-                    sysSkuId = response.sysSkuId,
-                    propertiesName = response.propertiesName,
-                    picPath = response.picPath,
-                    status = response.status,
-                    supplierName = response.supplierName,
-                    supplierCode = response.supplierCode,
-                    remark = response.remark,
-                    itemOuterId = response.itemOuterId,
-                    createdAt = TimeUtils.parseBeijingTime(response.createdAt).let { if (it > 0) it else TimeUtils.now() }
-                )
-                pickOrderRepository.insertItem(item)
-                val newSupplier = response.supplierName
-                if (newSupplier.isNotEmpty() && !_suppliers.value.contains(newSupplier)) {
-                    _suppliers.value = _suppliers.value + newSupplier
-                }
-                loadOrder()
-                _order.value = _order.value?.copy(totalCount = (_order.value?.totalCount ?: 0) + 1)
+                // 立即加入待处理列表（UI 瞬间显示占位行）
+                _pendingItems.value = _pendingItems.value + barcode
                 _scanSuccessEvent.emit(Unit)
-            } catch (e: Exception) {
-                if (e is HttpException && e.code() == 409) {
-                    _errorMessage.value = null
-                    syncItemsFromBackend()
-                    _duplicateScan.value = true
-                } else {
-                    _errorMessage.value = "添加明细失败: ${e.message}"
-                    _scanFailureEvent.emit("添加明细失败: ${e.message}")
+
+                try {
+                    val token = userRepository.getToken()
+                    val response = orderApiService.addItem(
+                        token,
+                        orderId,
+                        AddOrderItemRequest(barcode)
+                    )
+                    // 同步到本地数据库
+                    val item = PickItemEntity(
+                        id = response.id,
+                        orderId = orderId,
+                        skuOuterId = response.skuOuterId,
+                        sysItemId = response.sysItemId,
+                        sysSkuId = response.sysSkuId,
+                        propertiesName = response.propertiesName,
+                        picPath = response.picPath,
+                        status = response.status,
+                        supplierName = response.supplierName,
+                        supplierCode = response.supplierCode,
+                        remark = response.remark,
+                        itemOuterId = response.itemOuterId,
+                        createdAt = TimeUtils.parseBeijingTime(response.createdAt).let { if (it > 0) it else TimeUtils.now() }
+                    )
+                    pickOrderRepository.insertItem(item)
+                    val newSupplier = response.supplierName
+                    if (newSupplier.isNotEmpty() && !_suppliers.value.contains(newSupplier)) {
+                        _suppliers.value = _suppliers.value + newSupplier
+                    }
+                    loadOrder()
+                    _order.value = _order.value?.copy(totalCount = (_order.value?.totalCount ?: 0) + 1)
+                } catch (e: Exception) {
+                    if (e is HttpException && e.code() == 409) {
+                        _errorMessage.value = null
+                        syncItemsFromBackend()
+                        _duplicateScan.value = true
+                    } else {
+                        _errorMessage.value = "添加明细失败: ${e.message}"
+                        _scanFailureEvent.emit("添加明细失败: ${e.message}")
+                    }
                 }
+            } catch (e: Exception) {
+                _errorMessage.value = "添加明细失败: ${e.message}"
+                _scanFailureEvent.emit("添加明细失败: ${e.message}")
             } finally {
-                _isLoading.value = false
+                // 无论成功失败，从待处理列表中移除
+                _pendingItems.value = _pendingItems.value - barcode
             }
         }
     }
