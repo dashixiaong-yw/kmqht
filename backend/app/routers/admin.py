@@ -152,8 +152,7 @@ def _build_admin_html(base_url: str) -> str:
 
     api_key_status = "已配置" if API_KEY else '<span style="color:#dc2626">未配置</span>'
 
-    version_info = _load_version_info()
-    build_version = version_info.get("currentVersion", "") if version_info else ""
+    build_version = os.getenv("BUILD_VERSION", "").lstrip("v")
 
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
