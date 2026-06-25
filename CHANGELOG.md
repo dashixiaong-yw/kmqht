@@ -4,6 +4,8 @@
 
 ### 修复
 - 退出取货单详情后再次进入时库区缩略图不显示、点击无反应：`collectLatest` 竞态条件导致图片URL加载被取消后永远无法恢复，修复为 `collect`
+- 进入取货单详情页视口在底部：`snapshotFlow` 等待 `filteredItems` 就绪后再执行 `scrollToItem(0)`，避免第一帧数据到达前触发无效滚动
+- ViewModel: `needScroll` 初始值从 `0` 改为 `Int.MAX_VALUE`，确保每次新 ViewModel 的 key 不同，LaunchedEffect 以新 key 重启
 
 ## 2.38 (2026-06-25)
 
