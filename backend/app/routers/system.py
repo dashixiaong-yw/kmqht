@@ -2,6 +2,7 @@
 import json
 import logging
 import os
+import urllib.parse
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse, RedirectResponse
@@ -117,7 +118,7 @@ def get_app_version(request: Request) -> AppVersionResponse:
 def download_apk(request: Request) -> FileResponse:
     """下载APK文件（设置正确的Content-Type，PDA/浏览器扫码下载用）"""
     info = _load_version_info()
-    if not info or not info.get("currentVersion") or not info.get("publishedAt"):
+    if not info or not info.get("currentVersion"):
         raise HTTPException(status_code=404, detail="暂无已分发的版本")
 
     file_name = info.get("apkFileName", "")
@@ -142,10 +143,16 @@ def download_apk(request: Request) -> FileResponse:
             logger.error(f"APK_DIR={APK_DIR} 内容: {dir_contents}")
             raise HTTPException(status_code=404, detail="文件不存在")
 
+    safe_filename = f"kuaimai-{info.get('currentVersion', 'unknown')}.apk"
+    encoded = urllib.parse.quote(safe_filename, safe='')
+    headers = {
+        "Content-Disposition": f"attachment; filename=\"{safe_filename}\"; filename*=UTF-8''{encoded}"
+    }
+
     return FileResponse(
         file_path,
         media_type="application/vnd.android.package-archive",
-        filename=file_name,
+        headers=headers,
     )
 
 
