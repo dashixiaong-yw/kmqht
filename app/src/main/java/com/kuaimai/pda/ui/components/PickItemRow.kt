@@ -168,6 +168,8 @@ fun PickItemRow(
                                     contentScale = ContentScale.Crop
                                 )
                             }
+                        } else {
+                            Text(text = "库区", fontSize = 9.sp, color = TextMuted)
                         }
                     }
 
@@ -196,6 +198,8 @@ fun PickItemRow(
                                     contentScale = ContentScale.Crop
                                 )
                             }
+                        } else {
+                            Text(text = "箱图", fontSize = 9.sp, color = TextMuted)
                         }
                     }
                 }
