@@ -22,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
@@ -80,6 +81,7 @@ class MainActivity : ComponentActivity() {
                 var showUpdateDialog by remember { mutableStateOf(false) }
                 var updateInfo by remember { mutableStateOf<AppVersionResponse?>(null) }
                 var isDownloading by remember { mutableStateOf(false) }
+                var downloadErrorMsg by remember { mutableStateOf<String?>(null) }
 
                 // 启动时自动检查更新
                 LaunchedEffect(Unit) {
@@ -100,6 +102,7 @@ class MainActivity : ComponentActivity() {
                             if (!info.forceUpdate && !isDownloading) {
                                 showUpdateDialog = false
                                 updateInfo = null
+                                downloadErrorMsg = null
                             }
                         },
                         shape = RoundedCornerShape(16.dp),
@@ -117,12 +120,21 @@ class MainActivity : ComponentActivity() {
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text("正在下载更新...", style = MaterialTheme.typography.bodySmall)
                                 }
+                                if (downloadErrorMsg != null) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = downloadErrorMsg!!,
+                                        color = androidx.compose.ui.graphics.Color(0xFFDC2626),
+                                        fontSize = 13.sp
+                                    )
+                                }
                             }
                         },
                         confirmButton = {
                             TextButton(
                                 onClick = {
                                     if (!isDownloading) {
+                                        downloadErrorMsg = null
                                         isDownloading = true
                                         appUpdateManager.downloadApk(info)
                                         lifecycleScope.launch {
@@ -139,11 +151,7 @@ class MainActivity : ComponentActivity() {
                                                     }
                                                     is DownloadState.Failed -> {
                                                         isDownloading = false
-                                                        android.widget.Toast.makeText(
-                                                            this@MainActivity,
-                                                            "下载失败: ${state.message}",
-                                                            android.widget.Toast.LENGTH_LONG
-                                                        ).show()
+                                                        downloadErrorMsg = "下载失败: ${state.message}"
                                                     }
                                                     else -> {}
                                                 }
@@ -162,6 +170,7 @@ class MainActivity : ComponentActivity() {
                                     onClick = {
                                         showUpdateDialog = false
                                         updateInfo = null
+                                        downloadErrorMsg = null
                                     }
                                 ) {
                                     Text("稍后再说")
