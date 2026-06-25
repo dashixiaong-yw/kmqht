@@ -12,9 +12,7 @@ import com.kuaimai.pda.data.api.dto.KuaimaiSupplierItem
 import com.kuaimai.pda.data.api.dto.SkuDetailResponse
 import com.kuaimai.pda.data.api.dto.SupplierDto
 import com.kuaimai.pda.data.db.dao.PickItemDao
-import com.kuaimai.pda.data.db.dao.ProductImageDao
 import com.kuaimai.pda.data.db.entity.PickItemEntity
-import com.kuaimai.pda.data.db.entity.ProductImageEntity
 import com.kuaimai.pda.data.repository.ImageRepository
 import com.kuaimai.pda.data.repository.PickOrderRepository
 import com.kuaimai.pda.scanner.ScannerManager
@@ -27,7 +25,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.io.File
@@ -76,7 +73,6 @@ sealed class ConfirmType {
 class ProductViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val pickItemDao: PickItemDao,
-    private val productImageDao: ProductImageDao,
     private val pickOrderRepository: PickOrderRepository,
     private val imageRepository: ImageRepository,
     private val systemApiService: SystemApiService,
@@ -150,9 +146,6 @@ class ProductViewModel @Inject constructor(
                     }
                     currentItem = item
                 } catch (apiError: Exception) {
-                    if (apiError is HttpException && apiError.code() == 401) {
-                        SessionExpiredEvent.notifyExpired()
-                    }
                     Log.w(TAG, "后端API获取SKU详情失败，降级到本地Room: ${apiError.message}")
                 }
                 if (!loaded) {
@@ -191,31 +184,24 @@ class ProductViewModel @Inject constructor(
     }
 
     /**
-     * 加载SKU图片（启动新协程收集，取消旧的避免泄漏）
+     * 加载SKU图片（从后端同步后直接更新UI状态）
      */
     private fun loadImages(skuOuterId: String) {
         imagesJob?.cancel()
         imagesJob = viewModelScope.launch {
             try {
-                // 从后端同步图片（多PDA数据共享）
-                imageRepository.syncImagesFromBackend(skuOuterId)
-            } catch (e: Exception) {
-                Log.w("ProductViewModel", "同步后端图片失败: ${e.message}")
-            }
-            try {
                 val serverUrl = prefs.getString(PrefsKeys.KEY_SERVER_URL, DEFAULT_SERVER_URL) ?: DEFAULT_SERVER_URL
-                productImageDao.getBySkuOuterId(skuOuterId).collectLatest { images ->
-                    val areaImage = images.find { it.imageType == AppConstants.IMAGE_TYPE_AREA }
-                    val boxImage = images.find { it.imageType == AppConstants.IMAGE_TYPE_BOX }
-                    _uiState.value = _uiState.value.copy(
-                        areaImageUrl = areaImage?.let { url ->
-                            if (serverUrl.isNotEmpty()) "${serverUrl.trimEnd('/')}/${url.imageUrl}" else url.imageUrl
-                        },
-                        boxImageUrl = boxImage?.let { url ->
-                            if (serverUrl.isNotEmpty()) "${serverUrl.trimEnd('/')}/${url.imageUrl}" else url.imageUrl
-                        }
-                    )
-                }
+                val images = imageRepository.syncImagesFromBackend(skuOuterId)
+                val areaImage = images.find { it.imageType == AppConstants.IMAGE_TYPE_AREA }
+                val boxImage = images.find { it.imageType == AppConstants.IMAGE_TYPE_BOX }
+                _uiState.value = _uiState.value.copy(
+                    areaImageUrl = areaImage?.let { url ->
+                        if (serverUrl.isNotEmpty()) "${serverUrl.trimEnd('/')}/${url.imageUrl}" else url.imageUrl
+                    },
+                    boxImageUrl = boxImage?.let { url ->
+                        if (serverUrl.isNotEmpty()) "${serverUrl.trimEnd('/')}/${url.imageUrl}" else url.imageUrl
+                    }
+                )
             } catch (e: Exception) {
                 Log.w("ProductViewModel", "加载SKU图片失败: ${e.message}")
             }
@@ -328,9 +314,6 @@ class ProductViewModel @Inject constructor(
                 }
                 _uiState.value = _uiState.value.copy(isLoadingSuppliers = false, showSupplierDialog = true)
             } catch (e: Exception) {
-                if (e is HttpException && e.code() == 401) {
-                    SessionExpiredEvent.notifyExpired()
-                }
                 _uiState.value = _uiState.value.copy(
                     isLoadingSuppliers = false,
                     showSupplierDialog = true,
@@ -406,18 +389,10 @@ class ProductViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(isUploading = true, uploadProgress = 0)
         viewModelScope.launch {
             try {
-                val (remoteId, imageUrl) = imageRepository.uploadImage(imageFile, imageType, skuOuterId)
-                val entity = ProductImageEntity(
-                    skuOuterId = skuOuterId,
-                    imageType = imageType,
-                    imageUrl = imageUrl,
-                    remoteId = remoteId,
-                    createdAt = TimeUtils.now()
-                )
-                imageRepository.saveImage(entity)
+                val entity = imageRepository.uploadImage(imageFile, imageType, skuOuterId)
 
                 val serverUrl = prefs.getString(PrefsKeys.KEY_SERVER_URL, DEFAULT_SERVER_URL) ?: DEFAULT_SERVER_URL
-                val fullUrl = if (serverUrl.isNotEmpty()) "${serverUrl.trimEnd('/')}/$imageUrl" else imageUrl
+                val fullUrl = if (serverUrl.isNotEmpty()) "${serverUrl.trimEnd('/')}/${entity.imageUrl}" else entity.imageUrl
                 _uiState.value = if (imageType == AppConstants.IMAGE_TYPE_AREA) {
                     _uiState.value.copy(areaImageUrl = fullUrl)
                 } else {
@@ -446,9 +421,6 @@ class ProductViewModel @Inject constructor(
                     )
                 }
             } catch (e: Exception) {
-                if (e is HttpException && e.code() == 401) {
-                    SessionExpiredEvent.notifyExpired()
-                }
                 Log.e(TAG, "图片上传失败: ${e.message}", e)
                 _uiState.value = _uiState.value.copy(
                     isUploading = false,
@@ -476,9 +448,6 @@ class ProductViewModel @Inject constructor(
                     _uiState.value.copy(boxImageUrl = null)
                 }
             } catch (e: Exception) {
-                if (e is HttpException && e.code() == 401) {
-                    SessionExpiredEvent.notifyExpired()
-                }
                 _uiState.value = _uiState.value.copy(
                     error = "删除图片失败: ${e.message}"
                 )

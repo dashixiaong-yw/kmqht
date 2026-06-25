@@ -16,6 +16,16 @@
 ### 修复
 - 修复 v2.25 管理后台 searchImages 函数中 onerror 内单引号未转义导致整个 JS 解析失败、登录按钮无响应的问题
 
+## 2.33 (2026-06-25)
+
+### 重构
+- PickDetailViewModel: refresh/syncItemsFromBackend重复映射提取为toPickItemEntity()+upsertItemFromResponse()（-30行）
+- 移除3个ViewModel共14处重复if(401)判断，由OkHttp TokenAuthenticator统一处理（-42行）
+
+### 清理
+- 删除根目录7个孤立test_*.py文件
+- ImageRepository: 移除3个纯透传DAO方法，ProductViewModel不再直接注入ProductImageDao
+
 ## 2.32 (2026-06-25)
 
 ### 性能优化

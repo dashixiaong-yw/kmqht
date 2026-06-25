@@ -87,12 +87,7 @@ class PickListViewModel @Inject constructor(
                 _activeOrders.value = response.data.map { it.toOrderEntity() }
             } catch (e: Exception) {
                 Log.e("PickListViewModel", "加载取货单列表失败: ${e.message}", e)
-                if (e is HttpException && e.code() == 401) {
-                    SessionExpiredEvent.notifyExpired()
-                    _errorMessage.value = "登录已过期，请重新登录"
-                } else {
-                    _errorMessage.value = "加载取货单列表失败: ${e.message?.take(80) ?: "未知错误"}"
-                }
+                _errorMessage.value = "加载取货单列表失败: ${e.message?.take(80) ?: "未知错误"}"
                 _activeOrders.value = emptyList()
             } finally {
                 _isLoading.value = false
@@ -114,12 +109,7 @@ class PickListViewModel @Inject constructor(
                 _areas.value = response.data.map { it.name }
             } catch (e: Exception) {
                 Log.e("PickListViewModel", "加载拣货区失败: ${e.message}", e)
-                if (e is HttpException && e.code() == 401) {
-                    SessionExpiredEvent.notifyExpired()
-                    _errorMessage.value = "登录已过期，请重新登录"
-                } else {
-                    _errorMessage.value = "加载拣货区失败: ${e.message?.take(80) ?: "未知错误"}"
-                }
+                _errorMessage.value = "加载拣货区失败: ${e.message?.take(80) ?: "未知错误"}"
                 _areas.value = emptyList()
             }
         }
@@ -136,9 +126,7 @@ class PickListViewModel @Inject constructor(
                 _completedOrders.value = response.data.map { it.toOrderEntity() }
             } catch (e: Exception) {
                 Log.e("PickListViewModel", "加载已完成取货单失败: ${e.message}", e)
-                if (e is HttpException && e.code() == 401) {
-                    SessionExpiredEvent.notifyExpired()
-                }
+
             }
         }
     }

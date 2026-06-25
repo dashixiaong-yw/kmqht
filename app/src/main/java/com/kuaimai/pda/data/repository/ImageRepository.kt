@@ -7,22 +7,17 @@ import com.kuaimai.pda.data.db.dao.ProductImageDao
 import com.kuaimai.pda.data.db.entity.ProductImageEntity
 import com.kuaimai.pda.util.ImageCompressor
 import com.kuaimai.pda.util.TimeUtils
-import kotlinx.coroutines.flow.Flow
 import org.json.JSONObject
 import java.io.File
 import javax.inject.Inject
 
-/**
- * 图片仓库接口
- */
+/** 图片仓库接口 */
 interface ImageRepository {
-    suspend fun uploadImage(imageFile: File, imageType: String, skuOuterId: String): Pair<Long, String>
-    fun getImagesBySkuOuterId(skuOuterId: String): Flow<List<ProductImageEntity>>
     suspend fun getImageBySkuAndType(skuOuterId: String, imageType: String): ProductImageEntity?
-    suspend fun saveImage(image: ProductImageEntity): Long
+    suspend fun uploadImage(imageFile: File, imageType: String, skuOuterId: String): ProductImageEntity
     suspend fun deleteImage(skuOuterId: String, imageType: String)
-    /** 从后端同步图片到本地（多PDA数据共享） */
-    suspend fun syncImagesFromBackend(skuOuterId: String)
+    /** 从后端同步图片到本地（多PDA数据共享），返回同步后的图片列表 */
+    suspend fun syncImagesFromBackend(skuOuterId: String): List<ProductImageEntity>
 }
 
 /**
@@ -33,35 +28,33 @@ class ImageRepositoryImpl @Inject constructor(
     private val productImageDao: ProductImageDao
 ) : ImageRepository {
 
+    override suspend fun getImageBySkuAndType(skuOuterId: String, imageType: String): ProductImageEntity? {
+        return productImageDao.getBySkuOuterIdAndType(skuOuterId, imageType)
+    }
+
     override suspend fun uploadImage(
         imageFile: File,
         imageType: String,
         skuOuterId: String
-    ): Pair<Long, String> {
+    ): ProductImageEntity {
         val compressedFile = ImageCompressor.compress(imageFile)
         val fileToUpload = if (compressedFile !== imageFile) compressedFile else imageFile
         return try {
-            uploadService.uploadImage(fileToUpload, imageType, skuOuterId)
+            val (remoteId, imageUrl) = uploadService.uploadImage(fileToUpload, imageType, skuOuterId)
+            val entity = ProductImageEntity(
+                skuOuterId = skuOuterId,
+                imageType = imageType,
+                imageUrl = imageUrl,
+                remoteId = remoteId,
+                createdAt = TimeUtils.now()
+            )
+            productImageDao.insert(entity)
+            entity
         } finally {
             if (compressedFile !== imageFile && compressedFile.exists()) {
                 compressedFile.delete()
             }
         }
-    }
-
-    override fun getImagesBySkuOuterId(skuOuterId: String): Flow<List<ProductImageEntity>> {
-        return productImageDao.getBySkuOuterId(skuOuterId)
-    }
-
-    override suspend fun getImageBySkuAndType(
-        skuOuterId: String,
-        imageType: String
-    ): ProductImageEntity? {
-        return productImageDao.getBySkuOuterIdAndType(skuOuterId, imageType)
-    }
-
-    override suspend fun saveImage(image: ProductImageEntity): Long {
-        return productImageDao.insert(image)
     }
 
     override suspend fun deleteImage(skuOuterId: String, imageType: String) {
@@ -73,11 +66,11 @@ class ImageRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun syncImagesFromBackend(skuOuterId: String) {
+    override suspend fun syncImagesFromBackend(skuOuterId: String): List<ProductImageEntity> {
         try {
             val responseBody = uploadService.fetchImages(skuOuterId)
             val jsonArray = JSONObject(responseBody).getJSONArray("data")
-            if (jsonArray.length() == 0) return
+            if (jsonArray.length() == 0) return productImageDao.getBySkuOuterId(skuOuterId)
             val now = TimeUtils.now()
             for (i in 0 until jsonArray.length()) {
                 val json = jsonArray.getJSONObject(i)
@@ -96,5 +89,6 @@ class ImageRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Log.w("ImageRepository", "同步后端图片列表失败: ${e.message}")
         }
+        return productImageDao.getBySkuOuterId(skuOuterId)
     }
 }

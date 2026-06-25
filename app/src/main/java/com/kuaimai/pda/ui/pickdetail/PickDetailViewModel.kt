@@ -165,7 +165,6 @@ class PickDetailViewModel @Inject constructor(
             } catch (e: Exception) {
                 Log.e("PickDetailViewModel", "加载供应商列表失败: ${e.message}", e)
                 if (e is HttpException && e.code() == 401) {
-                    SessionExpiredEvent.notifyExpired()
                     _errorMessage.value = "登录已过期，请重新登录"
                 } else {
                     _errorMessage.value = "加载供应商列表失败: ${e.message?.take(80) ?: "未知错误"}"
@@ -274,9 +273,6 @@ class PickDetailViewModel @Inject constructor(
                 syncItemsFromBackend()
                 _duplicateScan.value = true
             } else {
-                if (e is HttpException && e.code() == 401) {
-                    SessionExpiredEvent.notifyExpired()
-                }
                 _errorMessage.value = "添加明细失败: ${e.message}"
                 _scanFailureEvent.emit("添加明细失败: ${e.message}")
             }
@@ -302,11 +298,7 @@ class PickDetailViewModel @Inject constructor(
                 pickOrderRepository.updateCompletedCount(orderId, count)
                 loadOrder()
             } catch (e: Exception) {
-                if (e is HttpException && e.code() == 401) {
-                    SessionExpiredEvent.notifyExpired()
-                }
                 pickOrderRepository.updateItemStatus(itemId, 1, TimeUtils.now())
-                val count = pickOrderRepository.getCompletedCount(orderId, 1)
                 pickOrderRepository.updateCompletedCount(orderId, count)
                 _errorMessage.value = "完成明细失败: ${e.message}"
             } finally {
@@ -330,9 +322,6 @@ class PickDetailViewModel @Inject constructor(
                 pickOrderRepository.updateCompletedCount(orderId, count)
                 loadOrder()
             } catch (e: Exception) {
-                if (e is HttpException && e.code() == 401) {
-                    SessionExpiredEvent.notifyExpired()
-                }
                 pickOrderRepository.updateItemStatus(itemId, 0, null)
                 val count = pickOrderRepository.getCompletedCount(orderId, 1)
                 pickOrderRepository.updateCompletedCount(orderId, count)
@@ -359,9 +348,6 @@ class PickDetailViewModel @Inject constructor(
             } catch (e: Exception) {
                 pickOrderRepository.enqueueCompleteAll(orderId, now)
                 loadOrder()
-                if (e is HttpException && e.code() == 401) {
-                    SessionExpiredEvent.notifyExpired()
-                }
                 _errorMessage.value = "批量完成失败: ${e.message}"
             } finally {
                 _isLoading.value = false
@@ -405,41 +391,11 @@ class PickDetailViewModel @Inject constructor(
 
                 // 同步明细数据：将后端明细upsert到本地数据库
                 detail.items.forEach { itemResponse ->
-                    val existing = pickOrderRepository.getItemByOrderIdAndSkuOuterId(orderId, itemResponse.skuOuterId)
-                    if (existing == null) {
-                        // 新明细（其他PDA添加的），插入本地
-                        val item = PickItemEntity(
-                            id = itemResponse.id,
-                            orderId = orderId,
-                            skuOuterId = itemResponse.skuOuterId,
-                            sysItemId = itemResponse.sysItemId,
-                            sysSkuId = itemResponse.sysSkuId,
-                            propertiesName = itemResponse.propertiesName,
-                            picPath = itemResponse.picPath,
-                            status = itemResponse.status,
-                            supplierName = itemResponse.supplierName,
-                            supplierCode = itemResponse.supplierCode,
-                            remark = itemResponse.remark,
-                            itemOuterId = itemResponse.itemOuterId,
-                            createdAt = TimeUtils.parseBeijingTime(itemResponse.createdAt).let { if (it > 0) it else TimeUtils.now() },
-                            completedAt = TimeUtils.parseBeijingTimeOrNull(itemResponse.completedAt)
-                        )
-                        pickOrderRepository.insertItem(item)
-                    } else {
-                        // 已有明细，同步快麦字段（仅不可变字段，防止覆盖用户修改）
-                        pickOrderRepository.updateItemFieldsDirect(existing.id, itemResponse.propertiesName, itemResponse.picPath, itemResponse.itemOuterId)
-                        if (existing.status != itemResponse.status) {
-                            val completedAt = TimeUtils.parseBeijingTimeOrNull(itemResponse.completedAt)
-                            pickOrderRepository.updateItemStatusDirect(existing.id, itemResponse.status, completedAt)
-                        }
-                    }
+                    upsertItemFromResponse(itemResponse)
                 }
 
                 loadSuppliers()
             } catch (e: Exception) {
-                if (e is HttpException && e.code() == 401) {
-                    SessionExpiredEvent.notifyExpired()
-                }
                 _errorMessage.value = "刷新失败: ${e.message}"
             } finally {
                 _isRefreshing.value = false
@@ -461,9 +417,6 @@ class PickDetailViewModel @Inject constructor(
                 loadSuppliers()
             } catch (e: Exception) {
                 // API失败，使用乐观更新+入队（离线模式自动走此路径）
-                if (e is HttpException && e.code() == 401) {
-                    SessionExpiredEvent.notifyExpired()
-                }
                 pickOrderRepository.deleteItemWithQueue(itemId)
                 _errorMessage.value = "删除失败: ${e.message}"
             } finally {
@@ -514,38 +467,10 @@ class PickDetailViewModel @Inject constructor(
 
             // 同步明细数据（items由Room Flow自动驱动，无需手动设置）
             detail.items.forEach { itemResponse ->
-                val existing = pickOrderRepository.getItemByOrderIdAndSkuOuterId(orderId, itemResponse.skuOuterId)
-                if (existing == null) {
-                    pickOrderRepository.insertItem(
-                        PickItemEntity(
-                            id = itemResponse.id,
-                            orderId = orderId,
-                            skuOuterId = itemResponse.skuOuterId,
-                            sysItemId = itemResponse.sysItemId,
-                            sysSkuId = itemResponse.sysSkuId,
-                            propertiesName = itemResponse.propertiesName,
-                            picPath = itemResponse.picPath,
-                            status = itemResponse.status,
-                            supplierName = itemResponse.supplierName,
-                            supplierCode = itemResponse.supplierCode,
-                            remark = itemResponse.remark,
-                            itemOuterId = itemResponse.itemOuterId,
-                            createdAt = TimeUtils.parseBeijingTime(itemResponse.createdAt).let { if (it > 0) it else TimeUtils.now() }
-                        )
-                    )
-                } else {
-                    pickOrderRepository.updateItemFieldsDirect(existing.id, itemResponse.propertiesName, itemResponse.picPath, itemResponse.itemOuterId)
-                    val completedAt = TimeUtils.parseBeijingTimeOrNull(itemResponse.completedAt)
-                    if (existing.status != itemResponse.status) {
-                        pickOrderRepository.updateItemStatusDirect(existing.id, itemResponse.status, completedAt)
-                    }
-                }
+                upsertItemFromResponse(itemResponse)
             }
             loadSuppliers()
         } catch (e: Exception) {
-            if (e is HttpException && e.code() == 401) {
-                SessionExpiredEvent.notifyExpired()
-            }
             Log.w(TAG, "syncItemsFromBackend失败: ${e.message}")
         }
     }
@@ -566,8 +491,9 @@ class PickDetailViewModel @Inject constructor(
      */
     suspend fun getImageUrls(skuOuterId: String): ImageUrls {
         return try {
-            val areaImage = imageRepository.getImageBySkuAndType(skuOuterId, AppConstants.IMAGE_TYPE_AREA)
-            val boxImage = imageRepository.getImageBySkuAndType(skuOuterId, AppConstants.IMAGE_TYPE_BOX)
+            val images = imageRepository.syncImagesFromBackend(skuOuterId)
+            val areaImage = images.find { it.imageType == AppConstants.IMAGE_TYPE_AREA }
+            val boxImage = images.find { it.imageType == AppConstants.IMAGE_TYPE_BOX }
             val serverUrl = prefs.getString(PrefsKeys.KEY_SERVER_URL, AppConstants.DEFAULT_SERVER_URL)?.trim() ?: AppConstants.DEFAULT_SERVER_URL
             val areaUrl = areaImage?.let { url -> if (serverUrl.isNotEmpty()) "${serverUrl.trimEnd('/')}/${url.imageUrl}" else url.imageUrl }
             val boxUrl = boxImage?.let { url -> if (serverUrl.isNotEmpty()) "${serverUrl.trimEnd('/')}/${url.imageUrl}" else url.imageUrl }
@@ -589,6 +515,35 @@ class PickDetailViewModel @Inject constructor(
         val dot = fullUrl.lastIndexOf('.')
         return if (dot > 0) "${fullUrl.substring(0, dot)}_thumb.jpg" else "$fullUrl._thumb.jpg"
     }
+
+    /**
+     * 统一 upsert：从后端响应中插入或更新明细
+     */
+    private suspend fun upsertItemFromResponse(itemResponse: OrderItemResponse) {
+        val existing = pickOrderRepository.getItemByOrderIdAndSkuOuterId(orderId, itemResponse.skuOuterId)
+        if (existing == null) {
+            pickOrderRepository.insertItem(itemResponse.toPickItemEntity(orderId))
+        } else {
+            pickOrderRepository.updateItemFieldsDirect(existing.id, itemResponse.propertiesName, itemResponse.picPath, itemResponse.itemOuterId)
+            if (existing.status != itemResponse.status) {
+                val completedAt = TimeUtils.parseBeijingTimeOrNull(itemResponse.completedAt)
+                pickOrderRepository.updateItemStatusDirect(existing.id, itemResponse.status, completedAt)
+            }
+        }
+    }
+
+    /**
+     * 将OrderItemResponse转换为PickItemEntity
+     */
+    private fun OrderItemResponse.toPickItemEntity(orderId: Long): PickItemEntity = PickItemEntity(
+        id = id, orderId = orderId,
+        skuOuterId = skuOuterId, sysItemId = sysItemId, sysSkuId = sysSkuId,
+        propertiesName = propertiesName, picPath = picPath,
+        status = status, supplierName = supplierName, supplierCode = supplierCode,
+        remark = remark, itemOuterId = itemOuterId,
+        createdAt = TimeUtils.parseBeijingTime(createdAt).let { if (it > 0) it else TimeUtils.now() },
+        completedAt = TimeUtils.parseBeijingTimeOrNull(completedAt)
+    )
 }
 
 /** SKU图片URL集合（完整URL + 缩略图URL） */
