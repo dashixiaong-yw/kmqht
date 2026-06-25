@@ -747,14 +747,24 @@ async function searchImages() {{
       container.innerHTML = '<div class="empty">未找到图片</div>';
       return;
     }}
-    container.innerHTML = images.map(img => `
-      <div style="display:inline-block;margin:8px;text-align:center">
-        <img src="${{API_BASE}}/images/${{img.filePath}}"
-             style="max-width:200px;max-height:200px;border-radius:8px;border:1px solid #e5e7eb"
-             onerror="this.src='';this.alt='图片加载失败'" />
-        <p style="font-size:12px;color:#666;margin-top:4px">${{img.imageType === 'area' ? '库区图' : '箱规图'}}</p>
-      </div>
-    `).join('');
+    container.innerHTML = images.map(function(img) {{
+      const fullUrl = API_BASE + '/images/' + img.filePath;
+      const dot = img.filePath.lastIndexOf('.');
+      const thumbUrl = dot > 0
+        ? API_BASE + '/images/' + img.filePath.substring(0, dot) + '_thumb.jpg'
+        : API_BASE + '/images/' + img.filePath + '_thumb.jpg';
+      return '<div style="display:inline-block;margin:8px;text-align:center;vertical-align:top">' +
+        '<div style="display:flex;gap:8px;margin-bottom:4px">' +
+          '<div><img src="' + fullUrl + '" style="max-width:200px;max-height:200px;border-radius:8px;border:1px solid #e5e7eb" onerror="this.src=\'\';this.alt=\'加载失败\'" />' +
+            '<div style="font-size:11px;color:#666;margin-top:2px">原图</div></div>' +
+          '<div><img src="' + thumbUrl + '" style="max-width:100px;max-height:100px;border-radius:8px;border:1px solid #e5e7eb" onerror="this.src=\'\';this.alt=\'加载失败\'" />' +
+            '<div style="font-size:11px;color:#666;margin-top:2px">缩略图</div></div>' +
+        '</div>' +
+        '<div style="font-size:12px;color:#666;margin-top:4px">' + (img.imageType === 'area' ? '库区图' : '箱规图') + '</div>' +
+        '<div style="font-size:10px;color:#999;word-break:break-all;max-width:310px;text-align:left">原图: ' + fullUrl + '</div>' +
+        '<div style="font-size:10px;color:#999;word-break:break-all;max-width:310px;text-align:left">缩略图: ' + thumbUrl + '</div>' +
+      '</div>';
+    }}).join('');
   }} catch(e) {{
     document.getElementById('imageResults').innerHTML = '<div class="empty">查询失败: ' + e.message + '</div>';
   }}
