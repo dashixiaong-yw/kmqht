@@ -20,6 +20,7 @@ import com.kuaimai.pda.data.repository.PickOrderRepository
 import com.kuaimai.pda.scanner.ScannerManager
 import com.kuaimai.pda.util.AppConstants
 import com.kuaimai.pda.util.PrefsKeys
+import com.kuaimai.pda.util.SessionExpiredEvent
 import com.kuaimai.pda.util.TimeUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -32,6 +33,7 @@ import kotlinx.coroutines.launch
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Named
+import retrofit2.HttpException
 
 /**
  * 商品详情UI状态
@@ -148,6 +150,9 @@ class ProductViewModel @Inject constructor(
                     }
                     currentItem = item
                 } catch (apiError: Exception) {
+                    if (apiError is HttpException && apiError.code() == 401) {
+                        SessionExpiredEvent.notifyExpired()
+                    }
                     Log.w(TAG, "后端API获取SKU详情失败，降级到本地Room: ${apiError.message}")
                 }
                 if (!loaded) {
@@ -323,6 +328,9 @@ class ProductViewModel @Inject constructor(
                 }
                 _uiState.value = _uiState.value.copy(isLoadingSuppliers = false, showSupplierDialog = true)
             } catch (e: Exception) {
+                if (e is HttpException && e.code() == 401) {
+                    SessionExpiredEvent.notifyExpired()
+                }
                 _uiState.value = _uiState.value.copy(
                     isLoadingSuppliers = false,
                     showSupplierDialog = true,
@@ -438,6 +446,9 @@ class ProductViewModel @Inject constructor(
                     )
                 }
             } catch (e: Exception) {
+                if (e is HttpException && e.code() == 401) {
+                    SessionExpiredEvent.notifyExpired()
+                }
                 Log.e(TAG, "图片上传失败: ${e.message}", e)
                 _uiState.value = _uiState.value.copy(
                     isUploading = false,
@@ -465,6 +476,9 @@ class ProductViewModel @Inject constructor(
                     _uiState.value.copy(boxImageUrl = null)
                 }
             } catch (e: Exception) {
+                if (e is HttpException && e.code() == 401) {
+                    SessionExpiredEvent.notifyExpired()
+                }
                 _uiState.value = _uiState.value.copy(
                     error = "删除图片失败: ${e.message}"
                 )

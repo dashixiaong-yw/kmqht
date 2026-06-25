@@ -9,6 +9,7 @@ import com.kuaimai.pda.data.api.dto.CreateOrderRequest
 import com.kuaimai.pda.data.db.entity.PickOrderEntity
 import com.kuaimai.pda.data.repository.PickOrderRepository
 import com.kuaimai.pda.data.repository.UserRepository
+import com.kuaimai.pda.util.SessionExpiredEvent
 import com.kuaimai.pda.util.TimeUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 import javax.inject.Inject
 
 /**
@@ -85,7 +87,12 @@ class PickListViewModel @Inject constructor(
                 _activeOrders.value = response.data.map { it.toOrderEntity() }
             } catch (e: Exception) {
                 Log.e("PickListViewModel", "加载取货单列表失败: ${e.message}", e)
-                _errorMessage.value = "加载取货单列表失败: ${e.message?.take(80) ?: "未知错误"}"
+                if (e is HttpException && e.code() == 401) {
+                    SessionExpiredEvent.notifyExpired()
+                    _errorMessage.value = "登录已过期，请重新登录"
+                } else {
+                    _errorMessage.value = "加载取货单列表失败: ${e.message?.take(80) ?: "未知错误"}"
+                }
                 _activeOrders.value = emptyList()
             } finally {
                 _isLoading.value = false
@@ -107,7 +114,12 @@ class PickListViewModel @Inject constructor(
                 _areas.value = response.data.map { it.name }
             } catch (e: Exception) {
                 Log.e("PickListViewModel", "加载拣货区失败: ${e.message}", e)
-                _errorMessage.value = "加载拣货区失败: ${e.message?.take(80) ?: "未知错误"}"
+                if (e is HttpException && e.code() == 401) {
+                    SessionExpiredEvent.notifyExpired()
+                    _errorMessage.value = "登录已过期，请重新登录"
+                } else {
+                    _errorMessage.value = "加载拣货区失败: ${e.message?.take(80) ?: "未知错误"}"
+                }
                 _areas.value = emptyList()
             }
         }
@@ -124,6 +136,9 @@ class PickListViewModel @Inject constructor(
                 _completedOrders.value = response.data.map { it.toOrderEntity() }
             } catch (e: Exception) {
                 Log.e("PickListViewModel", "加载已完成取货单失败: ${e.message}", e)
+                if (e is HttpException && e.code() == 401) {
+                    SessionExpiredEvent.notifyExpired()
+                }
             }
         }
     }
