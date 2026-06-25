@@ -117,9 +117,9 @@ class PickDetailViewModel @Inject constructor(
     /** 添加取货明细的串行化锁，避免并发导致视口跳动 */
     private val addItemMutex = Mutex()
 
-    /** 添加完成后滚动到顶部的事件（数据已就绪） */
-    private val _scrollToTopEvent = MutableSharedFlow<Unit>()
-    val scrollToTopEvent: SharedFlow<Unit> = _scrollToTopEvent.asSharedFlow()
+    /** 滚动到顶部状态标识 — 递增表示需要滚动（进入页面 + 扫码添加后） */
+    private val _needScroll = MutableStateFlow(0)
+    val needScroll: StateFlow<Int> = _needScroll.asStateFlow()
 
     init {
         loadOrder()
@@ -267,6 +267,8 @@ class PickDetailViewModel @Inject constructor(
             }
             loadOrder()
             _order.value = _order.value?.copy(totalCount = (_order.value?.totalCount ?: 0) + 1)
+            // 数据已就绪，触发滚动到顶部显示新商品
+            _needScroll.value = _needScroll.value + 1
         } catch (e: Exception) {
             if (e is HttpException && e.code() == 409) {
                 _errorMessage.value = null
@@ -277,9 +279,8 @@ class PickDetailViewModel @Inject constructor(
                 _scanFailureEvent.emit("添加明细失败: ${e.message}")
             }
         } finally {
-            // 无论成功失败，从待处理列表中移除 + 通知UI滚动到顶部
+            // 无论成功失败，从待处理列表中移除占位
             _pendingItems.value = _pendingItems.value - barcode
-            _scrollToTopEvent.emit(Unit)
         }
     }
 

@@ -1,5 +1,13 @@
 # 快麦取货通 - 变更日志
 
+## 2.37 (2026-06-25)
+
+### 重构
+- 取货单详情视口滚动逻辑重构：取消SharedFlow事件总线，改为StateFlow+LaunchedEffect状态驱动
+- 统一管理进入页面 + 扫码添加后的滚动控制，LaunchedEffect在Compose重组后执行，数据天然就绪
+- ViewModel: 删除 scrollToTopEvent(SharedFlow)，新增 needScroll(StateFlow)
+- Screen: 删除2个LaunchedEffect合并为1个 LaunchedEffect(orderId, needScroll)
+
 ## 2.36 (2026-06-25)
 
 ### 安全

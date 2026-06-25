@@ -126,11 +126,6 @@ fun PickDetailScreen(
     var duplicateTipText by remember { mutableStateOf("") }
     val listState = remember(viewModel.orderId) { LazyListState() }
 
-    // 进入详情页时强制滚动到顶部（覆盖 Navigation 状态恢复导致的视口错位）
-    LaunchedEffect(viewModel.orderId) {
-        listState.scrollToItem(0)
-    }
-
     // 根据供应商过滤明细 + GAP-07: 按状态+时间排序（未完成在上，已完成在下，同状态按时间倒序）
     val filteredItems by remember {
         derivedStateOf {
@@ -187,11 +182,10 @@ fun PickDetailScreen(
         }
     }
 
-    // 添加完成（成功/失败）后滚动到顶部（数据已就绪）
-    LaunchedEffect(Unit) {
-        viewModel.scrollToTopEvent.collectLatest {
-            listState.scrollToItem(0)
-        }
+    // 添加完成（成功）后滚动到顶部显示新商品（进入页面时也生效）
+    val needScroll by viewModel.needScroll.collectAsState()
+    LaunchedEffect(viewModel.orderId, needScroll) {
+        listState.scrollToItem(0)
     }
 
     // 扫码失败反馈
