@@ -24,6 +24,10 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -66,6 +70,9 @@ fun PickItemRow(
 ) {
     val isCompleted = item.status == 1
     val contentAlpha = if (isCompleted) 0.65f else 1f
+
+    var areaShowThumb by remember { mutableStateOf(true) }
+    var boxShowThumb by remember { mutableStateOf(true) }
 
     Card(
         modifier = Modifier
@@ -145,12 +152,22 @@ fun PickItemRow(
                         contentAlignment = Alignment.Center
                     ) {
                         if (!areaImageUrl.isNullOrEmpty()) {
-                            AsyncImage(
-                                model = areaThumbUrl,
-                                contentDescription = "库区图",
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
+                            if (areaShowThumb && !areaThumbUrl.isNullOrEmpty()) {
+                                AsyncImage(
+                                    model = areaThumbUrl,
+                                    contentDescription = "库区图",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop,
+                                    onError = { areaShowThumb = false }
+                                )
+                            } else {
+                                AsyncImage(
+                                    model = areaImageUrl,
+                                    contentDescription = "库区图",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
                         }
                     }
 
@@ -163,12 +180,22 @@ fun PickItemRow(
                         contentAlignment = Alignment.Center
                     ) {
                         if (!boxImageUrl.isNullOrEmpty()) {
-                            AsyncImage(
-                                model = boxThumbUrl,
-                                contentDescription = "装箱图",
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
+                            if (boxShowThumb && !boxThumbUrl.isNullOrEmpty()) {
+                                AsyncImage(
+                                    model = boxThumbUrl,
+                                    contentDescription = "装箱图",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop,
+                                    onError = { boxShowThumb = false }
+                                )
+                            } else {
+                                AsyncImage(
+                                    model = boxImageUrl,
+                                    contentDescription = "装箱图",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
                         }
                     }
                 }

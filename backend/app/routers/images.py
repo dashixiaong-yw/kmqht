@@ -56,6 +56,8 @@ def _check_upload_rate(user_id: int) -> None:
 def _generate_thumbnail(file_path: str) -> None:
     """生成200px缩略图，失败不影响主流程"""
     try:
+        from PIL import features
+        logger.info(f"Pillow 支持格式: JPEG={features.check('jpeg')}, PNG={features.check('png')}, 文件={file_path}")
         img = Image.open(file_path)
         img.thumbnail((200, 200), Image.LANCZOS)
         base, _ = os.path.splitext(file_path)
@@ -63,7 +65,7 @@ def _generate_thumbnail(file_path: str) -> None:
         img.convert("RGB").save(thumb_path, "JPEG", quality=50)
         logger.info(f"缩略图生成成功: {os.path.basename(thumb_path)}")
     except Exception as e:
-        logger.warning(f"生成缩略图失败: {e}")
+        logger.error(f"生成缩略图失败 [文件={file_path}]: {e}")
 
 
 @router.post("/upload", response_model=ImageResponse)
@@ -185,6 +187,42 @@ def get_images(sku_outer_id: str, user: dict = Depends(get_current_user)) -> Ima
     rows = cursor.fetchall()
     images = [_row_to_image_response(row) for row in rows]
     return ImageListResponse(data=images)
+
+
+@router.post("/images/regenerate-thumbnails", response_model=BaseResponse)
+def regenerate_thumbnails(user: dict = Depends(get_current_user)) -> BaseResponse:
+    """管理员：扫描所有已有图片，为缺少缩略图的补生成"""
+    if "admin" not in user.get("roles", []):
+        raise HTTPException(status_code=403, detail="仅管理员可执行此操作")
+
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT file_path FROM product_images")
+    rows = cursor.fetchall()
+
+    generated = 0
+    failed = 0
+    for row in rows:
+        file_path = os.path.join(IMAGE_DIR, row["file_path"])
+        if not os.path.exists(file_path):
+            logger.warning(f"原图不存在，跳过: {file_path}")
+            continue
+        base, _ = os.path.splitext(file_path)
+        thumb_path = f"{base}_thumb.jpg"
+        if os.path.exists(thumb_path):
+            continue
+
+        try:
+            img = Image.open(file_path)
+            img.thumbnail((200, 200), Image.LANCZOS)
+            img.convert("RGB").save(thumb_path, "JPEG", quality=50)
+            logger.info(f"补缩略图成功: {os.path.basename(thumb_path)}")
+            generated += 1
+        except Exception as e:
+            logger.error(f"补缩略图失败: {file_path} - {e}")
+            failed += 1
+
+    return BaseResponse(message=f"补缩略图完成: 成功{generated}张, 失败{failed}张")
 
 
 @router.delete("/images/{image_id}", response_model=BaseResponse)

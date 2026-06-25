@@ -16,6 +16,16 @@
 ### 修复
 - 修复 v2.25 管理后台 searchImages 函数中 onerror 内单引号未转义导致整个 JS 解析失败、登录按钮无响应的问题
 
+## 2.30 (2026-06-25)
+
+### 修复
+- 缩略图 404 根因：Dockerfile 中 Alpine 缺少 jpeg-dev/zlib-dev/libpng-dev，Pillow 编译时无 JPEG 解码支持
+- Dockerfile 补充 jpeg-dev/zlib-dev/libpng-dev，重建镜像后生效
+- _generate_thumbnail 增加诊断日志（Pillow 格式支持）并改为 ERROR 级别
+- 新增 POST /api/images/regenerate-thumbnails 管理员API，补生成缺失缩略图
+- admin.py 图片Tab增加「补全缩略图」按钮
+- Android 端缩略图加载失败自动 fallback 显示原图（PickItemRow.kt）
+
 ## 2.29 (2026-06-25)
 
 ### 重构

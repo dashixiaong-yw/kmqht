@@ -356,6 +356,7 @@ input:focus,select:focus {{ border-color:#2563eb; }}
         <div style="display:flex;gap:8px;margin-bottom:16px">
           <input id="imageSkuInput" placeholder="输入SKU编码" style="width:200px" />
           <button class="btn btn-primary" onclick="searchImages()">搜索</button>
+          <button class="btn btn-success" onclick="regenerateThumbnails()">补全缩略图</button>
         </div>
         <div id="imageResults"></div>
       </div>
@@ -767,6 +768,23 @@ async function searchImages() {{
     }}).join('');
   }} catch(e) {{
     document.getElementById('imageResults').innerHTML = '<div class="empty">查询失败: ' + e.message + '</div>';
+  }}
+}}
+
+// 补全缩略图
+async function regenerateThumbnails() {{
+  if (!confirm('将为所有已有图片补生成缩略图，确定继续？')) return;
+  const btn = document.querySelector('button[onclick="regenerateThumbnails()"]');
+  btn.disabled = true;
+  btn.textContent = '执行中...';
+  try {{
+    const r = await api('/api/images/regenerate-thumbnails', {{ method: 'POST' }});
+    alert(r.message || '操作完成');
+  }} catch(e) {{
+    alert('补缩略图失败: ' + e.message);
+  }} finally {{
+    btn.disabled = false;
+    btn.textContent = '补全缩略图';
   }}
 }}
 
