@@ -16,6 +16,11 @@
 ### 修复
 - 修复 v2.25 管理后台 searchImages 函数中 onerror 内单引号未转义导致整个 JS 解析失败、登录按钮无响应的问题
 
+## 2.31 (2026-06-25)
+
+### 修复
+- 打开已完成取货单详情时视口显示在底部的Bug：rememberLazyListState→remember(orderId){LazyListState()}
+
 ## 2.30 (2026-06-25)
 
 ### 修复
