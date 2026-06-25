@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        BUILD_VERSION: v2.33
+        BUILD_VERSION: v2.34
     container_name: kuaimai-pda-server
     restart: unless-stopped
     ports:

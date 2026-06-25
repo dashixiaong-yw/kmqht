@@ -16,6 +16,13 @@
 ### 修复
 - 修复 v2.25 管理后台 searchImages 函数中 onerror 内单引号未转义导致整个 JS 解析失败、登录按钮无响应的问题
 
+## 2.34 (2026-06-25)
+
+### 重构
+- config.py: 迁移到 pydantic-settings BaseSettings（消除手动os.getenv重复模式）
+- 抽取 StandardTopAppBar 公共组件，4个Screen统一使用（-40行模板代码）
+- OrderSyncWorker: 空catch补充日志
+
 ## 2.33 (2026-06-25)
 
 ### 重构

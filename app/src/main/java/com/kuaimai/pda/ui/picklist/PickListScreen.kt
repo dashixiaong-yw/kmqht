@@ -57,17 +57,8 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.kuaimai.pda.data.db.entity.PickOrderEntity
 import com.kuaimai.pda.ui.components.PickOrderCard
-import com.kuaimai.pda.ui.theme.BorderGray
-import com.kuaimai.pda.ui.theme.BrandBlue
-import com.kuaimai.pda.ui.theme.DangerText
-import com.kuaimai.pda.ui.theme.PrimaryLightBg
-import com.kuaimai.pda.ui.theme.PrimaryLightText
-import com.kuaimai.pda.ui.theme.SurfaceGray
-import com.kuaimai.pda.ui.theme.SurfaceWhite
-import com.kuaimai.pda.ui.theme.TextPrimary
-import com.kuaimai.pda.ui.theme.TextSecondary
-import com.kuaimai.pda.ui.theme.WarningBg
-import com.kuaimai.pda.ui.theme.WarningText
+import com.kuaimai.pda.ui.components.StandardTopAppBar
+import com.kuaimai.pda.ui.theme.*
 
 /**
  * 取货列表页面
@@ -125,13 +116,9 @@ fun PickListScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = { Text("取货列表", color = SurfaceWhite) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "返回", tint = SurfaceWhite)
-                    }
-                },
+            StandardTopAppBar(
+                title = "取货列表",
+                onNavigateBack = onNavigateBack,
                 actions = {
                     TextButton(
                         onClick = { viewModel.showNewOrderDialog() },
@@ -144,8 +131,7 @@ fun PickListScreen(
                     ) {
                         Text("+ 新建", fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = BrandBlue)
+                }
             )
         }
     ) { innerPadding ->

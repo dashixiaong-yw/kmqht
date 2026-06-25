@@ -79,20 +79,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.kuaimai.pda.data.repository.UserRepository
-import com.kuaimai.pda.ui.theme.BorderGray
+import com.kuaimai.pda.ui.components.StandardTopAppBar
+import com.kuaimai.pda.ui.theme.*
 import com.kuaimai.pda.util.AppConstants
-import com.kuaimai.pda.ui.theme.BrandBlue
-import com.kuaimai.pda.ui.theme.DangerText
-import com.kuaimai.pda.ui.theme.PrimaryLightBg
-import com.kuaimai.pda.ui.theme.PrimaryLightText
-import com.kuaimai.pda.ui.theme.SuccessBg
-import com.kuaimai.pda.ui.theme.SuccessText
-import com.kuaimai.pda.ui.theme.SupplierRed
-import com.kuaimai.pda.ui.theme.TextMuted
-import com.kuaimai.pda.ui.theme.SurfaceWhite
-import com.kuaimai.pda.ui.theme.TextPrimary
-import com.kuaimai.pda.ui.theme.TextSecondary
-import com.kuaimai.pda.ui.theme.WarningYellow
 import kotlinx.coroutines.flow.collectLatest
 
 import android.content.ActivityNotFoundException
@@ -178,21 +167,9 @@ fun ProductScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("商品详情") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "返回"
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = BrandBlue,
-                    titleContentColor = SurfaceWhite,
-                    navigationIconContentColor = SurfaceWhite
-                )
+            StandardTopAppBar(
+                title = "商品详情",
+                onNavigateBack = onNavigateBack
             )
         }
     ) { innerPadding ->

@@ -9,46 +9,47 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Optional
 
-from dotenv import load_dotenv
-
-# 加载 .env 文件（如果存在）
-load_dotenv()
+from pydantic_settings import BaseSettings
 
 logger = logging.getLogger(__name__)
-
-# API 认证密钥
-API_KEY: str = os.getenv("API_KEY", "")
 
 # 凭证访问锁（kuaimai_api.py也引用此锁）
 kuaimai_config_lock = threading.Lock()
 
-# 服务器端口
-SERVER_PORT: int = int(os.getenv("SERVER_PORT") or "8900")
 
-# 快麦凭证文件路径
-KUAIMAI_CONFIG_PATH: str = os.getenv("KUAIMAI_CONFIG_PATH", "/data/kuaimai.json")
+class _Settings(BaseSettings):
+    """应用配置 - 自动从环境变量和.env文件加载"""
+    api_key: str = ""
+    server_port: int = 8900
+    kuaimai_config_path: str = "/data/kuaimai.json"
+    image_dir: str = "/data/product_images"
+    db_path: str = "/data/kuaimai.db"
+    kuaimai_api_base: str = "https://gw.superboss.cc/router"
+    server_url: str = ""
+    cors_origins: str = "*"
+    session_warning_days: int = 5
+    apk_dir: str = "/data/apk"
+    apk_version_file: str = "/data/apk_version.json"
 
-# 图片存储目录
-IMAGE_DIR: str = os.getenv("IMAGE_DIR", "/data/product_images")
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
 
-# 数据库路径
-DB_PATH: str = os.getenv("DB_PATH", "/data/kuaimai.db")
 
-# 快麦API基础URL（2022年4月1日后申请的APP Key统一使用V2正式环境地址）
-KUAIMAI_API_BASE: str = os.getenv("KUAIMAI_API_BASE", "https://gw.superboss.cc/router")
+_settings = _Settings()
 
-# 服务器对外暴露地址（用于生成配置二维码，格式：http://IP:PORT）
-SERVER_URL: str = os.getenv("SERVER_URL", "")
-
-# CORS允许的来源（逗号分隔，默认*允许所有，生产环境应限制）
-CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", "*")
-
-# 会话过期预警天数（与前端SESSION_WARNING_DAYS保持一致）
-SESSION_WARNING_DAYS: int = int(os.getenv("SESSION_WARNING_DAYS", "5"))
-
-# APK 版本配置（用于 OTA 更新）
-APK_DIR: str = os.getenv("APK_DIR", "/data/apk")
-APK_VERSION_FILE: str = os.getenv("APK_VERSION_FILE", "/data/apk_version.json")
+# 向后兼容的模块级常量（已有代码无需修改import）
+API_KEY = _settings.api_key
+SERVER_PORT = _settings.server_port
+KUAIMAI_CONFIG_PATH = _settings.kuaimai_config_path
+IMAGE_DIR = _settings.image_dir
+DB_PATH = _settings.db_path
+KUAIMAI_API_BASE = _settings.kuaimai_api_base
+SERVER_URL = _settings.server_url
+CORS_ORIGINS = _settings.cors_origins
+SESSION_WARNING_DAYS = _settings.session_warning_days
+APK_DIR = _settings.apk_dir
+APK_VERSION_FILE = _settings.apk_version_file
 
 
 class KuaimaiCredentials:

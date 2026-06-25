@@ -59,7 +59,7 @@ class OrderSyncWorker(
                 val existing = if (file.exists()) file.readLines() else emptyList()
                 val lines = if (existing.size >= 500) existing.drop(existing.size - 250) else existing
                 file.writeText(lines.joinToString("\n") + "\n" + line)
-            } catch (_: Exception) { }
+            } catch (e: Exception) { Log.w("OrderSyncWorker", "appendLog失败: ${e.message}") }
         }
     }
 

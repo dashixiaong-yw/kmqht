@@ -48,14 +48,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.kuaimai.pda.BuildConfig
 import com.kuaimai.pda.data.repository.UserRepository
-import com.kuaimai.pda.ui.theme.AppAlignment
-import com.kuaimai.pda.ui.theme.BrandBlue
-import com.kuaimai.pda.ui.theme.PrimaryLightBg
-import com.kuaimai.pda.ui.theme.PrimaryLightText
-import com.kuaimai.pda.ui.theme.SuccessBg
-import com.kuaimai.pda.ui.theme.SuccessText
-import com.kuaimai.pda.ui.theme.SurfaceWhite
-import com.kuaimai.pda.ui.theme.TextSecondary
+import com.kuaimai.pda.ui.components.StandardTopAppBar
+import com.kuaimai.pda.ui.theme.*
 import kotlinx.coroutines.launch
 
 /**
@@ -246,18 +240,9 @@ fun SettingsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("个人设置", color = SurfaceWhite) },
-                navigationIcon = {
-                    androidx.compose.material3.IconButton(onClick = onNavigateBack) {
-                        androidx.compose.material3.Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "返回",
-                            tint = SurfaceWhite
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = BrandBlue)
+            StandardTopAppBar(
+                title = "个人设置",
+                onNavigateBack = onNavigateBack
             )
         }
     ) { innerPadding ->

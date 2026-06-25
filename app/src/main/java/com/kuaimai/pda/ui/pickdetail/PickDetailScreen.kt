@@ -45,8 +45,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import com.kuaimai.pda.ui.components.PickItemRow
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -77,6 +76,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.kuaimai.pda.data.db.entity.PickItemEntity
 import com.kuaimai.pda.scanner.ScanFeedbackType
 import com.kuaimai.pda.ui.components.PickItemRow
+import com.kuaimai.pda.ui.components.StandardTopAppBar
 import com.kuaimai.pda.util.AppConstants
 import com.kuaimai.pda.ui.theme.BrandBlue
 import com.kuaimai.pda.ui.theme.DangerText
@@ -222,14 +222,9 @@ fun PickDetailScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = { Text(order?.orderNo ?: "取货单详情", color = SurfaceWhite) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "返回", tint = SurfaceWhite)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = BrandBlue)
+            StandardTopAppBar(
+                title = order?.orderNo ?: "取货单详情",
+                onNavigateBack = onNavigateBack
             )
         }
     ) { innerPadding ->
