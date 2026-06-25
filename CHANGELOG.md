@@ -1,5 +1,10 @@
 # 快麦取货通 - 变更日志
 
+## 2.17 (2026-06-24)
+
+### 修复
+- 修正 Android 6.0 PDA OTA 更新：下载目录改为 cacheDir 无需存储权限、移除 saveToPublicDownloads、installApk 增加未知来源检查和 ActivityNotFoundException 捕获
+
 ## 2.16 (2026-06-24)
 
 ### 修复

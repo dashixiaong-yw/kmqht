@@ -129,14 +129,13 @@ class MainActivity : ComponentActivity() {
                                             appUpdateManager.downloadState.collect { state ->
                                                 when (state) {
                                                     is DownloadState.Completed -> {
-                                                        appUpdateManager.installApk(state.file)
-                                                        showUpdateDialog = false
-                                                        updateInfo = null
-                                                        android.widget.Toast.makeText(
-                                                            this@MainActivity,
-                                                            "APK已保存到系统下载目录，可手动安装",
-                                                            android.widget.Toast.LENGTH_LONG
-                                                        ).show()
+                                                        val installed = appUpdateManager.installApk(state.file)
+                                                        if (installed) {
+                                                            showUpdateDialog = false
+                                                            updateInfo = null
+                                                        } else {
+                                                            isDownloading = false
+                                                        }
                                                     }
                                                     is DownloadState.Failed -> {
                                                         isDownloading = false

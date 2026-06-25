@@ -3,15 +3,14 @@ package com.kuaimai.pda.update
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.content.ContentValues
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
-import android.os.Environment
 import android.os.Handler
 import android.os.Looper
-import android.provider.MediaStore
+import android.provider.Settings
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.FileProvider
@@ -111,8 +110,7 @@ class AppUpdateManager @Inject constructor(
         Thread {
             try {
                 try {
-                    val dir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
-                        ?: File(context.cacheDir, "update")
+                    val dir = File(context.cacheDir, "update")
                     dir.mkdirs()
                     val apkFile = File(dir, "快麦取货通-${info.latestVersion}.apk")
                     if (apkFile.exists() && info.apkSize > 0 && apkFile.length() == info.apkSize) {
@@ -156,10 +154,9 @@ class AppUpdateManager @Inject constructor(
                         showNotificationFailed("文件大小不匹配")
                         return@Thread
                     }
-                    saveToPublicDownloads(apkFile, info.latestVersion)
                     _downloadState.value = DownloadState.Completed(apkFile)
                     showNotificationCompleted(apkFile, info.latestVersion)
-                } catch (e: IOException) {
+                } catch (e: Exception) {
                     Log.e(TAG, "下载APK失败", e)
                     val msg = e.message ?: "未知错误"
                     _downloadState.value = DownloadState.Failed(msg)
@@ -171,8 +168,18 @@ class AppUpdateManager @Inject constructor(
         }.start()
     }
 
-    fun installApk(apkFile: File) {
+    fun installApk(apkFile: File): Boolean {
         try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (!context.packageManager.canRequestPackageInstalls()) {
+                    val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        data = Uri.parse("package:${context.packageName}")
+                    }
+                    context.startActivity(intent)
+                    return false
+                }
+            }
             val uri: Uri = FileProvider.getUriForFile(
                 context,
                 "${context.packageName}.fileprovider",
@@ -184,8 +191,14 @@ class AppUpdateManager @Inject constructor(
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             context.startActivity(intent)
+            return true
+        } catch (e: ActivityNotFoundException) {
+            Log.e(TAG, "未找到安装器", e)
+            showNotificationFailed("未找到安装器，请到系统文件管理器手动安装")
+            return false
         } catch (e: Exception) {
             Log.e(TAG, "安装APK失败", e)
+            return false
         }
     }
 
@@ -242,37 +255,6 @@ class AppUpdateManager @Inject constructor(
                     .build()
                 notificationManager.notify(NOTIFICATION_ID, notification)
             } catch (_: Exception) {}
-        }
-    }
-
-    private fun saveToPublicDownloads(file: File, version: String) {
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val contentValues = ContentValues().apply {
-                    put(MediaStore.Downloads.DISPLAY_NAME, "快麦取货通-${version}.apk")
-                    put(MediaStore.Downloads.MIME_TYPE, "application/vnd.android.package-archive")
-                    put(MediaStore.Downloads.IS_PENDING, 0)
-                }
-                val uri = context.contentResolver.insert(
-                    MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues
-                )
-                if (uri != null) {
-                    context.contentResolver.openOutputStream(uri)?.use { output ->
-                        file.inputStream().use { input -> input.copyTo(output) }
-                    }
-                    Log.i(TAG, "APK已保存到系统Downloads (MediaStore)")
-                }
-            } else {
-                val publicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-                publicDir.mkdirs()
-                val dest = File(publicDir, "快麦取货通-${version}.apk")
-                file.inputStream().use { input ->
-                    dest.outputStream().use { output -> input.copyTo(output) }
-                }
-                Log.i(TAG, "APK已保存到: ${dest.absolutePath}")
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "保存到公共Downloads失败（不影响安装）: ${e.message}")
         }
     }
 
