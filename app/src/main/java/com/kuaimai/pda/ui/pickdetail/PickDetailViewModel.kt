@@ -112,6 +112,13 @@ class PickDetailViewModel @Inject constructor(
     private val _imageUrlsMap = MutableStateFlow<Map<String, ImageUrls>>(emptyMap())
     val imageUrlsMap: StateFlow<Map<String, ImageUrls>> = _imageUrlsMap.asStateFlow()
 
+    /** 添加取货明细的串行化锁，避免并发导致视口跳动 */
+    private val addItemMutex = Mutex()
+
+    /** 添加完成后滚动到顶部的事件（数据已就绪） */
+    private val _scrollToTopEvent = MutableSharedFlow<Unit>()
+    val scrollToTopEvent: SharedFlow<Unit> = _scrollToTopEvent.asSharedFlow()
+
     init {
         loadOrder()
         loadSuppliers()
@@ -195,63 +202,83 @@ class PickDetailViewModel @Inject constructor(
                     return@launch
                 }
 
-                // 立即加入待处理列表（UI 瞬间显示占位行）
+                // 立即显示占位符 + 清空输入框（无锁，即时反馈）
                 _pendingItems.value = _pendingItems.value + barcode
                 _scanSuccessEvent.emit(Unit)
 
-                try {
-                    val token = userRepository.getToken()
-                    val response = orderApiService.addItem(
-                        token,
-                        orderId,
-                        AddOrderItemRequest(barcode)
-                    )
-                    // 同步到本地数据库
-                    val item = PickItemEntity(
-                        id = response.id,
-                        orderId = orderId,
-                        skuOuterId = response.skuOuterId,
-                        sysItemId = response.sysItemId,
-                        sysSkuId = response.sysSkuId,
-                        propertiesName = response.propertiesName,
-                        picPath = response.picPath,
-                        status = response.status,
-                        supplierName = response.supplierName,
-                        supplierCode = response.supplierCode,
-                        remark = response.remark,
-                        itemOuterId = response.itemOuterId,
-                        createdAt = TimeUtils.parseBeijingTime(response.createdAt).let { if (it > 0) it else TimeUtils.now() }
-                    )
-                    pickOrderRepository.insertItem(item)
-                    val newSupplier = response.supplierName
-                    if (newSupplier.isNotEmpty() && !_suppliers.value.contains(newSupplier)) {
-                        _suppliers.value = _suppliers.value + newSupplier
-                    }
-                    loadOrder()
-                    _order.value = _order.value?.copy(totalCount = (_order.value?.totalCount ?: 0) + 1)
-                } catch (e: Exception) {
-                    if (e is HttpException && e.code() == 409) {
-                        _errorMessage.value = null
-                        syncItemsFromBackend()
-                        _duplicateScan.value = true
-                    } else {
-                        if (e is HttpException && e.code() == 401) {
-                            SessionExpiredEvent.notifyExpired()
-                        }
-                        _errorMessage.value = "添加明细失败: ${e.message}"
-                        _scanFailureEvent.emit("添加明细失败: ${e.message}")
-                    }
+                // API 调用串行化（等待前面的扫码处理完成）
+                addItemMutex.withLock {
+                    _executeAddItem(barcode)
                 }
             } catch (e: Exception) {
+                Log.e(TAG, "添加取货明细异常", e)
+                _errorMessage.value = "添加明细失败: ${e.message}"
+                _scanFailureEvent.emit("添加明细失败: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * 实际执行添加取货明细（由 Mutex 串行化保护）
+     * 注意：调用前 _pendingItems 已包含 barcode，调用后已移除
+     */
+    private suspend fun _executeAddItem(barcode: String) {
+        try {
+            val token = userRepository.getToken()
+            var response: OrderItemResponse? = null
+            var retries = 0
+            while (response == null && retries < 2) {
+                try {
+                    response = orderApiService.addItem(
+                        token, orderId, AddOrderItemRequest(barcode)
+                    )
+                } catch (e: HttpException) {
+                    if (e.code() == 404 && retries == 0) {
+                        retries++
+                        delay(200)
+                    } else {
+                        throw e
+                    }
+                }
+            }
+
+            val item = PickItemEntity(
+                id = response.id, orderId = orderId,
+                skuOuterId = response.skuOuterId,
+                sysItemId = response.sysItemId,
+                sysSkuId = response.sysSkuId,
+                propertiesName = response.propertiesName,
+                picPath = response.picPath,
+                status = response.status,
+                supplierName = response.supplierName,
+                supplierCode = response.supplierCode,
+                remark = response.remark,
+                itemOuterId = response.itemOuterId,
+                createdAt = TimeUtils.parseBeijingTime(response.createdAt).let { if (it > 0) it else TimeUtils.now() }
+            )
+            pickOrderRepository.insertItem(item)
+            val newSupplier = response.supplierName
+            if (newSupplier.isNotEmpty() && !_suppliers.value.contains(newSupplier)) {
+                _suppliers.value = _suppliers.value + newSupplier
+            }
+            loadOrder()
+            _order.value = _order.value?.copy(totalCount = (_order.value?.totalCount ?: 0) + 1)
+        } catch (e: Exception) {
+            if (e is HttpException && e.code() == 409) {
+                _errorMessage.value = null
+                syncItemsFromBackend()
+                _duplicateScan.value = true
+            } else {
                 if (e is HttpException && e.code() == 401) {
                     SessionExpiredEvent.notifyExpired()
                 }
                 _errorMessage.value = "添加明细失败: ${e.message}"
                 _scanFailureEvent.emit("添加明细失败: ${e.message}")
-            } finally {
-                // 无论成功失败，从待处理列表中移除
-                _pendingItems.value = _pendingItems.value - barcode
             }
+        } finally {
+            // 无论成功失败，从待处理列表中移除 + 通知UI滚动到顶部
+            _pendingItems.value = _pendingItems.value - barcode
+            _scrollToTopEvent.emit(Unit)
         }
     }
 

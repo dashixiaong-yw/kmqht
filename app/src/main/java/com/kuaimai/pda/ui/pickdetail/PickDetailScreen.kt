@@ -146,7 +146,7 @@ fun PickDetailScreen(
             // 滚动到重复行
             val duplicateSku = viewModel.lastScannedSku
             if (duplicateSku.isNotEmpty()) {
-                val duplicateIndex = items.indexOfFirst { it.skuOuterId == duplicateSku }
+                val duplicateIndex = filteredItems.indexOfFirst { it.skuOuterId == duplicateSku }
                 if (duplicateIndex >= 0) {
                     listState.animateScrollToItem(duplicateIndex)
                 }
@@ -157,13 +157,19 @@ fun PickDetailScreen(
         }
     }
 
-    // 扫码成功反馈 + 清空输入框并重新聚焦 + 滚到顶部
+    // 扫码成功反馈 + 清空输入框并重新聚焦（不再滚动，数据还没就绪）
     LaunchedEffect(Unit) {
         viewModel.scanSuccessEvent.collectLatest {
             viewModel.provideFeedback(context, ScanFeedbackType.SUCCESS)
             scanInput = ""
             focusRequester.requestFocus()
-            listState.animateScrollToItem(0)
+        }
+    }
+
+    // 添加完成（成功/失败）后滚动到顶部（数据已就绪）
+    LaunchedEffect(Unit) {
+        viewModel.scrollToTopEvent.collectLatest {
+            listState.scrollToItem(0)
         }
     }
 
