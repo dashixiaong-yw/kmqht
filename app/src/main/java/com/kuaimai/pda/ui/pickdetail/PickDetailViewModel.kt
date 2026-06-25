@@ -17,7 +17,6 @@ import com.kuaimai.pda.scanner.ScanFeedbackType
 import com.kuaimai.pda.scanner.ScannerManager
 import com.kuaimai.pda.util.AppConstants
 import com.kuaimai.pda.util.PrefsKeys
-import com.kuaimai.pda.util.SessionExpiredEvent
 import com.kuaimai.pda.util.TimeUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
@@ -246,22 +245,23 @@ class PickDetailViewModel @Inject constructor(
                 }
             }
 
+            val r = response ?: throw IllegalStateException("添加明细返回空响应")
             val item = PickItemEntity(
-                id = response.id, orderId = orderId,
-                skuOuterId = response.skuOuterId,
-                sysItemId = response.sysItemId,
-                sysSkuId = response.sysSkuId,
-                propertiesName = response.propertiesName,
-                picPath = response.picPath,
-                status = response.status,
-                supplierName = response.supplierName,
-                supplierCode = response.supplierCode,
-                remark = response.remark,
-                itemOuterId = response.itemOuterId,
-                createdAt = TimeUtils.parseBeijingTime(response.createdAt).let { if (it > 0) it else TimeUtils.now() }
+                id = r.id, orderId = orderId,
+                skuOuterId = r.skuOuterId,
+                sysItemId = r.sysItemId,
+                sysSkuId = r.sysSkuId,
+                propertiesName = r.propertiesName,
+                picPath = r.picPath,
+                status = r.status,
+                supplierName = r.supplierName,
+                supplierCode = r.supplierCode,
+                remark = r.remark,
+                itemOuterId = r.itemOuterId,
+                createdAt = TimeUtils.parseBeijingTime(r.createdAt).let { if (it > 0) it else TimeUtils.now() }
             )
             pickOrderRepository.insertItem(item)
-            val newSupplier = response.supplierName
+            val newSupplier = r.supplierName
             if (newSupplier.isNotEmpty() && !_suppliers.value.contains(newSupplier)) {
                 _suppliers.value = _suppliers.value + newSupplier
             }
@@ -299,7 +299,7 @@ class PickDetailViewModel @Inject constructor(
                 loadOrder()
             } catch (e: Exception) {
                 pickOrderRepository.updateItemStatus(itemId, 1, TimeUtils.now())
-                pickOrderRepository.updateCompletedCount(orderId, count)
+                pickOrderRepository.updateCompletedCount(orderId, pickOrderRepository.getCompletedCount(orderId, 1))
                 _errorMessage.value = "完成明细失败: ${e.message}"
             } finally {
                 _isLoading.value = false

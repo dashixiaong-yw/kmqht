@@ -126,6 +126,21 @@ fun PickDetailScreen(
     var duplicateTipText by remember { mutableStateOf("") }
     val listState = remember(viewModel.orderId) { LazyListState() }
 
+    // 根据供应商过滤明细 + GAP-07: 按状态+时间排序（未完成在上，已完成在下，同状态按时间倒序）
+    val filteredItems by remember {
+        derivedStateOf {
+            (if (currentSupplier == AppConstants.SUPPLIER_ALL_LABEL) {
+                items
+            } else {
+                items.filter { it.supplierName == currentSupplier }
+            }).sortedWith(compareBy<PickItemEntity> { it.status }.thenByDescending { it.createdAt }.thenByDescending { it.id })
+        }
+    }
+
+    val completedCount = items.count { it.status == 1 }
+    val totalCount = items.size
+    val allCompleted = completedCount >= totalCount && totalCount > 0
+
     // GAP-05: 屏幕常亮
     val activity = context.findActivity()
     LaunchedEffect(Unit) {
@@ -199,20 +214,10 @@ fun PickDetailScreen(
         }
     }
 
-    // 根据供应商过滤明细 + GAP-07: 按状态+时间排序（未完成在上，已完成在下，同状态按时间倒序）
-    val filteredItems by remember {
-        derivedStateOf {
-            (if (currentSupplier == AppConstants.SUPPLIER_ALL_LABEL) {
-                items
-            } else {
-                items.filter { it.supplierName == currentSupplier }
-            }).sortedWith(compareBy<PickItemEntity> { it.status }.thenByDescending { it.createdAt }.thenByDescending { it.id })
-        }
+    // 自动聚焦扫码输入框
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
     }
-
-    val completedCount = items.count { it.status == 1 }
-    val totalCount = items.size
-    val allCompleted = completedCount >= totalCount && totalCount > 0
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },

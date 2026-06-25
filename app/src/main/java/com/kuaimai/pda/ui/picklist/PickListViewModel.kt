@@ -9,7 +9,6 @@ import com.kuaimai.pda.data.api.dto.CreateOrderRequest
 import com.kuaimai.pda.data.db.entity.PickOrderEntity
 import com.kuaimai.pda.data.repository.PickOrderRepository
 import com.kuaimai.pda.data.repository.UserRepository
-import com.kuaimai.pda.util.SessionExpiredEvent
 import com.kuaimai.pda.util.TimeUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

@@ -7,6 +7,7 @@ import com.kuaimai.pda.data.db.dao.ProductImageDao
 import com.kuaimai.pda.data.db.entity.ProductImageEntity
 import com.kuaimai.pda.util.ImageCompressor
 import com.kuaimai.pda.util.TimeUtils
+import kotlinx.coroutines.flow.first
 import org.json.JSONObject
 import java.io.File
 import javax.inject.Inject
@@ -70,7 +71,7 @@ class ImageRepositoryImpl @Inject constructor(
         try {
             val responseBody = uploadService.fetchImages(skuOuterId)
             val jsonArray = JSONObject(responseBody).getJSONArray("data")
-            if (jsonArray.length() == 0) return productImageDao.getBySkuOuterId(skuOuterId)
+            if (jsonArray.length() == 0) return productImageDao.getBySkuOuterId(skuOuterId).first()
             val now = TimeUtils.now()
             for (i in 0 until jsonArray.length()) {
                 val json = jsonArray.getJSONObject(i)
@@ -89,6 +90,6 @@ class ImageRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Log.w("ImageRepository", "同步后端图片列表失败: ${e.message}")
         }
-        return productImageDao.getBySkuOuterId(skuOuterId)
+        return productImageDao.getBySkuOuterId(skuOuterId).first()
     }
 }

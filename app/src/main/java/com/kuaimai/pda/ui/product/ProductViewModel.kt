@@ -18,7 +18,6 @@ import com.kuaimai.pda.data.repository.PickOrderRepository
 import com.kuaimai.pda.scanner.ScannerManager
 import com.kuaimai.pda.util.AppConstants
 import com.kuaimai.pda.util.PrefsKeys
-import com.kuaimai.pda.util.SessionExpiredEvent
 import com.kuaimai.pda.util.TimeUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
