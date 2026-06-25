@@ -239,7 +239,7 @@ input:focus,select:focus {{ border-color:#2563eb; }}
   <div id="loginSection" style="display:block">
     <div style="max-width:360px;margin:0 auto 24px;text-align:center">
       <h2 style="margin-bottom:20px;color:#2563eb">管理后台登录</h2>
-      <input type="password" id="apiKeyInput" placeholder="请输入API Key"
+      <input type="password" id="apiKeyInput" placeholder="请输入管理密码"
              style="width:100%;margin-bottom:12px;padding:10px 12px;font-size:15px" />
       <button class="btn btn-primary" style="width:100%;padding:10px;font-size:15px" onclick="doLogin()">
         验证并登录
@@ -443,7 +443,7 @@ async function doLogin() {{
       document.getElementById('loginError').textContent = '';
       showMainPanel();
     }} else {{
-      document.getElementById('loginError').textContent = 'API Key无效';
+      document.getElementById('loginError').textContent = '管理密码错误';
     }}
   }} catch(e) {{
     document.getElementById('loginError').textContent = '连接失败: ' + e.message;
