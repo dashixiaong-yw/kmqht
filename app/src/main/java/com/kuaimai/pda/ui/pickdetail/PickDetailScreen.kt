@@ -57,6 +57,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import com.kuaimai.pda.util.ScrollLogger
 import kotlinx.coroutines.flow.first
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.alpha
@@ -158,6 +159,7 @@ fun PickDetailScreen(
     // GAP-08: 重复扫码反馈 + 居中弹窗提示
     LaunchedEffect(duplicateScan) {
         if (duplicateScan) {
+            ScrollLogger.appendLog(context.applicationContext, "duplicateScan触发")
             viewModel.provideFeedback(context, ScanFeedbackType.DUPLICATE)
             showDuplicateTip = true
             duplicateTipText = "该商品已在列表中"
@@ -165,6 +167,7 @@ fun PickDetailScreen(
             val duplicateSku = viewModel.lastScannedSku
             if (duplicateSku.isNotEmpty()) {
                 val duplicateIndex = filteredItems.indexOfFirst { it.skuOuterId == duplicateSku }
+                ScrollLogger.appendLog(context.applicationContext, "animateScrollToItem(duplicateIndex=$duplicateIndex) 即将执行")
                 if (duplicateIndex >= 0) {
                     listState.animateScrollToItem(duplicateIndex)
                 }
@@ -187,8 +190,27 @@ fun PickDetailScreen(
     // 添加完成（成功）后滚动到顶部显示新商品（进入页面时也生效）
     val needScroll by viewModel.needScroll.collectAsState()
     LaunchedEffect(viewModel.orderId, needScroll) {
+        val ctx = context.applicationContext
+        ScrollLogger.appendLog(ctx, "=== LaunchedEffect触发: orderId=${viewModel.orderId}, needScroll=$needScroll ===")
+        val firstVisible = listState.firstVisibleItemIndex
+        val visibleCount = listState.layoutInfo.visibleItemsInfo.size
+        val firstVisibleSku = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.let {
+            filteredItems.getOrNull(it.index)?.let { item -> "${item.skuOuterId.take(12)}(idx=${it.index})" }
+        } ?: "none"
+        val lastVisibleSku = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.let {
+            filteredItems.getOrNull(it.index)?.let { item -> "${item.skuOuterId.take(12)}(idx=${it.index})" }
+        } ?: "none"
+        ScrollLogger.appendLog(ctx, "scroll前: filteredSize=${filteredItems.size}, listIndex=$firstVisible, visibleCount=$visibleCount, firstVisible=$firstVisibleSku, lastVisible=$lastVisibleSku")
         if (filteredItems.isNotEmpty()) {
+            ScrollLogger.appendLog(ctx, "scrollToItem(0) 即将执行")
             listState.scrollToItem(0)
+            val afterFirst = listState.firstVisibleItemIndex
+            val afterFirstSku = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.let {
+                filteredItems.getOrNull(it.index)?.let { item -> "${item.skuOuterId.take(12)}(idx=${it.index})" }
+            } ?: "none"
+            ScrollLogger.appendLog(ctx, "scrollToItem(0) 完成: postIndex=$afterFirst, firstVisible=$afterFirstSku")
+        } else {
+            ScrollLogger.appendLog(ctx, "scroll跳过: filteredItems为空")
         }
     }
 
