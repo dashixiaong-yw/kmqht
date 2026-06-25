@@ -196,6 +196,7 @@ class AppUpdateManager @Inject constructor(
             Log.w(TAG, "FileProvider URI 不被识别，尝试 file:// URI 降级", e)
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
                 try {
+                    apkFile.setReadable(true, false)
                     val fallbackIntent = Intent(Intent.ACTION_VIEW).apply {
                         setDataAndType(Uri.fromFile(apkFile), "application/vnd.android.package-archive")
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
