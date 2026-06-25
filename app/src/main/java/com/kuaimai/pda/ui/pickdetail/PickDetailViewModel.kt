@@ -118,7 +118,7 @@ class PickDetailViewModel @Inject constructor(
     private val addItemMutex = Mutex()
 
     /** 滚动到顶部状态标识 — 递增表示需要滚动（进入页面 + 扫码添加后） */
-    private val _needScroll = MutableStateFlow(0)
+    private val _needScroll = MutableStateFlow(Int.MAX_VALUE)
     val needScroll: StateFlow<Int> = _needScroll.asStateFlow()
 
     init {

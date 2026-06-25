@@ -185,7 +185,9 @@ fun PickDetailScreen(
     // 添加完成（成功）后滚动到顶部显示新商品（进入页面时也生效）
     val needScroll by viewModel.needScroll.collectAsState()
     LaunchedEffect(viewModel.orderId, needScroll) {
-        listState.scrollToItem(0)
+        if (filteredItems.isNotEmpty()) {
+            listState.scrollToItem(0)
+        }
     }
 
     // 扫码失败反馈
