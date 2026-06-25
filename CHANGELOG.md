@@ -1,5 +1,13 @@
 # 快麦取货通 - 变更日志
 
+## 2.44 (2026-06-26)
+
+### 修改
+- 简化视口逻辑：删除VM侧所有`_needScroll`/`needScroll`相关代码，还原为LazyColumn默认行为
+- Screen侧用`snapshotFlow`监听`firstVisibleItemIndex`漂移，只有index从0被推到>0时才回滚到位置号0
+- 全面回归审查确认14项检查全部通过，无跨模块影响
+- 退出登录时自动清理`sync_log.txt`和`scroll_log.txt`，启动时自动清理超过7天的日志文件
+
 ## 2.42 (2026-06-26)
 
 ### 修复

@@ -186,31 +186,14 @@ fun PickDetailScreen(
         }
     }
 
-    // 添加完成（成功）后滚动到顶部显示新商品（进入页面时也生效）
-    val needScroll by viewModel.needScroll.collectAsState()
-    LaunchedEffect(viewModel.orderId, needScroll) {
-        val ctx = context.applicationContext
-        ScrollLogger.appendLog(ctx, "=== LaunchedEffect触发: orderId=${viewModel.orderId}, needScroll=$needScroll ===")
-        val firstVisible = listState.firstVisibleItemIndex
-        val visibleCount = listState.layoutInfo.visibleItemsInfo.size
-        val firstVisibleSku = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.let {
-            filteredItems.getOrNull(it.index)?.let { item -> "${item.skuOuterId.take(12)}(idx=${it.index})" }
-        } ?: "none"
-        val lastVisibleSku = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.let {
-            filteredItems.getOrNull(it.index)?.let { item -> "${item.skuOuterId.take(12)}(idx=${it.index})" }
-        } ?: "none"
-        ScrollLogger.appendLog(ctx, "scroll前: filteredSize=${filteredItems.size}, listIndex=$firstVisible, visibleCount=$visibleCount, firstVisible=$firstVisibleSku, lastVisible=$lastVisibleSku")
-        if (filteredItems.isNotEmpty() && listState.firstVisibleItemIndex != 0) {
-            ScrollLogger.appendLog(ctx, "scrollToItem(0) 即将执行")
-            listState.scrollToItem(0)
-            val afterFirst = listState.firstVisibleItemIndex
-            val afterFirstSku = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.let {
-                filteredItems.getOrNull(it.index)?.let { item -> "${item.skuOuterId.take(12)}(idx=${it.index})" }
-            } ?: "none"
-            ScrollLogger.appendLog(ctx, "scrollToItem(0) 完成: postIndex=$afterFirst, firstVisible=$afterFirstSku")
-        } else {
-            ScrollLogger.appendLog(ctx, "scroll跳过: filteredItems为空")
-        }
+    // 当 LazyColumn 因新商品插入而被推到 index≠0 时，回滚到 index=0
+    LaunchedEffect(viewModel.orderId) {
+        snapshotFlow { listState.firstVisibleItemIndex }
+            .collect { index ->
+                if (index > 0 && filteredItems.isNotEmpty()) {
+                    listState.scrollToItem(0)
+                }
+            }
     }
 
     // 扫码失败反馈

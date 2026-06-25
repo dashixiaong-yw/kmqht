@@ -32,7 +32,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -122,13 +121,9 @@ class PickDetailViewModel @Inject constructor(
     /** 添加取货明细的串行化锁，避免并发导致视口跳动 */
     private val addItemMutex = Mutex()
 
-    /** 滚动到顶部状态标识 — 递增表示需要滚动（进入页面 + 扫码添加后） */
-    private val _needScroll = MutableStateFlow(Int.MAX_VALUE)
-    val needScroll: StateFlow<Int> = _needScroll.asStateFlow()
-
     init {
         ScrollLogger.appendLog(appContext, "=== VM init ===")
-        ScrollLogger.appendLog(appContext, "orderId=$orderId, needScroll初始=${_needScroll.value}")
+        ScrollLogger.appendLog(appContext, "orderId=$orderId")
         loadOrder()
         loadSuppliers()
         viewModelScope.launch {
@@ -281,18 +276,12 @@ class PickDetailViewModel @Inject constructor(
             )
             pickOrderRepository.insertItem(item)
             ScrollLogger.appendLog(appContext, "insertItem 返回, sku=${r.skuOuterId}")
-            // 等待 Room Flow 发射包含新商品的数据，再触发滚动
-            items.first { itemList -> itemList.any { it.skuOuterId == r.skuOuterId } }
             val newSupplier = r.supplierName
             if (newSupplier.isNotEmpty() && !_suppliers.value.contains(newSupplier)) {
                 _suppliers.value = _suppliers.value + newSupplier
             }
             loadOrder()
             _order.value = _order.value?.copy(totalCount = (_order.value?.totalCount ?: 0) + 1)
-            ScrollLogger.appendLog(appContext, "needScroll 准备++: ${_needScroll.value} → ${_needScroll.value + 1}")
-            // 数据已就绪，触发滚动到顶部显示新商品
-            _needScroll.value = _needScroll.value + 1
-            ScrollLogger.appendLog(appContext, "needScroll 已++: ${_needScroll.value}, items size=${items.value.size}")
         } catch (e: Exception) {
             if (e is HttpException && e.code() == 409) {
                 ScrollLogger.appendLog(appContext, "_executeAddItem: 409重复, 触发syncItemsFromBackend")
@@ -500,8 +489,6 @@ class PickDetailViewModel @Inject constructor(
             }
             loadSuppliers()
             ScrollLogger.appendLog(appContext, "syncItemsFromBackend 完成, items size=${items.value.size}")
-            // 数据已就绪，触发滚动
-            _needScroll.value = _needScroll.value + 1
         } catch (e: Exception) {
             Log.w(TAG, "syncItemsFromBackend失败: ${e.message}")
             ScrollLogger.appendLog(appContext, "syncItemsFromBackend 失败: ${e.message?.take(60)}")
