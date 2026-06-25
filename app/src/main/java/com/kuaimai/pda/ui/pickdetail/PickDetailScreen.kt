@@ -200,7 +200,7 @@ fun PickDetailScreen(
             filteredItems.getOrNull(it.index)?.let { item -> "${item.skuOuterId.take(12)}(idx=${it.index})" }
         } ?: "none"
         ScrollLogger.appendLog(ctx, "scroll前: filteredSize=${filteredItems.size}, listIndex=$firstVisible, visibleCount=$visibleCount, firstVisible=$firstVisibleSku, lastVisible=$lastVisibleSku")
-        if (filteredItems.isNotEmpty()) {
+        if (filteredItems.isNotEmpty() && listState.firstVisibleItemIndex != 0) {
             ScrollLogger.appendLog(ctx, "scrollToItem(0) 即将执行")
             listState.scrollToItem(0)
             val afterFirst = listState.firstVisibleItemIndex

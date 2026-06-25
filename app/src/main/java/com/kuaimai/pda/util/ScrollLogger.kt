@@ -23,4 +23,29 @@ object ScrollLogger {
             Log.w(TAG, "appendLog失败: ${e.message}")
         }
     }
+
+    fun clearLogs(context: Context) {
+        try {
+            val file = File(context.cacheDir, LOG_FILE)
+            if (file.exists()) file.delete()
+        } catch (e: Exception) {
+            Log.w(TAG, "clearLogs失败: ${e.message}")
+        }
+    }
+
+    fun trimByAge(context: Context, maxAgeDays: Int = 7) {
+        try {
+            val file = File(context.cacheDir, LOG_FILE)
+            if (file.exists()) {
+                val lastModified = file.lastModified()
+                val cutoff = System.currentTimeMillis() - maxAgeDays * 24L * 60 * 60 * 1000
+                if (lastModified < cutoff) {
+                    file.delete()
+                    Log.i(TAG, "日志文件超过${maxAgeDays}天，已自动清理")
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "trimByAge失败: ${e.message}")
+        }
+    }
 }

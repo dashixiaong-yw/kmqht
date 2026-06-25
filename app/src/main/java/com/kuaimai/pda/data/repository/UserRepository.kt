@@ -1,8 +1,10 @@
 package com.kuaimai.pda.data.repository
 
+import android.content.Context
 import android.content.SharedPreferences
 import android.util.Base64
 import android.util.Log
+import com.kuaimai.pda.data.OrderSyncWorker
 import com.kuaimai.pda.data.api.SystemApiService
 import com.kuaimai.pda.data.api.UserApiService
 import com.kuaimai.pda.data.api.dto.LoginResponse
@@ -12,8 +14,10 @@ import com.kuaimai.pda.data.api.dto.UpdateUserRequest
 import com.kuaimai.pda.data.api.dto.UserListResponse
 import com.kuaimai.pda.data.api.dto.UserResponse
 import com.kuaimai.pda.util.PrefsKeys
+import com.kuaimai.pda.util.ScrollLogger
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -115,7 +119,8 @@ interface UserRepository {
 class UserRepositoryImpl @Inject constructor(
     private val apiService: UserApiService,
     private val systemApiService: SystemApiService,
-    @Named("encrypted") private val prefs: SharedPreferences
+    @Named("encrypted") private val prefs: SharedPreferences,
+    @ApplicationContext private val appContext: Context
 ) : UserRepository {
 
     /** 应用级协程作用域，用于handleAuthError发送事件 */
@@ -197,6 +202,9 @@ class UserRepositoryImpl @Inject constructor(
                 Log.w(TAG, "退出登录API调用失败: ${e.message}")
             }
         }
+        // 退出登录时清理日志文件
+        OrderSyncWorker.clearLogs(appContext)
+        ScrollLogger.clearLogs(appContext)
     }
 
     override fun hasPermission(perm: String): Boolean {

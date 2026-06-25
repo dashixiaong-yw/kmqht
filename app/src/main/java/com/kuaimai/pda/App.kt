@@ -8,6 +8,7 @@ import coil.ImageLoader
 import coil.ImageLoaderFactory
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
+import com.kuaimai.pda.data.OrderSyncWorker
 import com.kuaimai.pda.data.api.ImageUploadService
 import com.kuaimai.pda.data.api.KuaimaiApiService
 import com.kuaimai.pda.data.api.OrderApiService
@@ -18,6 +19,7 @@ import com.kuaimai.pda.data.db.dao.PendingOperationDao
 import com.kuaimai.pda.data.db.dao.ProductImageDao
 import com.kuaimai.pda.data.repository.AuthRepository
 import com.kuaimai.pda.data.repository.UserRepository
+import com.kuaimai.pda.util.ScrollLogger
 import com.kuaimai.pda.util.TimeUtils
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -121,6 +123,10 @@ class App : Application(), ImageLoaderFactory {
                 productImageDao.deleteOlderThan(System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000)
             } catch (_: Exception) { }
         }
+
+        // 启动时清理超过7天的日志文件
+        OrderSyncWorker.trimByAge(this)
+        ScrollLogger.trimByAge(this)
     }
 
     /**
