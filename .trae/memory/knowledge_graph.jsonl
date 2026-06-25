@@ -215,6 +215,7 @@
 {"type":"entity","name":"D_视口逻辑简化_v2.44","entityType":"design_decision","observations":["删除VM侧所有_needScroll/needScroll相关代码（声明、items.first等待、两处_needScroll++）","Screen侧用snapshotFlow监听firstVisibleItemIndex漂移，只有index从0被推到>0时才回滚","LazyColumn默认index=0即位置号0（最后添加的商品），无需额外滚动","全面回归审查14项检查全部通过，无跨模块影响"]}
 {"type":"entity","name":"PickDetailScreen","entityType":"composable","observations":["LaunchedEffect(orderId) + snapshotFlow { firstVisibleItemIndex } 替代旧的需要Scroll事件驱动方案"]}
 {"type":"entity","name":"PickDetailViewModel","entityType":"viewmodel","observations":["v2.44: 删除13行代码（_needScroll声明、items.first、两处_needScroll++、import first）"]}
+{"type":"entity","name":"D_CASCADE修复_v2.45","entityType":"design_decision","observations":["根因：PickOrderDao.insert使用OnConflictStrategy.REPLACE+CASCADE外键导致syncItemsFromBackend时级联删除全部明细","修复：syncItemsFromBackend中判断订单是否存在，已有则updateOrder不触发CASCADE，不存在才insertOrder","删除v2.44加的snapshotFlow+scrollToItem滚动代码，LazyColumn默认index=0满足需求","退出登录自动清理sync_log.txt和scroll_log.txt","ScrollLogger与OrderSyncWorker均添加clearLogs+trimByAge支持"]}
 {"type":"relation","from":"F1_取货单管理","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F2_扫码待办","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F3_取货单自动完成","to":"快麦取货通项目","relationType":"属于"}
@@ -369,3 +370,6 @@
 {"type":"relation","from":"D_视口逻辑简化_v2.44","to":"PickDetailScreen","relationType":"修改了"}
 {"type":"relation","from":"D_视口逻辑简化_v2.44","to":"PickDetailViewModel","relationType":"修改了"}
 {"type":"relation","from":"PickDetailScreen","to":"PickDetailViewModel","relationType":"引用"}
+{"type":"relation","from":"D_CASCADE修复_v2.45","to":"PickDetailScreen","relationType":"修改了"}
+{"type":"relation","from":"D_CASCADE修复_v2.45","to":"PickDetailViewModel","relationType":"修改了"}
+{"type":"relation","from":"D_CASCADE修复_v2.45","to":"PickOrderDao","relationType":"引用了根因"}

@@ -56,7 +56,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import com.kuaimai.pda.util.ScrollLogger
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.alpha
@@ -184,16 +183,6 @@ fun PickDetailScreen(
             scanInput = ""
             focusRequester.requestFocus()
         }
-    }
-
-    // 当 LazyColumn 因新商品插入而被推到 index≠0 时，回滚到 index=0
-    LaunchedEffect(viewModel.orderId) {
-        snapshotFlow { listState.firstVisibleItemIndex }
-            .collect { index ->
-                if (index > 0 && filteredItems.isNotEmpty()) {
-                    listState.scrollToItem(0)
-                }
-            }
     }
 
     // 扫码失败反馈

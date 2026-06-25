@@ -1,5 +1,11 @@
 # 快麦取货通 - 变更日志
 
+## 2.45 (2026-06-26)
+
+### 修复
+- 重新进入取货单详情视口从底部往顶部快速滚动：syncItemsFromBackend中用updateOrder替代insertOrder(REPLACE)，消除CASCADE级联删除全部明细导致的数据剧烈波动
+- 删除v2.44加的snapshotFlow+scrollToItem滚动回滚代码（已不需要，LazyColumn默认index=0就是最新商品）
+
 ## 2.44 (2026-06-26)
 
 ### 修改

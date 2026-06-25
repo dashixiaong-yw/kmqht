@@ -480,7 +480,12 @@ class PickDetailViewModel @Inject constructor(
                 assignedTo = detail.assignedTo,
                 visibility = detail.visibility
             )
-            pickOrderRepository.insertOrder(orderEntity) // insertOrder (REPLACE) 兼容不存在和已存在
+            val existing = pickOrderRepository.getOrderById(orderId)
+            if (existing != null) {
+                pickOrderRepository.updateOrder(orderEntity)
+            } else {
+                pickOrderRepository.insertOrder(orderEntity)
+            }
             _order.value = orderEntity // 直接设置StateFlow，让UI立即响应
 
             // 同步明细数据（items由Room Flow自动驱动，无需手动设置）
