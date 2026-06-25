@@ -264,6 +264,7 @@ fun LoginScreen(
                                 } else {
                                     userRepository.clearSavedCredentials()
                                 }
+                                password = ""
                                 userRepository.setSavePasswordEnabled(savePasswordChecked)
                                 userRepository.saveToLoginHistory(username)
 

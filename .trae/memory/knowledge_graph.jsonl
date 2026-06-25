@@ -208,6 +208,10 @@
 {"type":"entity","name":"v2.31_历史取货单详情打开时视口固定在顶部","entityType":"版本","observations":["rememberLazyListState→remember(orderId){LazyListState()}确保每次进订单详情视口从顶部开始","不再依赖rememberSaveable可能的状态恢复","仅1行代码改动","版本号：2.31","不构建APK，等通知"]}
 {"type":"entity","name":"v2.32_全链路性能优化(6项)","entityType":"版本","observations":["PickDetailViewModel: items Flow 加 distinctUntilChanged 减少不必要发射","PickDetailViewModel: imageUrlsMap collect 加 map+distinctUntilChanged 仅在SKU集合变化时触发","PickDetailScreen: filteredItems 加 derivedStateOf 避免重组时重算排序","database.py: 补充 cache_size/temp_store/mmap_size 三个 PRAGMA","orders.py: complete_item/restore_item 复用 _check_order_access 返回值消除冗余查询","main.py: 自定义 CachedStaticFiles 给图片响应加 Cache-Control: max-age=86400","版本号：2.32"]}
 {"type":"entity","name":"v2.33_代码审计修复(重复代码清理+401统一+孤立文件清理)","entityType":"版本","observations":["PickDetailViewModel: refresh/syncItemsFromBackend重复映射提取为toPickItemEntity()+upsertItemFromResponse()","移除3个ViewModel共14处重复if(401)判断，由TokenAuthenticator统一处理","删除根目录7个孤立test_*.py文件","ImageRepository: 移除3个纯透传DAO方法，保留getImageBySkuAndType供PickDetailViewModel","ProductViewModel: 移除ProductImageDao直接注入，改为全部走ImageRepository","版本号：2.33"]}
+{"type":"entity","name":"安全加固_v2.36","entityType":"decision","observations":["v2.36 安全加固：后端 kuaimai.json 改为 AES-256-GCM 加密存储","v2.36 安全加固：Android 记住密码使用 Android KeyStore + AES/GCM 应用层加密","v2.36 安全加固：登录成功后清除内存密码变量","密码加密密钥别名: kuaimai_password_key，存储在 Android KeyStore","后端加密密钥通过 KUAIMAI_CONFIG_KEY 环境变量传入，Base64 编码的 32 字节 AES 密钥","save_kuaimai_config() 改为从内存构建数据，不再依赖 json.load() 读取旧文件","load_kuaimai_config() 支持自动检测加密/明文格式"]}
+{"type":"entity","name":"AES-256-GCM","entityType":"technology","observations":["后端快麦凭证文件加密使用 AES-256-GCM 认证加密算法","nonce 12字节，随机生成，每次加密不同","输出格式: 12字节 nonce || AES-GCM 密文（含16字节认证标签）","依赖 cryptography Python 库"]}
+{"type":"entity","name":"Android KeyStore","entityType":"technology","observations":["Android 记住密码使用 Android KeyStore 存储 AES-256 加密密钥","算法: AES/GCM/NoPadding，256 bit","密钥生成使用 KeyGenParameterSpec 指定 PURPOSE_ENCRYPT | PURPOSE_DECRYPT","旧版明文密码通过解密失败降级策略向前兼容","最小支持 SDK 23 (Android 6.0)"]}
+{"type":"entity","name":"KUAIMAI_CONFIG_KEY","entityType":"config","observations":["环境变量名: KUAIMAI_CONFIG_KEY","格式: Base64 编码的 32 字节密钥","生成命令: openssl rand -base64 32","在 .env.docker.example 和 docker-deploy/.env 中配置","运行时通过 docker-compose env_file 传递"]}
 {"type":"relation","from":"F1_取货单管理","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F2_扫码待办","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F3_取货单自动完成","to":"快麦取货通项目","relationType":"属于"}
@@ -355,3 +359,7 @@
 {"type":"relation","from":"v2.9_扫码性能优化","to":"ProductViewModel","relationType":"修改了"}
 {"type":"relation","from":"v2.9_扫码性能优化","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"v2.10_TokenAuthenticator修复","to":"快麦取货通项目","relationType":"属于"}
+{"type":"relation","from":"安全加固_v2.36","to":"AES-256-GCM","relationType":"uses"}
+{"type":"relation","from":"安全加固_v2.36","to":"Android KeyStore","relationType":"uses"}
+{"type":"relation","from":"安全加固_v2.36","to":"KUAIMAI_CONFIG_KEY","relationType":"configures"}
+{"type":"relation","from":"AES-256-GCM","to":"KUAIMAI_CONFIG_KEY","relationType":"depends_on"}

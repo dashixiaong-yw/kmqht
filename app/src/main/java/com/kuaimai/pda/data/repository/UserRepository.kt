@@ -1,6 +1,7 @@
 package com.kuaimai.pda.data.repository
 
 import android.content.SharedPreferences
+import android.util.Base64
 import android.util.Log
 import com.kuaimai.pda.data.api.SystemApiService
 import com.kuaimai.pda.data.api.UserApiService
@@ -21,9 +22,15 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
+import java.security.KeyStore
+import javax.crypto.Cipher
+import javax.crypto.spec.GCMParameterSpec
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton
+import javax.crypto.KeyGenerator
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
 
 /**
  * 用户仓库接口
@@ -118,6 +125,8 @@ class UserRepositoryImpl @Inject constructor(
         private const val TAG = "UserRepository"
         /** Token有效期7天（毫秒） */
         private const val TOKEN_EXPIRE_MS = 7L * 24 * 60 * 60 * 1000
+        /** Android KeyStore中存储密码加密密钥的别名 */
+        private const val PASSWORD_KEY_ALIAS = "kuaimai_password_key"
     }
 
     private val _currentUser = MutableStateFlow<UserResponse?>(null)
@@ -369,13 +378,15 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override fun getSavedPassword(): String {
-        return prefs.getString(PrefsKeys.KEY_SAVED_PASSWORD, "") ?: ""
+        val encrypted = prefs.getString(PrefsKeys.KEY_SAVED_PASSWORD, "") ?: ""
+        if (encrypted.isEmpty()) return ""
+        return decryptPassword(encrypted)
     }
 
     override fun saveCredentials(username: String, password: String) {
         prefs.edit()
             .putString(PrefsKeys.KEY_SAVED_USERNAME, username)
-            .putString(PrefsKeys.KEY_SAVED_PASSWORD, password)
+            .putString(PrefsKeys.KEY_SAVED_PASSWORD, encryptPassword(password))
             .apply()
     }
 
@@ -384,6 +395,65 @@ class UserRepositoryImpl @Inject constructor(
             .remove(PrefsKeys.KEY_SAVED_USERNAME)
             .remove(PrefsKeys.KEY_SAVED_PASSWORD)
             .apply()
+    }
+
+    /**
+     * 从Android KeyStore获取或创建密码加密密钥
+     */
+    private fun getPasswordCipherKey(): javax.crypto.SecretKey {
+        val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+        if (!keyStore.containsAlias(PASSWORD_KEY_ALIAS)) {
+            val keyGenerator = KeyGenerator.getInstance(
+                KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore"
+            )
+            keyGenerator.init(
+                KeyGenParameterSpec.Builder(
+                    PASSWORD_KEY_ALIAS,
+                    KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+                )
+                    .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                    .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                    .setKeySize(256)
+                    .build()
+            )
+            return keyGenerator.generateKey()
+        }
+        return (keyStore.getEntry(PASSWORD_KEY_ALIAS, null) as KeyStore.SecretKeyEntry).secretKey
+    }
+
+    /**
+     * AES/GCM加密密码，返回Base64(12字节IV + 密文)
+     */
+    private fun encryptPassword(plaintext: String): String {
+        return try {
+            val secretKey = getPasswordCipherKey()
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey)
+            val iv = cipher.iv
+            val encrypted = cipher.doFinal(plaintext.toByteArray(Charsets.UTF_8))
+            Base64.encodeToString(iv + encrypted, Base64.NO_WRAP)
+        } catch (e: Exception) {
+            Log.e(TAG, "加密密码失败: ${e.message}")
+            plaintext
+        }
+    }
+
+    /**
+     * AES/GCM解密密码，兼容旧版明文密码
+     */
+    private fun decryptPassword(encrypted: String): String {
+        return try {
+            val raw = Base64.decode(encrypted, Base64.NO_WRAP)
+            if (raw.size < 13) return encrypted
+            val secretKey = getPasswordCipherKey()
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            val gcmSpec = GCMParameterSpec(128, raw, 0, 12)
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmSpec)
+            cipher.doFinal(raw, 12, raw.size - 12).toString(Charsets.UTF_8)
+        } catch (e: Exception) {
+            // 解密失败 → 可能是旧版明文密码，直接返回原值
+            encrypted
+        }
     }
 
     // ↓↓↓ 登录历史实现 ↓↓↓

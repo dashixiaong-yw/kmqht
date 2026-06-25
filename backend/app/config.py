@@ -1,5 +1,6 @@
 """配置模块 - 加载环境变量和快麦凭证"""
 
+import base64
 import json
 import logging
 import os
@@ -9,6 +10,7 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Optional
 
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from pydantic_settings import BaseSettings
 
 logger = logging.getLogger(__name__)
@@ -30,6 +32,7 @@ class _Settings(BaseSettings):
     session_warning_days: int = 5
     apk_dir: str = "/data/apk"
     apk_version_file: str = "/data/apk_version.json"
+    kuaimai_config_key: str = ""
 
     class Config:
         env_file = ".env"
@@ -50,6 +53,7 @@ CORS_ORIGINS = _settings.cors_origins
 SESSION_WARNING_DAYS = _settings.session_warning_days
 APK_DIR = _settings.apk_dir
 APK_VERSION_FILE = _settings.apk_version_file
+KUAIMAI_CONFIG_KEY = _settings.kuaimai_config_key
 
 
 class KuaimaiCredentials:
@@ -107,16 +111,62 @@ class KuaimaiCredentials:
 kuaimai_creds = KuaimaiCredentials()
 
 
+def _get_config_key() -> Optional[bytes]:
+    """获取AES-256-GCM加密密钥（从环境变量读取Base64编码的32字节密钥）"""
+    raw = KUAIMAI_CONFIG_KEY
+    if not raw:
+        return None
+    try:
+        return base64.b64decode(raw)
+    except Exception as e:
+        logger.error(f"解析KUAIMAI_CONFIG_KEY失败（需要Base64编码的32字节密钥）: {e}")
+        return None
+
+
+def _encrypt_config_data(data: dict, key: bytes) -> bytes:
+    """AES-256-GCM加密配置数据
+    输出格式: 12字节nonce || AES-GCM密文（含16字节认证标签）
+    """
+    aesgcm = AESGCM(key)
+    nonce = os.urandom(12)
+    plaintext = json.dumps(data, ensure_ascii=False).encode("utf-8")
+    return nonce + aesgcm.encrypt(nonce, plaintext, None)
+
+
+def _decrypt_config_data(encrypted: bytes, key: bytes) -> dict:
+    """AES-256-GCM解密配置数据"""
+    if len(encrypted) < 13:
+        raise ValueError("加密数据长度不足")
+    aesgcm = AESGCM(key)
+    nonce = encrypted[:12]
+    ciphertext = encrypted[12:]
+    plaintext = aesgcm.decrypt(nonce, ciphertext, None)
+    return json.loads(plaintext.decode("utf-8"))
+
+
 def load_kuaimai_config() -> None:
-    """从JSON文件加载快麦凭证"""
+    """从文件加载快麦凭证（支持加密格式和旧版明文JSON格式）"""
     config_path = Path(KUAIMAI_CONFIG_PATH)
     if not config_path.exists():
         logger.warning(f"快麦凭证文件不存在: {KUAIMAI_CONFIG_PATH}")
         return
 
     try:
-        with open(config_path, "r", encoding="utf-8") as f:
-            data: dict = json.load(f)
+        raw = config_path.read_bytes()
+        config_key = _get_config_key()
+
+        data = None
+        if config_key:
+            try:
+                data = _decrypt_config_data(raw, config_key)
+            except Exception:
+                pass
+
+        if data is None:
+            data = json.loads(raw.decode("utf-8"))
+            if config_key:
+                logger.warning("旧版明文配置文件 detected，建议配置KUAIMAI_CONFIG_KEY后重新保存凭证")
+
         with kuaimai_config_lock:
             kuaimai_creds.app_key = data.get("app_key", "")
             kuaimai_creds.app_secret = data.get("app_secret", "")
@@ -124,34 +174,35 @@ def load_kuaimai_config() -> None:
             kuaimai_creds.refresh_token = data.get("refresh_token", "")
             kuaimai_creds.updated_at = data.get("updated_at", "")
         logger.info("快麦凭证加载成功")
-    except (json.JSONDecodeError, IOError) as e:
+    except Exception as e:
         logger.error(f"加载快麦凭证失败: {e}")
 
 
 def save_kuaimai_config() -> None:
-    """将快麦凭证写回JSON文件（刷新session后更新updated_at）"""
+    """将快麦凭证写入文件（密钥存在时加密存储，密钥不存在时明文JSON存储）"""
     config_path = Path(KUAIMAI_CONFIG_PATH)
     try:
-        data: dict = {}
-        if config_path.exists():
-            with open(config_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-
-        # 更新字段
         with kuaimai_config_lock:
-            data["app_key"] = kuaimai_creds.app_key
-            data["app_secret"] = kuaimai_creds.app_secret
-            data["updated_at"] = kuaimai_creds.updated_at
-            data["session"] = kuaimai_creds.session
-            data["refresh_token"] = kuaimai_creds.refresh_token
+            data = {
+                "app_key": kuaimai_creds.app_key,
+                "app_secret": kuaimai_creds.app_secret,
+                "session": kuaimai_creds.session,
+                "refresh_token": kuaimai_creds.refresh_token,
+                "updated_at": kuaimai_creds.updated_at,
+            }
 
-        # 原子写入：先写临时文件，再替换原文件（防止写入中断导致JSON损坏）
+        config_key = _get_config_key()
         tmp_path = config_path.with_suffix(".json.tmp")
-        with open(tmp_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+        if config_key:
+            encrypted = _encrypt_config_data(data, config_key)
+            with open(tmp_path, "wb") as f:
+                f.write(encrypted)
+        else:
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
         tmp_path.replace(config_path)
         logger.info("快麦凭证已保存到文件")
-    except (json.JSONDecodeError, IOError) as e:
+    except Exception as e:
         logger.error(f"保存快麦凭证失败: {e}")
 
 
