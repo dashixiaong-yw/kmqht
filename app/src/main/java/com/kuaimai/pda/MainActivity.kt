@@ -168,6 +168,7 @@ class MainActivity : ComponentActivity() {
                                                             updateInfo = null
                                                         } else {
                                                             isDownloading = false
+                                                            downloadErrorMsg = "下载成功，但安装失败：系统未找到安装器，请点击「在浏览器中下载」重新下载后手动安装"
                                                         }
                                                     }
                                                     is DownloadState.Failed -> {

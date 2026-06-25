@@ -193,7 +193,19 @@ class AppUpdateManager @Inject constructor(
             context.startActivity(intent)
             return true
         } catch (e: ActivityNotFoundException) {
-            Log.e(TAG, "未找到安装器", e)
+            Log.w(TAG, "FileProvider URI 不被识别，尝试 file:// URI 降级", e)
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+                try {
+                    val fallbackIntent = Intent(Intent.ACTION_VIEW).apply {
+                        setDataAndType(Uri.fromFile(apkFile), "application/vnd.android.package-archive")
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(fallbackIntent)
+                    return true
+                } catch (e2: Exception) {
+                    Log.e(TAG, "file:// URI 降级也失败", e2)
+                }
+            }
             showNotificationFailed("未找到安装器，请到系统文件管理器手动安装")
             return false
         } catch (e: Exception) {
