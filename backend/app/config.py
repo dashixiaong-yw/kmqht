@@ -161,6 +161,10 @@ _last_kuaimai_mtime: float = 0.0
 def start_config_watcher() -> None:
     """启动配置文件热重载监控"""
     global _watcher_task
+
+    # 抑制 watchfiles 库自身的 INFO 日志（文件变更事件与健康检查冲突，产生大量噪音）
+    logging.getLogger("watchfiles.main").setLevel(logging.WARNING)
+
     import asyncio
     import os
 
@@ -181,7 +185,6 @@ def start_config_watcher() -> None:
                     if current_mtime == _last_kuaimai_mtime:
                         continue
                     _last_kuaimai_mtime = current_mtime
-                    logger.info(f"检测到配置文件变更: {change_type}")
                     load_kuaimai_config()
         except ImportError as e:
             logger.warning(f"watchfiles未安装，配置热重载不可用: {e}")

@@ -25,7 +25,7 @@ def get_db() -> sqlite3.Connection:
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
         _local.db_connection = conn
-        logger.info(f"数据库连接已建立: {DB_PATH} (thread={threading.current_thread().name})")
+        logger.debug(f"数据库连接已建立: {DB_PATH} (thread={threading.current_thread().name})")
 
         # 每个连接首次使用时设置PRAGMA
         with _pragma_lock:

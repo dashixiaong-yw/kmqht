@@ -755,9 +755,9 @@ async function searchImages() {{
         : API_BASE + '/images/' + img.filePath + '_thumb.jpg';
       return '<div style="display:inline-block;margin:8px;text-align:center;vertical-align:top">' +
         '<div style="display:flex;gap:8px;margin-bottom:4px">' +
-          '<div><img src="' + fullUrl + '" style="max-width:200px;max-height:200px;border-radius:8px;border:1px solid #e5e7eb" onerror="this.src=\'\';this.alt=\'加载失败\'" />' +
+          '<div><img src="' + fullUrl + '" style="max-width:200px;max-height:200px;border-radius:8px;border:1px solid #e5e7eb" onerror="this.src=\\\'\\';this.alt=\\\'加载失败\\\'" />' +
             '<div style="font-size:11px;color:#666;margin-top:2px">原图</div></div>' +
-          '<div><img src="' + thumbUrl + '" style="max-width:100px;max-height:100px;border-radius:8px;border:1px solid #e5e7eb" onerror="this.src=\'\';this.alt=\'加载失败\'" />' +
+          '<div><img src="' + thumbUrl + '" style="max-width:100px;max-height:100px;border-radius:8px;border:1px solid #e5e7eb" onerror="this.src=\\\'\\';this.alt=\\\'加载失败\\\'" />' +
             '<div style="font-size:11px;color:#666;margin-top:2px">缩略图</div></div>' +
         '</div>' +
         '<div style="font-size:12px;color:#666;margin-top:4px">' + (img.imageType === 'area' ? '库区图' : '箱规图') + '</div>' +
