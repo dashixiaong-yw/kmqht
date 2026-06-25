@@ -112,7 +112,7 @@ class AppUpdateManager @Inject constructor(
                 try {
                     val dir = File(context.cacheDir, "update")
                     dir.mkdirs()
-                    val apkFile = File(dir, "快麦取货通-${info.latestVersion}.apk")
+                    val apkFile = File(dir, "kuaimai-${info.latestVersion}.apk")
                     if (apkFile.exists() && info.apkSize > 0 && apkFile.length() == info.apkSize) {
                         _downloadState.value = DownloadState.Completed(apkFile)
                         showNotificationCompleted(apkFile, info.latestVersion)
@@ -193,18 +193,27 @@ class AppUpdateManager @Inject constructor(
             context.startActivity(intent)
             return true
         } catch (e: ActivityNotFoundException) {
-            Log.w(TAG, "FileProvider URI 不被识别，尝试 file:// URI 降级", e)
+            Log.w(TAG, "FileProvider URI 不被识别，尝试复制到外部存储后安装", e)
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
                 try {
                     apkFile.setReadable(true, false)
-                    val fallbackIntent = Intent(Intent.ACTION_VIEW).apply {
-                        setDataAndType(Uri.fromFile(apkFile), "application/vnd.android.package-archive")
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    val extCache = context.getExternalCacheDir()
+                    if (extCache != null) {
+                        val destDir = File(extCache, "update")
+                        destDir.mkdirs()
+                        val destFile = File(destDir, apkFile.name)
+                        destFile.delete()
+                        apkFile.copyTo(destFile, overwrite = true)
+                        destFile.setReadable(true, false)
+                        val fallbackIntent = Intent(Intent.ACTION_VIEW).apply {
+                            setDataAndType(Uri.fromFile(destFile), "application/vnd.android.package-archive")
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        context.startActivity(fallbackIntent)
+                        return true
                     }
-                    context.startActivity(fallbackIntent)
-                    return true
                 } catch (e2: Exception) {
-                    Log.e(TAG, "file:// URI 降级也失败", e2)
+                    Log.e(TAG, "外部存储复制安装也失败", e2)
                 }
             }
             showNotificationFailed("未找到安装器，请到系统文件管理器手动安装")
