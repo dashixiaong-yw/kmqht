@@ -195,6 +195,7 @@
 {"type":"entity","name":"v2.18_更新弹窗显示下载错误详情","entityType":"版本","observations":["下载失败时弹窗内直接显示红色错误文本，替代一闪而过的Toast","新增downloadErrorMsg状态变量，在弹窗的Column中展示","点击立即更新/稍后再说/弹窗关闭时重置错误信息","便于用户看到具体错误原因（如SSL handshake failed）","修改文件：app/src/main/java/com/kuaimai/pda/MainActivity.kt","版本号：v2.18"]}
 {"type":"entity","name":"更新弹窗新增浏览器下载按钮","entityType":"版本","observations":["更新弹窗text区域底部新增「在浏览器中下载」TextButton","点击后调用 Intent(ACTION_VIEW, Uri.parse(downloadUrl)) 打开系统浏览器","catch Exception 处理无浏览器/浏览器下载失败等异常","按钮始终可用，不依赖 isDownloading 状态","作为 Android 6.0 内部下载失败的兜底方案","修改文件：app/src/main/java/com/kuaimai/pda/MainActivity.kt","不修改版本号，等下次迭代一起发布"]}
 {"type":"entity","name":"v2.19_Android6.0安装失败降级修复","entityType":"版本","observations":["installApk 在 ActivityNotFoundException 时增加 file:// URI 降级（Android 6.0 支持）","MainActivity 中 installApk 返回 false 时设置 downloadErrorMsg 到弹窗","用户不再看到静默失败，弹窗显示红色错误文字","APK 文件名：快麦取货通-2.19.apk","修改文件：AppUpdateManager.kt, MainActivity.kt","版本号：2.19"]}
+{"type":"entity","name":"v2.20_Android6.0安装降级测试版","entityType":"版本","observations":["版本号2.19→2.20，无代码改动，仅更新版本号+构建","APK文件名：快麦取货通-2.20.apk","用于在Android 6.0 PDA上实际测试file:// URI降级","测试方法：点立即更新→期望弹出安装界面"]}
 {"type":"relation","from":"F1_取货单管理","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F2_扫码待办","to":"快麦取货通项目","relationType":"属于"}
 {"type":"relation","from":"F3_取货单自动完成","to":"快麦取货通项目","relationType":"属于"}
