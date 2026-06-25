@@ -24,7 +24,6 @@ from app.models import (
     KuaimaiSuppliersResponse,
     SkuDetailResponse,
 )
-from app.utils.qr_utils import generate_qr_base64
 from app.utils.time_utils import beijing_now, format_beijing
 
 logger = logging.getLogger(__name__)
@@ -154,20 +153,6 @@ def download_apk(request: Request) -> FileResponse:
         media_type="application/vnd.android.package-archive",
         headers=headers,
     )
-
-
-@router.get("/api/app-version/qrcode")
-def get_app_version_qrcode(request: Request) -> dict:
-    """获取 APK 下载二维码（base64 PNG，公开访问）"""
-    info = _load_version_info()
-    if not info or not info.get("currentVersion") or not info.get("publishedAt"):
-        return {"success": False, "message": "暂无已分发的版本", "qrcode": ""}
-
-    base_url = SERVER_URL.rstrip("/") if SERVER_URL else str(request.base_url).rstrip("/")
-    download_url = f"{base_url}/api/app-version/download"
-    qr_base64 = generate_qr_base64(download_url)
-
-    return {"success": True, "qrcode": qr_base64}
 
 
 @router.get("/api/kuaimai/session-status", response_model=KuaimaiSessionStatusResponse)
