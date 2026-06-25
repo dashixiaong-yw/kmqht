@@ -248,8 +248,8 @@ fun HomeScreen(
         AlertDialog(
             onDismissRequest = { showTokenExpiredDialog = false },
             shape = RoundedCornerShape(16.dp),
-            title = { Text("会话已过期") },
-            text = { Text("快麦API会话已过期，请重新授权") },
+            title = { Text("授权已过期") },
+            text = { Text("当前账号已过期，请前往设置页面重新配置") },
             confirmButton = {
                 TextButton(onClick = {
                     showTokenExpiredDialog = false

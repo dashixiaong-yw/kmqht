@@ -316,16 +316,16 @@ input:focus,select:focus {{ border-color:#2563eb; }}
         <div class="card">
           <h3>操作</h3>
           <button class="btn btn-success" onclick="refreshKuaimaiSession()" id="btnRefreshSession">
-            刷新Session
+            刷新连接
           </button>
         </div>
         <div class="card">
-          <h3>自动刷新诊断</h3>
+          <h3>连接检测</h3>
           <div id="diagnoseResult" style="font-size:13px;margin-bottom:8px">
-            点击下方按钮测试自动刷新链路
+            点击下方按钮检测连接状态
           </div>
           <button class="btn btn-warning" onclick="diagnoseKuaimaiRefresh()" id="btnDiagnose">
-            执行自动刷新测试
+            测试连接
           </button>
         </div>
         <div class="card">
@@ -341,8 +341,8 @@ input:focus,select:focus {{ border-color:#2563eb; }}
       <!-- 系统配置 -->
       <div id="panel-system" class="panel">
         <div class="card">
-          <h3>API Key</h3>
-          <p style="font-size:14px;color:#666">当前API Key: <code id="currentApiKey" style="background:#f0f0f0;padding:2px 6px;border-radius:4px">****</code></p>
+          <h3>管理密码</h3>
+          <p style="font-size:14px;color:#666">当前管理密码: <code id="currentApiKey" style="background:#f0f0f0;padding:2px 6px;border-radius:4px">****</code></p>
         </div>
         <div class="card">
           <h3>服务器地址</h3>
@@ -709,7 +709,7 @@ async function diagnoseKuaimaiRefresh() {{
   }} catch(e) {{
     resultDiv.innerHTML = '<span style="color:#dc2626">诊断失败: ' + e.message + '</span>';
   }} finally {{
-    btn.disabled = false; btn.textContent = '执行自动刷新测试';
+    btn.disabled = false; btn.textContent = '测试连接';
   }}
 }}
 
