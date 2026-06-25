@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -280,6 +281,8 @@ class PickDetailViewModel @Inject constructor(
             )
             pickOrderRepository.insertItem(item)
             ScrollLogger.appendLog(appContext, "insertItem 返回, sku=${r.skuOuterId}")
+            // 等待 Room Flow 发射包含新商品的数据，再触发滚动
+            items.first { itemList -> itemList.any { it.skuOuterId == r.skuOuterId } }
             val newSupplier = r.supplierName
             if (newSupplier.isNotEmpty() && !_suppliers.value.contains(newSupplier)) {
                 _suppliers.value = _suppliers.value + newSupplier
@@ -497,6 +500,8 @@ class PickDetailViewModel @Inject constructor(
             }
             loadSuppliers()
             ScrollLogger.appendLog(appContext, "syncItemsFromBackend 完成, items size=${items.value.size}")
+            // 数据已就绪，触发滚动
+            _needScroll.value = _needScroll.value + 1
         } catch (e: Exception) {
             Log.w(TAG, "syncItemsFromBackend失败: ${e.message}")
             ScrollLogger.appendLog(appContext, "syncItemsFromBackend 失败: ${e.message?.take(60)}")

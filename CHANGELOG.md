@@ -1,5 +1,11 @@
 # 快麦取货通 - 变更日志
 
+## 2.42 (2026-06-26)
+
+### 修复
+- 重新进入取货单详情视口在底部：syncItemsFromBackend 末尾触发 needScroll++，确保数据恢复后 LazyColumn 执行 scrollToItem(0)
+- 扫码添加后新商品不显示在视口：insertItem 后用 items.first 等待 Room Flow 异步发射完成，再触发 _needScroll++，确保 filteredItems 已包含新商品
+
 ## 2.40 (2026-06-25)
 
 ### 改进
