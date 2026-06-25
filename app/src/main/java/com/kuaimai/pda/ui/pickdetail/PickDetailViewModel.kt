@@ -132,10 +132,10 @@ class PickDetailViewModel @Inject constructor(
             items
                 .map { itemList -> itemList.map { it.skuOuterId }.distinct().toSet() }
                 .distinctUntilChanged()
-                .collectLatest { skuSet ->
+                .collect { skuSet ->
                     val current = _imageUrlsMap.value
                     val newSkus = skuSet.filter { it !in current }
-                    if (newSkus.isEmpty()) return@collectLatest
+                    if (newSkus.isEmpty()) return@collect
                     val map = newSkus.associateWith { sku -> getImageUrls(sku) }
                     _imageUrlsMap.value = current + map
                 }
