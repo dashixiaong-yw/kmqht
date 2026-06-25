@@ -190,10 +190,8 @@ def get_images(sku_outer_id: str, user: dict = Depends(get_current_user)) -> Ima
 
 
 @router.post("/images/regenerate-thumbnails", response_model=BaseResponse)
-def regenerate_thumbnails(user: dict = Depends(get_current_user)) -> BaseResponse:
-    """管理员：扫描所有已有图片，为缺少缩略图的补生成"""
-    if "admin" not in user.get("roles", []):
-        raise HTTPException(status_code=403, detail="仅管理员可执行此操作")
+def regenerate_thumbnails(user: dict = Depends(check_permission("settings"))) -> BaseResponse:
+    """补全所有已有图片的缩略图（需要settings权限）"""
 
     db = get_db()
     cursor = db.cursor()
