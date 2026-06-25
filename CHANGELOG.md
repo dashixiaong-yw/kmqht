@@ -16,6 +16,16 @@
 ### 修复
 - 修复 v2.25 管理后台 searchImages 函数中 onerror 内单引号未转义导致整个 JS 解析失败、登录按钮无响应的问题
 
+## 2.32 (2026-06-25)
+
+### 性能优化
+- Android: items Flow 加 distinctUntilChanged 减少不必要的数据发射和UI重组
+- Android: imageUrlsMap 仅在SKU集合变化时触发图片加载，完成/恢复/删除时不触发
+- Android: filteredItems 加 derivedStateOf，避免输入框重组时重算排序
+- 后端: SQLite 补充 cache_size(64MB)/temp_store(MEMORY)/mmap_size(256MB) PRAGMA
+- 后端: complete_item/restore_item 复用 _check_order_access 返回值消除冗余查询
+- 后端: 静态图片文件加 Cache-Control: max-age=86400 缓存头
+
 ## 2.31 (2026-06-25)
 
 ### 修复

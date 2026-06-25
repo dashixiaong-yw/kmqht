@@ -59,6 +59,16 @@ app.include_router(system.router)
 app.include_router(users.router)
 
 
+# ==================== 自定义StaticFiles（图片缓存头） ====================
+
+class _CachedStaticFiles(StaticFiles):
+    async def get_response(self, path: str, scope):
+        response = await super().get_response(path, scope)
+        if path.lower().endswith(('.jpg', '.jpeg', '.png', '.webp')):
+            response.headers["Cache-Control"] = "public, max-age=86400"
+        return response
+
+
 # ==================== 启动与关闭事件 ====================
 
 @app.on_event("startup")
@@ -92,7 +102,7 @@ async def startup_event() -> None:
 
     # 挂载静态文件目录（图片访问）
     if os.path.exists(IMAGE_DIR):
-        app.mount("/images", StaticFiles(directory=IMAGE_DIR), name="images")
+        app.mount("/images", _CachedStaticFiles(directory=IMAGE_DIR), name="images")
         logger.info(f"静态文件目录已挂载: {IMAGE_DIR}")
 
     os.makedirs(APK_DIR, exist_ok=True)

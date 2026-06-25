@@ -52,6 +52,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -199,11 +200,15 @@ fun PickDetailScreen(
     }
 
     // 根据供应商过滤明细 + GAP-07: 按状态+时间排序（未完成在上，已完成在下，同状态按时间倒序）
-    val filteredItems = (if (currentSupplier == AppConstants.SUPPLIER_ALL_LABEL) {
-        items
-    } else {
-        items.filter { it.supplierName == currentSupplier }
-    }).sortedWith(compareBy<PickItemEntity> { it.status }.thenByDescending { it.createdAt }.thenByDescending { it.id })
+    val filteredItems by remember {
+        derivedStateOf {
+            (if (currentSupplier == AppConstants.SUPPLIER_ALL_LABEL) {
+                items
+            } else {
+                items.filter { it.supplierName == currentSupplier }
+            }).sortedWith(compareBy<PickItemEntity> { it.status }.thenByDescending { it.createdAt }.thenByDescending { it.id })
+        }
+    }
 
     val completedCount = items.count { it.status == 1 }
     val totalCount = items.size

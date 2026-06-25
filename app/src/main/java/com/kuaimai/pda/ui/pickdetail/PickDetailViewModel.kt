@@ -29,6 +29,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -66,6 +68,7 @@ class PickDetailViewModel @Inject constructor(
     /** 取货明细列表 */
     val items: StateFlow<List<PickItemEntity>> =
         pickOrderRepository.getItemsByOrderId(orderId)
+            .distinctUntilChanged()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     /** 供应商列表（从明细中提取） */
@@ -127,14 +130,16 @@ class PickDetailViewModel @Inject constructor(
         }
         // 监听 items 变化，批量预加载图片URL
         viewModelScope.launch {
-            items.collectLatest { itemList ->
-                val skus = itemList.map { it.skuOuterId }.distinct()
-                val current = _imageUrlsMap.value
-                val newSkus = skus.filter { it !in current }
-                if (newSkus.isEmpty()) return@collectLatest
-                val map = newSkus.associateWith { sku -> getImageUrls(sku) }
-                _imageUrlsMap.value = current + map
-            }
+            items
+                .map { itemList -> itemList.map { it.skuOuterId }.distinct().toSet() }
+                .distinctUntilChanged()
+                .collectLatest { skuSet ->
+                    val current = _imageUrlsMap.value
+                    val newSkus = skuSet.filter { it !in current }
+                    if (newSkus.isEmpty()) return@collectLatest
+                    val map = newSkus.associateWith { sku -> getImageUrls(sku) }
+                    _imageUrlsMap.value = current + map
+                }
         }
     }
 

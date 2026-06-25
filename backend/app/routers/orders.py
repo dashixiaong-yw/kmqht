@@ -271,19 +271,17 @@ def add_item(order_id: int, req: AddItemRequest, user: dict = Depends(get_curren
 @router.put("/{order_id}/items/{item_id}/complete", response_model=BaseResponse)
 def complete_item(order_id: int, item_id: int, user: dict = Depends(get_current_user)) -> BaseResponse:
     """完成取货明细（幂等操作）"""
-    _check_order_access(order_id, user["username"])
+    order_row = _check_order_access(order_id, user["username"])
     db = get_db()
     cursor = db.cursor()
+
+    if order_row["status"] == 1:
+        raise HTTPException(status_code=400, detail="已完成的取货单不能完成明细")
 
     cursor.execute("SELECT * FROM pick_items WHERE id = ? AND order_id = ?", (item_id, order_id))
     item_row = cursor.fetchone()
     if not item_row:
         raise HTTPException(status_code=404, detail="取货明细不存在")
-
-    cursor.execute("SELECT status FROM pick_orders WHERE id = ?", (order_id,))
-    order_row = cursor.fetchone()
-    if order_row and order_row["status"] == 1:
-        raise HTTPException(status_code=400, detail="已完成的取货单不能完成明细")
 
     # 幂等：已完成的不再处理
     if item_row["status"] == 1:
@@ -321,9 +319,12 @@ def complete_item(order_id: int, item_id: int, user: dict = Depends(get_current_
 @router.put("/{order_id}/items/{item_id}/restore", response_model=BaseResponse)
 def restore_item(order_id: int, item_id: int, user: dict = Depends(get_current_user)) -> BaseResponse:
     """恢复取货明细（撤销完成）"""
-    _check_order_access(order_id, user["username"])
+    order_row = _check_order_access(order_id, user["username"])
     db = get_db()
     cursor = db.cursor()
+
+    if order_row["status"] == 1:
+        raise HTTPException(status_code=400, detail="已完成的取货单不能恢复明细")
 
     cursor.execute("SELECT * FROM pick_items WHERE id = ? AND order_id = ?", (item_id, order_id))
     item_row = cursor.fetchone()
@@ -332,12 +333,6 @@ def restore_item(order_id: int, item_id: int, user: dict = Depends(get_current_u
 
     if item_row["status"] == 0:
         return BaseResponse(message="该明细未完成，无需恢复")
-
-    # 检查取货单是否已完成
-    cursor.execute("SELECT status FROM pick_orders WHERE id = ?", (order_id,))
-    order_row = cursor.fetchone()
-    if order_row and order_row["status"] == 1:
-        raise HTTPException(status_code=400, detail="已完成的取货单不能恢复明细")
 
     try:
         cursor.execute(

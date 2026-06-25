@@ -34,6 +34,9 @@ def get_db() -> sqlite3.Connection:
                 cursor.execute("PRAGMA journal_mode=WAL")
                 cursor.execute("PRAGMA foreign_keys=ON")
                 cursor.execute("PRAGMA busy_timeout=5000")
+                cursor.execute("PRAGMA cache_size=-65536")
+                cursor.execute("PRAGMA temp_store=MEMORY")
+                cursor.execute("PRAGMA mmap_size=268435456")
                 _pragma_initialized = True
                 logger.info("数据库PRAGMA设置完成")
             else:
