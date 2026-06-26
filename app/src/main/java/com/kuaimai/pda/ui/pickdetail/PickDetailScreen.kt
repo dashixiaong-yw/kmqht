@@ -56,7 +56,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import com.kuaimai.pda.util.ScrollLogger
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
@@ -157,7 +156,6 @@ fun PickDetailScreen(
     // GAP-08: 重复扫码反馈 + 居中弹窗提示
     LaunchedEffect(duplicateScan) {
         if (duplicateScan) {
-            ScrollLogger.appendLog(context.applicationContext, "duplicateScan触发")
             viewModel.provideFeedback(context, ScanFeedbackType.DUPLICATE)
             showDuplicateTip = true
             duplicateTipText = "该商品已在列表中"
@@ -165,7 +163,6 @@ fun PickDetailScreen(
             val duplicateSku = viewModel.lastScannedSku
             if (duplicateSku.isNotEmpty()) {
                 val duplicateIndex = filteredItems.indexOfFirst { it.skuOuterId == duplicateSku }
-                ScrollLogger.appendLog(context.applicationContext, "animateScrollToItem(duplicateIndex=$duplicateIndex) 即将执行")
                 if (duplicateIndex >= 0) {
                     listState.animateScrollToItem(duplicateIndex)
                 }

@@ -49,39 +49,6 @@ class OrderSyncWorker(
     companion object {
         private const val TAG = "OrderSyncWorker"
         private const val MAX_RETRY = 3
-        private const val LOG_FILE = "sync_log.txt"
-
-        fun appendLog(context: Context, message: String) {
-            try {
-                val file = File(context.cacheDir, LOG_FILE)
-                val now = java.text.SimpleDateFormat("MM-dd HH:mm:ss.SSS", java.util.Locale.getDefault()).format(java.util.Date())
-                val line = "[$now] $message\n"
-                val existing = if (file.exists()) file.readLines() else emptyList()
-                val lines = if (existing.size >= 500) existing.drop(existing.size - 250) else existing
-                file.writeText(lines.joinToString("\n") + "\n" + line)
-            } catch (e: Exception) { Log.w("OrderSyncWorker", "appendLog失败: ${e.message}") }
-        }
-
-        fun clearLogs(context: Context) {
-            try {
-                val file = File(context.cacheDir, LOG_FILE)
-                if (file.exists()) file.delete()
-            } catch (e: Exception) { Log.w(TAG, "clearLogs失败: ${e.message}") }
-        }
-
-        fun trimByAge(context: Context, maxAgeDays: Int = 7) {
-            try {
-                val file = File(context.cacheDir, LOG_FILE)
-                if (file.exists()) {
-                    val lastModified = file.lastModified()
-                    val cutoff = System.currentTimeMillis() - maxAgeDays * 24L * 60 * 60 * 1000
-                    if (lastModified < cutoff) {
-                        file.delete()
-                        Log.i(TAG, "日志文件超过${maxAgeDays}天，已自动清理")
-                    }
-                }
-            } catch (e: Exception) { Log.w(TAG, "trimByAge失败: ${e.message}") }
-        }
     }
 
     private val pendingOperationDao: PendingOperationDao? by lazy {
@@ -127,7 +94,6 @@ class OrderSyncWorker(
                     hasWork = false
                     break
                 }
-                appendLog(applicationContext, "Worker启动，共 ${operations.size} 个待处理操作")
 
                 val grouped = operations.groupBy { it.orderId }
                 var loopFailure = false
@@ -138,7 +104,6 @@ class OrderSyncWorker(
                         if (success) {
                             dao.deleteById(op.id)
                             Log.d(TAG, "操作同步成功: ${op.operationType} orderId=$orderId")
-                            appendLog(applicationContext, "操作同步成功: type=${op.operationType}, orderId=$orderId")
                         } else {
                             val current = dao.getById(op.id)
                             if (current == null) continue
@@ -167,16 +132,13 @@ class OrderSyncWorker(
             }
 
             if (hasFailure) {
-                 appendLog(applicationContext, "Worker本轮结束: 有失败操作，返回retry")
                  Result.retry()
              } else {
-                 // 清理超过7天的冲突记录
                  try {
                      val oneWeekAgo = java.lang.System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000
                      val cleaned = dao.deleteConflictsOlderThan(oneWeekAgo)
-                     if (cleaned > 0) appendLog(applicationContext, "清理冲突记录: ${cleaned}条")
+                     if (cleaned > 0) Log.d(TAG, "清理冲突记录: ${cleaned}条")
                  } catch (_: Exception) { }
-                 // 清理超过7天的已完成取货单
                  try {
                      val oneWeekAgo = java.lang.System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000
                      val orderDao = pickOrderDao
@@ -184,11 +146,9 @@ class OrderSyncWorker(
                          val cleaned = orderDao.deleteCompletedOlderThan(oneWeekAgo)
                          if (cleaned > 0) {
                              pickItemDao?.deleteOrphanItems()
-                             appendLog(applicationContext, "清理已完成取货单: ${cleaned}单")
                          }
                      }
                  } catch (_: Exception) { }
-                 appendLog(applicationContext, "Worker本轮结束: 全部成功")
                  Result.success()
              }
         } catch (e: Exception) {
@@ -217,178 +177,152 @@ class OrderSyncWorker(
         } catch (e: retrofit2.HttpException) {
             if (e.code() in 400..499) {
                 Log.w(TAG, "客户端错误${e.code()}，标记冲突: ${op.operationType}")
-                appendLog(applicationContext, "操作${op.operationType}客户端错误${e.code()}，标记冲突")
                 dao.updateRetryCount(op.id, -1)
                 false
             } else {
                 Log.e(TAG, "服务端错误${e.code()}，将重试: ${op.operationType}")
-                appendLog(applicationContext, "操作${op.operationType}服务端错误${e.code()}，将重试")
                 false
             }
         } catch (e: Exception) {
             Log.e(TAG, "同步操作失败: ${op.operationType}, error=${e.message}")
-            appendLog(applicationContext, "操作${op.operationType}异常: ${e.message}")
             false
         }
     }
 
     private suspend fun syncCompleteItem(op: PendingOperationEntity): Boolean {
         val userRepo = userRepository ?: run {
-            appendLog(applicationContext, "completeItem同步失败: userRepository为null")
+            Log.w(TAG, "completeItem同步失败: userRepository为null")
             return false
         }
         val api = orderApiService ?: run {
-            appendLog(applicationContext, "completeItem同步失败: orderApiService为null")
+            Log.w(TAG, "completeItem同步失败: orderApiService为null")
             return false
         }
         val token = userRepo.getToken()
-        appendLog(applicationContext, "completeItem开始同步: orderId=${op.orderId}, itemId=${op.targetId}")
         return try {
             val resp = api.completeItem(token, op.orderId, op.targetId)
             if (!resp.success) {
                 Log.w(TAG, "completeItem业务拒绝: ${resp.message}")
-                appendLog(applicationContext, "completeItem业务拒绝: ${resp.message}")
                 return false
             }
-            appendLog(applicationContext, "completeItem同步成功: orderId=${op.orderId}, itemId=${op.targetId}")
             true
         } catch (e: Exception) {
             Log.w(TAG, "completeItem同步失败: ${e.message}")
-            appendLog(applicationContext, "completeItem同步异常: ${e.message}")
             false
         }
     }
 
     private suspend fun syncRestoreItem(op: PendingOperationEntity): Boolean {
         val userRepo = userRepository ?: run {
-            appendLog(applicationContext, "restoreItem同步失败: userRepository为null")
+            Log.w(TAG, "restoreItem同步失败: userRepository为null")
             return false
         }
         val api = orderApiService ?: run {
-            appendLog(applicationContext, "restoreItem同步失败: orderApiService为null")
+            Log.w(TAG, "restoreItem同步失败: orderApiService为null")
             return false
         }
         val token = userRepo.getToken()
-        appendLog(applicationContext, "restoreItem开始同步: orderId=${op.orderId}, itemId=${op.targetId}")
         return try {
             val resp = api.restoreItem(token, op.orderId, op.targetId)
             if (!resp.success) {
                 Log.w(TAG, "restoreItem业务拒绝: ${resp.message}")
-                appendLog(applicationContext, "restoreItem业务拒绝: ${resp.message}")
                 return false
             }
-            appendLog(applicationContext, "restoreItem同步成功: orderId=${op.orderId}, itemId=${op.targetId}")
             true
         } catch (e: Exception) {
             Log.w(TAG, "restoreItem同步失败: ${e.message}")
-            appendLog(applicationContext, "restoreItem同步异常: ${e.message}")
             false
         }
     }
 
     private suspend fun syncAddItem(op: PendingOperationEntity): Boolean {
         val userRepo = userRepository ?: run {
-            appendLog(applicationContext, "addItem同步失败: userRepository为null")
+            Log.w(TAG, "addItem同步失败: userRepository为null")
             return false
         }
         val api = orderApiService ?: run {
-            appendLog(applicationContext, "addItem同步失败: orderApiService为null")
+            Log.w(TAG, "addItem同步失败: orderApiService为null")
             return false
         }
         val skuOuterId = extractPayloadValue(op.payload, "sku_outer_id") ?: run {
-            appendLog(applicationContext, "addItem同步失败: payload缺少sku_outer_id")
+            Log.w(TAG, "addItem同步失败: payload缺少sku_outer_id")
             return false
         }
         val token = userRepo.getToken()
-        appendLog(applicationContext, "addItem开始同步: orderId=${op.orderId}, sku=$skuOuterId")
         return try {
             api.addItem(token, op.orderId, AddOrderItemRequest(skuOuterId = skuOuterId))
-            appendLog(applicationContext, "addItem同步成功: orderId=${op.orderId}, sku=$skuOuterId")
             true
         } catch (e: Exception) {
             Log.w(TAG, "addItem同步失败: ${e.message}")
-            appendLog(applicationContext, "addItem同步异常: orderId=${op.orderId}, sku=$skuOuterId, error=${e.message}")
             false
         }
     }
 
     private suspend fun syncCompleteAll(op: PendingOperationEntity): Boolean {
         val userRepo = userRepository ?: run {
-            appendLog(applicationContext, "completeAll同步失败: userRepository为null")
+            Log.w(TAG, "completeAll同步失败: userRepository为null")
             return false
         }
         val api = orderApiService ?: run {
-            appendLog(applicationContext, "completeAll同步失败: orderApiService为null")
+            Log.w(TAG, "completeAll同步失败: orderApiService为null")
             return false
         }
         val token = userRepo.getToken()
-        appendLog(applicationContext, "completeAll开始同步: orderId=${op.orderId}")
         return try {
             val resp = api.completeAllItems(token, op.orderId)
             if (!resp.success) {
                 Log.w(TAG, "completeAll业务拒绝: ${resp.message}")
-                appendLog(applicationContext, "completeAll业务拒绝: ${resp.message}")
                 return false
             }
-            appendLog(applicationContext, "completeAll同步成功: orderId=${op.orderId}")
             true
         } catch (e: Exception) {
             Log.w(TAG, "completeAll同步失败: ${e.message}")
-            appendLog(applicationContext, "completeAll同步异常: ${e.message}")
             false
         }
     }
 
     private suspend fun syncDeleteItem(op: PendingOperationEntity): Boolean {
         val userRepo = userRepository ?: run {
-            appendLog(applicationContext, "deleteItem同步失败: userRepository为null")
+            Log.w(TAG, "deleteItem同步失败: userRepository为null")
             return false
         }
         val api = orderApiService ?: run {
-            appendLog(applicationContext, "deleteItem同步失败: orderApiService为null")
+            Log.w(TAG, "deleteItem同步失败: orderApiService为null")
             return false
         }
         val token = userRepo.getToken()
-        appendLog(applicationContext, "deleteItem开始同步: orderId=${op.orderId}, itemId=${op.targetId}")
         return try {
             val resp = api.deleteItem(token, op.orderId, op.targetId)
             if (!resp.success) {
                 Log.w(TAG, "deleteItem业务拒绝: ${resp.message}")
-                appendLog(applicationContext, "deleteItem业务拒绝: ${resp.message}")
                 return false
             }
-            appendLog(applicationContext, "deleteItem同步成功: orderId=${op.orderId}, itemId=${op.targetId}")
             true
         } catch (e: Exception) {
             Log.w(TAG, "deleteItem同步失败: ${e.message}")
-            appendLog(applicationContext, "deleteItem同步异常: ${e.message}")
             false
         }
     }
 
     private suspend fun syncDeleteOrder(op: PendingOperationEntity): Boolean {
         val userRepo = userRepository ?: run {
-            appendLog(applicationContext, "deleteOrder同步失败: userRepository为null")
+            Log.w(TAG, "deleteOrder同步失败: userRepository为null")
             return false
         }
         val api = orderApiService ?: run {
-            appendLog(applicationContext, "deleteOrder同步失败: orderApiService为null")
+            Log.w(TAG, "deleteOrder同步失败: orderApiService为null")
             return false
         }
         val token = userRepo.getToken()
-        appendLog(applicationContext, "deleteOrder开始同步: orderId=${op.orderId}")
         return try {
             val resp = api.deleteOrder(token, op.orderId)
             if (!resp.success) {
                 Log.w(TAG, "deleteOrder业务拒绝: ${resp.message}")
-                appendLog(applicationContext, "deleteOrder业务拒绝: ${resp.message}")
                 return false
             }
-            appendLog(applicationContext, "deleteOrder同步成功: orderId=${op.orderId}")
             true
         } catch (e: Exception) {
             Log.w(TAG, "deleteOrder同步失败: ${e.message}")
-            appendLog(applicationContext, "deleteOrder同步异常: ${e.message}")
             false
         }
     }
@@ -396,12 +330,10 @@ class OrderSyncWorker(
     private suspend fun syncRemarkUpdate(op: PendingOperationEntity): Boolean {
         val kmApi = apiService ?: run {
             Log.e(TAG, "syncRemarkUpdate: apiService为null")
-            appendLog(applicationContext, "快麦备注同步失败: apiService未初始化")
             return false
         }
         val remark = extractPayloadValue(op.payload, "remark") ?: run {
             Log.e(TAG, "syncRemarkUpdate: payload缺少remark字段")
-            appendLog(applicationContext, "快麦备注同步失败: payload缺少remark字段")
             return false
         }
         val skuId = extractPayloadValue(op.payload, "sys_sku_id")?.toLongOrNull() ?: run {
@@ -419,7 +351,6 @@ class OrderSyncWorker(
         val skuData = fetchLatestSkuDataViaBackend(skuOuterId, extractPayloadValue(op.payload, "item_outer_id"))
         if (skuData == null) {
             Log.w(TAG, "无法获取SKU数据，跳过备注同步: skuOuterId=$skuOuterId")
-            appendLog(applicationContext, "快麦备注同步失败: 获取SKU数据失败, sku=$skuOuterId")
             return false
         }
         val propertiesName = skuData.propertiesName.ifBlank {
@@ -436,17 +367,14 @@ class OrderSyncWorker(
         val response = kmApi.updateItemRemark(request)
         if (!response.success) {
             Log.w(TAG, "快麦备注更新失败: code=${response.code} msg=${response.msg}")
-            appendLog(applicationContext, "快麦备注同步失败: code=${response.code}, msg=${response.msg}")
             return false
         }
-        appendLog(applicationContext, "快麦备注同步成功: sku=$skuOuterId")
         return true
     }
 
     private suspend fun syncSupplierUpdate(op: PendingOperationEntity): Boolean {
         val kmApi = apiService ?: run {
             Log.e(TAG, "syncSupplierUpdate: apiService为null")
-            appendLog(applicationContext, "快麦供应商同步失败: apiService未初始化")
             return false
         }
         val supplierName = extractPayloadValue(op.payload, "supplier_name") ?: run {
@@ -472,7 +400,6 @@ class OrderSyncWorker(
         val skuData = fetchLatestSkuDataViaBackend(skuOuterId, extractPayloadValue(op.payload, "item_outer_id"))
         if (skuData == null) {
             Log.w(TAG, "无法获取SKU数据，跳过供应商同步: skuOuterId=$skuOuterId")
-            appendLog(applicationContext, "快麦供应商同步失败: 获取SKU数据失败, sku=$skuOuterId")
             return false
         }
         val skuPropertiesName = skuData.propertiesName.ifBlank {
@@ -494,10 +421,8 @@ class OrderSyncWorker(
         val response = kmApi.updateItemSupplier(request)
         if (!response.success) {
             Log.w(TAG, "快麦供应商更新失败: code=${response.code} msg=${response.msg}")
-            appendLog(applicationContext, "快麦供应商同步失败: code=${response.code}, msg=${response.msg}")
             return false
         }
-        appendLog(applicationContext, "快麦供应商同步成功: sku=$skuOuterId, supplier=$supplierName")
         return true
     }
 
@@ -519,7 +444,6 @@ class OrderSyncWorker(
                     Log.w(TAG, "fetchLatestSkuData: 未从API获取到itemOuterId，且无fallback: $skuOuterId")
                     return null
                 }
-                // 使用 fallback 跳过 getSkuInfo，直接调 getItemDetail
                 val fallbackResp = kmApi.getItemDetail(ItemGetRequest(outerId = itemOuterIdFallback))
                 val fallbackTitle = fallbackResp.response?.item?.title ?: ""
                 val effectiveFallbackTitle = if (fallbackTitle.isNotBlank()) fallbackTitle else sku?.title ?: ""
@@ -551,7 +475,6 @@ class OrderSyncWorker(
             )
         } catch (e: Exception) {
             Log.w(TAG, "获取SKU数据失败: $skuOuterId — ${e.message}")
-            appendLog(applicationContext, "获取SKU数据失败: sku=$skuOuterId, error=${e.message}")
             return null
         }
     }
@@ -564,43 +487,39 @@ class OrderSyncWorker(
             val detail = api.getSkuDetail(token, skuOuterId)
             val title = if (detail.itemTitle.isNotBlank()) detail.itemTitle else return null
             val itemOuterId = if (detail.itemOuterId.isNotBlank()) detail.itemOuterId else itemOuterIdFallback ?: return null
-            appendLog(applicationContext, "后端SKU查询成功: sku=$skuOuterId, title=$title")
             SkuSyncData(title = title, itemOuterId = itemOuterId, propertiesName = detail.propertiesName, skuOuterId = detail.skuOuterId)
         } catch (e: Exception) {
             Log.w(TAG, "通过后端获取SKU数据失败: $skuOuterId — ${e.message}")
-            appendLog(applicationContext, "后端SKU查询失败: sku=$skuOuterId, error=${e.message}")
             null
         }
     }
 
     private suspend fun syncImageUpload(op: PendingOperationEntity): Boolean {
         val skuOuterId = extractPayloadValue(op.payload, "sku_outer_id") ?: run {
-            appendLog(applicationContext, "imageUpload同步失败: payload缺少sku_outer_id")
+            Log.w(TAG, "imageUpload同步失败: payload缺少sku_outer_id")
             return false
         }
         val imageType = extractPayloadValue(op.payload, "image_type") ?: run {
-            appendLog(applicationContext, "imageUpload同步失败: payload缺少image_type")
+            Log.w(TAG, "imageUpload同步失败: payload缺少image_type")
             return false
         }
         val filePath = extractPayloadValue(op.payload, "file_path") ?: run {
-            appendLog(applicationContext, "imageUpload同步失败: payload缺少file_path")
+            Log.w(TAG, "imageUpload同步失败: payload缺少file_path")
             return false
         }
         val imageFile = File(filePath)
         if (!imageFile.exists()) {
             Log.w(TAG, "图片文件不存在，放弃同步: $filePath")
-            appendLog(applicationContext, "imageUpload放弃同步: 图片文件不存在, path=$filePath")
             return true
         }
         val uploader = imageUploadService ?: run {
-            appendLog(applicationContext, "imageUpload同步失败: imageUploadService为null")
+            Log.w(TAG, "imageUpload同步失败: imageUploadService为null")
             return false
         }
         val imageDao = productImageDao ?: run {
-            appendLog(applicationContext, "imageUpload同步失败: productImageDao为null")
+            Log.w(TAG, "imageUpload同步失败: productImageDao为null")
             return false
         }
-        appendLog(applicationContext, "imageUpload开始上传: sku=$skuOuterId, type=$imageType")
         return try {
             val (remoteId, imageUrl) = uploader.uploadImage(imageFile, imageType, skuOuterId)
             imageDao.insert(com.kuaimai.pda.data.db.entity.ProductImageEntity(
@@ -611,11 +530,9 @@ class OrderSyncWorker(
                 createdAt = com.kuaimai.pda.util.TimeUtils.now()
             ))
             imageFile.delete()
-            appendLog(applicationContext, "imageUpload上传成功: sku=$skuOuterId, remoteId=$remoteId")
             true
         } catch (e: Exception) {
             Log.w(TAG, "上传图片失败，保留文件以重试: ${e.message}")
-            appendLog(applicationContext, "imageUpload上传异常: sku=$skuOuterId, error=${e.message}")
             false
         }
     }

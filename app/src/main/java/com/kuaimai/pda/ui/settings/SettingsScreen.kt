@@ -39,7 +39,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
@@ -81,10 +80,6 @@ fun SettingsScreen(
     val updateCheckState by viewModel.updateCheckResult.collectAsState()
     var showLogoutDialog by remember { androidx.compose.runtime.mutableStateOf(false) }
     var isLoggingOut by remember { androidx.compose.runtime.mutableStateOf(false) }
-    var showLogDialog by remember { androidx.compose.runtime.mutableStateOf(false) }
-    var showScrollLogDialog by remember { androidx.compose.runtime.mutableStateOf(false) }
-    val appContext = LocalContext.current
-
     // 退出登录确认弹窗
     if (showLogoutDialog) {
         AlertDialog(
@@ -193,97 +188,6 @@ fun SettingsScreen(
         else -> {}
     }
 
-    // 同步日志显示弹窗
-    if (showLogDialog) {
-        val logContent = try {
-            java.io.File(appContext.cacheDir, "sync_log.txt").readText()
-        } catch (_: Exception) { "暂无同步日志" }
-
-        AlertDialog(
-            onDismissRequest = { showLogDialog = false },
-            shape = RoundedCornerShape(16.dp),
-            title = { Text("同步日志") },
-            text = {
-                Column {
-                    Text(
-                        text = logContent,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 400.dp)
-                            .verticalScroll(rememberScrollState())
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "可复制后发送",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showLogDialog = false }) {
-                    Text("关闭")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    val clipboard = appContext.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
-                    clipboard?.setPrimaryClip(android.content.ClipData.newPlainText("sync_log", logContent))
-                    android.widget.Toast.makeText(appContext, "已复制到剪贴板", android.widget.Toast.LENGTH_SHORT).show()
-                }) {
-                    Text("复制")
-                }
-            }
-        )
-    }
-
-    // 滚动日志显示弹窗
-    if (showScrollLogDialog) {
-        val logContent = try {
-            java.io.File(appContext.cacheDir, "scroll_log.txt").readText()
-        } catch (_: Exception) { "暂无滚动日志" }
-
-        AlertDialog(
-            onDismissRequest = { showScrollLogDialog = false },
-            shape = RoundedCornerShape(16.dp),
-            title = { Text("滚动日志") },
-            text = {
-                Column {
-                    Text(
-                        text = logContent,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 400.dp)
-                            .verticalScroll(rememberScrollState())
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "可复制后发送",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showScrollLogDialog = false }) {
-                    Text("关闭")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    val clipboard = appContext.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
-                    clipboard?.setPrimaryClip(android.content.ClipData.newPlainText("scroll_log", logContent))
-                    android.widget.Toast.makeText(appContext, "已复制到剪贴板", android.widget.Toast.LENGTH_SHORT).show()
-                }) {
-                    Text("复制")
-                }
-            }
-        )
-    }
 
     Scaffold(
         topBar = {
@@ -450,22 +354,6 @@ fun SettingsScreen(
                     .clickable { viewModel.checkForUpdate() },
                 textAlign = TextAlign.Center
             )
-
-            // 查看同步日志
-            TextButton(
-                onClick = { showLogDialog = true },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("查看同步日志", color = TextSecondary, fontSize = 12.sp)
-            }
-
-            // 查看滚动日志（用于取货单详情视口问题排查）
-            TextButton(
-                onClick = { showScrollLogDialog = true },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("查看滚动日志", color = TextSecondary, fontSize = 12.sp)
-            }
 
             Spacer(modifier = Modifier.height(16.dp))
         }

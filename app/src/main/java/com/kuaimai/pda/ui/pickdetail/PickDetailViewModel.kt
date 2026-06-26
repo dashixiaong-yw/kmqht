@@ -1,6 +1,5 @@
 package com.kuaimai.pda.ui.pickdetail
 
-import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
 import androidx.lifecycle.SavedStateHandle
@@ -18,10 +17,8 @@ import com.kuaimai.pda.scanner.ScanFeedbackType
 import com.kuaimai.pda.scanner.ScannerManager
 import com.kuaimai.pda.util.AppConstants
 import com.kuaimai.pda.util.PrefsKeys
-import com.kuaimai.pda.util.ScrollLogger
 import com.kuaimai.pda.util.TimeUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,8 +50,7 @@ class PickDetailViewModel @Inject constructor(
     val scannerManager: ScannerManager,
     private val imageRepository: ImageRepository,
     private val userRepository: UserRepository,
-    @Named("encrypted") private val prefs: SharedPreferences,
-    @ApplicationContext private val appContext: Context
+    @Named("encrypted") private val prefs: SharedPreferences
 ) : ViewModel() {
 
     companion object {
@@ -122,8 +118,6 @@ class PickDetailViewModel @Inject constructor(
     private val addItemMutex = Mutex()
 
     init {
-        ScrollLogger.appendLog(appContext, "=== VM init ===")
-        ScrollLogger.appendLog(appContext, "orderId=$orderId")
         loadOrder()
         loadSuppliers()
         viewModelScope.launch {
@@ -135,7 +129,6 @@ class PickDetailViewModel @Inject constructor(
                 .map { itemList -> itemList.map { it.skuOuterId }.distinct().toSet() }
                 .distinctUntilChanged()
                 .collect { skuSet ->
-                    ScrollLogger.appendLog(appContext, "items 发射: size=${items.value.size}")
                     val current = _imageUrlsMap.value
                     val newSkus = skuSet.filter { it !in current }
                     if (newSkus.isEmpty()) return@collect
@@ -143,15 +136,6 @@ class PickDetailViewModel @Inject constructor(
                     _imageUrlsMap.value = current + map
                 }
         }
-        // 日志：监听 items 每次发射（含重复发射）
-        viewModelScope.launch {
-            items.collect { list ->
-                val firstInfo = if (list.isNotEmpty()) "first=(${list[0].id},${list[0].skuOuterId.take(12)},status=${list[0].status})" else "empty"
-                val lastInfo = if (list.isNotEmpty()) "last=(${list.last().id},${list.last().skuOuterId.take(12)},status=${list.last().status})" else ""
-                ScrollLogger.appendLog(appContext, "items emit: size=${list.size}, $firstInfo $lastInfo")
-            }
-        }
-        ScrollLogger.appendLog(appContext, "VM init 完成")
     }
 
     /**
@@ -206,7 +190,6 @@ class PickDetailViewModel @Inject constructor(
      * @param barcode 扫描到的条码
      */
     fun onBarcodeScanned(barcode: String) {
-        ScrollLogger.appendLog(appContext, "onBarcodeScanned: barcode=$barcode")
         viewModelScope.launch {
             lastScannedSku = barcode
             try {
@@ -214,7 +197,6 @@ class PickDetailViewModel @Inject constructor(
                 val existing = pickOrderRepository.getItemByOrderIdAndSkuOuterId(orderId, barcode)
                 val pending = _pendingItems.value.contains(barcode)
                 if (existing != null || pending) {
-                    ScrollLogger.appendLog(appContext, "onBarcodeScanned: 重复扫码, existing=$existing, pending=$pending")
                     _duplicateScan.value = true
                     return@launch
                 }
@@ -275,7 +257,6 @@ class PickDetailViewModel @Inject constructor(
                 createdAt = TimeUtils.parseBeijingTime(r.createdAt).let { if (it > 0) it else TimeUtils.now() }
             )
             pickOrderRepository.insertItem(item)
-            ScrollLogger.appendLog(appContext, "insertItem 返回, sku=${r.skuOuterId}")
             val newSupplier = r.supplierName
             if (newSupplier.isNotEmpty() && !_suppliers.value.contains(newSupplier)) {
                 _suppliers.value = _suppliers.value + newSupplier
@@ -284,19 +265,16 @@ class PickDetailViewModel @Inject constructor(
             _order.value = _order.value?.copy(totalCount = (_order.value?.totalCount ?: 0) + 1)
         } catch (e: Exception) {
             if (e is HttpException && e.code() == 409) {
-                ScrollLogger.appendLog(appContext, "_executeAddItem: 409重复, 触发syncItemsFromBackend")
                 _errorMessage.value = null
                 syncItemsFromBackend()
                 _duplicateScan.value = true
             } else {
-                ScrollLogger.appendLog(appContext, "_executeAddItem: 失败 ${e.message?.take(60)}")
                 _errorMessage.value = "添加明细失败: ${e.message}"
                 _scanFailureEvent.emit("添加明细失败: ${e.message}")
             }
         } finally {
             // 无论成功失败，从待处理列表中移除占位
             _pendingItems.value = _pendingItems.value - barcode
-            ScrollLogger.appendLog(appContext, "_executeAddItem finally: pending移除, pendingItems size=${_pendingItems.value.size}")
         }
     }
 
@@ -460,7 +438,6 @@ class PickDetailViewModel @Inject constructor(
      * 从后端同步最新明细到本地（不含UI加载状态）
      */
     private suspend fun syncItemsFromBackend() {
-        ScrollLogger.appendLog(appContext, "syncItemsFromBackend 开始")
         try {
             val token = userRepository.getToken()
             val detail = orderApiService.getOrderDetail(token, orderId)
@@ -493,10 +470,8 @@ class PickDetailViewModel @Inject constructor(
                 upsertItemFromResponse(itemResponse)
             }
             loadSuppliers()
-            ScrollLogger.appendLog(appContext, "syncItemsFromBackend 完成, items size=${items.value.size}")
         } catch (e: Exception) {
             Log.w(TAG, "syncItemsFromBackend失败: ${e.message}")
-            ScrollLogger.appendLog(appContext, "syncItemsFromBackend 失败: ${e.message?.take(60)}")
         }
     }
 

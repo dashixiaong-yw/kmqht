@@ -1,5 +1,14 @@
 # 快麦取货通 - 变更日志
 
+## 2.46 (2026-06-26)
+
+### 修改
+- 移除 Worker sync_log.txt 文件日志系统和 ScrollLogger scroll_log.txt 日志系统
+- 删除 SettingsScreen 中的"查看同步日志"和"查看滚动日志"UI入口
+- OrderSyncWorker 中 18 处 error guard 的 appendLog 改为 Log.w 输出，其余日志调用删除
+- PickDetailViewModel、PickDetailScreen、UserRepository 清除 ScrollLogger 引用
+- UserRepository、PickDetailViewModel 移除为日志系统注入的 @ApplicationContext
+
 ## 2.45 (2026-06-26)
 
 ### 修复

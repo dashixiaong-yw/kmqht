@@ -19,7 +19,6 @@ import com.kuaimai.pda.data.db.dao.PendingOperationDao
 import com.kuaimai.pda.data.db.dao.ProductImageDao
 import com.kuaimai.pda.data.repository.AuthRepository
 import com.kuaimai.pda.data.repository.UserRepository
-import com.kuaimai.pda.util.ScrollLogger
 import com.kuaimai.pda.util.TimeUtils
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -124,9 +123,6 @@ class App : Application(), ImageLoaderFactory {
             } catch (_: Exception) { }
         }
 
-        // 启动时清理超过7天的日志文件
-        OrderSyncWorker.trimByAge(this)
-        ScrollLogger.trimByAge(this)
     }
 
     /**
