@@ -230,9 +230,11 @@ async def get_sku_stock(sku_outer_id: str) -> Optional[int]:
         "pageNo": 1,
         "pageSize": 1,
     })
-    stock_list = result.get("stockStatusVoList", [])
-    if stock_list:
-        return stock_list[0].get("totalAvailableStockSum") or 0
+    sku_list = result.get("skus", [])
+    if sku_list:
+        warehouse_stocks = sku_list[0].get("mainWareHousesStock", [])
+        if warehouse_stocks:
+            return warehouse_stocks[0].get("totalAvailableStockSum") or 0
     return None
 
 

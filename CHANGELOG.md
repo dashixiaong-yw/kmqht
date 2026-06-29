@@ -1,5 +1,10 @@
 # 快麦取货通 - 变更日志
 
+## 2.49 (2026-06-29)
+
+### 修复
+- **快麦库存API字段名修正**：真实API返回`skus[].mainWareHousesStock[].totalAvailableStockSum`，修正`get_sku_stock()`解析路径（原错误使用`stockStatusVoList`，导致库存始终返回None）
+
 ## 2.48 (2026-06-26)
 
 ### 修复
