@@ -494,7 +494,7 @@ class PickDetailViewModel @Inject constructor(
                 resp.totalStock?.let { stock ->
                     _stockMap.value = _stockMap.value + (item.skuOuterId to stock)
                 }
-            } catch (_: Exception) { }
+            } catch (e: Exception) { Log.w(TAG, "库存查询失败: ${item.skuOuterId}", e) }
         }
     }
 
