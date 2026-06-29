@@ -203,7 +203,8 @@ fun ProductScreen(
                     skuOuterId = uiState.skuOuterId,
                     supplierName = uiState.supplierName,
                     onChangeSupplier = viewModel::showSupplierDialog,
-                    canChangeSupplier = canUpdateSupplier
+                    canChangeSupplier = canUpdateSupplier,
+                    totalStock = uiState.totalStock
                 )
 
                 // 备注编辑区域（仅update_remark权限可见）
@@ -408,7 +409,8 @@ private fun SkuInfoCard(
     skuOuterId: String,
     supplierName: String,
     onChangeSupplier: () -> Unit,
-    canChangeSupplier: Boolean = true
+    canChangeSupplier: Boolean = true,
+    totalStock: Long? = null
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -477,6 +479,14 @@ private fun SkuInfoCard(
                             Text("切换", fontSize = 14.sp, color = BrandBlue)
                         }
                     }
+                }
+                if (totalStock != null) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "实际库存: $totalStock",
+                        fontSize = 14.sp,
+                        color = TextSecondary
+                    )
                 }
             }
         }

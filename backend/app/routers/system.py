@@ -323,3 +323,14 @@ async def get_sku_detail(sku_outer_id: str, user: dict = Depends(get_current_use
     except Exception as e:
         logger.error(f"查询SKU详情失败: {e}")
         raise HTTPException(status_code=502, detail=f"查询SKU详情失败: {e}")
+
+
+@router.get("/api/sku/{sku_outer_id}/stock")
+async def get_sku_stock_endpoint(sku_outer_id: str, user: dict = Depends(get_current_user)):
+    """查询SKU实际总库存"""
+    from app.services.kuaimai_api import get_sku_stock
+    try:
+        stock = await get_sku_stock(sku_outer_id)
+        return {"skuOuterId": sku_outer_id, "totalStock": stock}
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"查询库存失败: {e}")

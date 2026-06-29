@@ -300,6 +300,7 @@ fun PickDetailScreen(
 
             // 明细列表
             val imageUrlsMap by viewModel.imageUrlsMap.collectAsState()
+            val stockMap by viewModel.stockMap.collectAsState()
             val pendingItems by viewModel.pendingItems.collectAsState()
             LazyColumn(
                 modifier = Modifier
@@ -382,7 +383,8 @@ fun PickDetailScreen(
                                 previewImageUrl = urls.boxUrl
                                 previewImageLabel = "箱图 - ${item.skuOuterId}"
                             }
-                        }
+                        },
+                        totalStock = stockMap[item.skuOuterId]
                     )
                 }
             }

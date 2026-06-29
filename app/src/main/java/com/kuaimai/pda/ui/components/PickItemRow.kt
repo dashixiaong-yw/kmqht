@@ -66,7 +66,8 @@ fun PickItemRow(
     boxThumbUrl: String? = null,
     onAreaImageClick: () -> Unit = {},
     onBoxImageClick: () -> Unit = {},
-    orderCompleted: Boolean = false
+    orderCompleted: Boolean = false,
+    totalStock: Long? = null
 ) {
     val isCompleted = item.status == 1
     val contentAlpha = if (isCompleted) 0.65f else 1f
@@ -134,6 +135,14 @@ fun PickItemRow(
                     overflow = TextOverflow.Ellipsis,
                     textDecoration = if (isCompleted) TextDecoration.LineThrough else TextDecoration.None
                 )
+                if (totalStock != null) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "实际库存: $totalStock",
+                        fontSize = 12.sp,
+                        color = TextMuted
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.width(12.dp))

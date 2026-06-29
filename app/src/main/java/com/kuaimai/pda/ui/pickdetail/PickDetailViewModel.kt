@@ -10,6 +10,7 @@ import com.kuaimai.pda.data.api.dto.AddOrderItemRequest
 import com.kuaimai.pda.data.api.dto.OrderItemResponse
 import com.kuaimai.pda.data.db.entity.PickItemEntity
 import com.kuaimai.pda.data.db.entity.PickOrderEntity
+import com.kuaimai.pda.data.api.SystemApiService
 import com.kuaimai.pda.data.repository.ImageRepository
 import com.kuaimai.pda.data.repository.PickOrderRepository
 import com.kuaimai.pda.data.repository.UserRepository
@@ -50,12 +51,17 @@ class PickDetailViewModel @Inject constructor(
     val scannerManager: ScannerManager,
     private val imageRepository: ImageRepository,
     private val userRepository: UserRepository,
-    @Named("encrypted") private val prefs: SharedPreferences
+    @Named("encrypted") private val prefs: SharedPreferences,
+    private val systemApiService: SystemApiService
 ) : ViewModel() {
 
     companion object {
         private const val TAG = "PickDetailVM"
     }
+
+    /** SKU库存映射（skuOuterId → totalStock） */
+    private val _stockMap = MutableStateFlow<Map<String, Long>>(emptyMap())
+    val stockMap: StateFlow<Map<String, Long>> = _stockMap.asStateFlow()
 
     /** 取货单ID */
     val orderId: Long = savedStateHandle["orderId"] ?: 0L
@@ -136,6 +142,8 @@ class PickDetailViewModel @Inject constructor(
                     _imageUrlsMap.value = current + map
                 }
         }
+        // 加载库存数据
+        viewModelScope.launch { loadStocks() }
     }
 
     /**
@@ -393,6 +401,7 @@ class PickDetailViewModel @Inject constructor(
             } catch (e: Exception) {
                 _errorMessage.value = "刷新失败: ${e.message}"
             } finally {
+                viewModelScope.launch { loadStocks() }
                 _isRefreshing.value = false
             }
         }
@@ -442,7 +451,6 @@ class PickDetailViewModel @Inject constructor(
             val token = userRepository.getToken()
             val detail = orderApiService.getOrderDetail(token, orderId)
 
-            // 同步order信息（_order是MutableStateFlow，需同时保存Room和设置StateFlow）
             val orderEntity = PickOrderEntity(
                 id = detail.id,
                 orderNo = detail.orderNo,
@@ -463,15 +471,30 @@ class PickDetailViewModel @Inject constructor(
             } else {
                 pickOrderRepository.insertOrder(orderEntity)
             }
-            _order.value = orderEntity // 直接设置StateFlow，让UI立即响应
+            _order.value = orderEntity
 
-            // 同步明细数据（items由Room Flow自动驱动，无需手动设置）
             detail.items.forEach { itemResponse ->
                 upsertItemFromResponse(itemResponse)
             }
             loadSuppliers()
         } catch (e: Exception) {
             Log.w(TAG, "syncItemsFromBackend失败: ${e.message}")
+        }
+    }
+
+    /**
+     * 加载所有明细SKU的库存数据
+     */
+    private suspend fun loadStocks() {
+        val token = userRepository.getToken()
+        if (token.isEmpty()) return
+        items.value.forEach { item ->
+            try {
+                val resp = systemApiService.getSkuStock(token, item.skuOuterId)
+                resp.totalStock?.let { stock ->
+                    _stockMap.value = _stockMap.value + (item.skuOuterId to stock)
+                }
+            } catch (_: Exception) { }
         }
     }
 

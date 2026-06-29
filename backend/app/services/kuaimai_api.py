@@ -1,5 +1,6 @@
 """快麦API客户端 - MD5签名与API调用"""
 
+import asyncio
 import hashlib
 import json
 import logging
@@ -220,6 +221,19 @@ async def get_supplier_list() -> Optional[list]:
     except Exception as e:
         logger.error(f"获取供应商列表失败: {e}")
         return None
+
+
+async def get_sku_stock(sku_outer_id: str) -> Optional[int]:
+    """查询SKU实际总库存 — erp.item.warehouse.list.get"""
+    result = await _call_api("erp.item.warehouse.list.get", {
+        "skuOuterId": sku_outer_id,
+        "pageNo": 1,
+        "pageSize": 1,
+    })
+    stock_list = result.get("stockStatusVoList", [])
+    if stock_list:
+        return stock_list[0].get("totalAvailableStockSum") or 0
+    return None
 
 
 # ==================== 会话刷新 ====================

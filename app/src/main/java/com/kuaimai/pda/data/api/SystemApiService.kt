@@ -6,6 +6,7 @@ import com.kuaimai.pda.data.api.dto.KuaimaiRefreshResponse
 import com.kuaimai.pda.data.api.dto.KuaimaiSessionStatusResponse
 import com.kuaimai.pda.data.api.dto.KuaimaiSuppliersResponse
 import com.kuaimai.pda.data.api.dto.SkuDetailResponse
+import com.kuaimai.pda.data.api.dto.SkuStockResponse
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
@@ -50,4 +51,11 @@ interface SystemApiService {
         @Header("X-User-Token") token: String,
         @Path("skuOuterId") skuOuterId: String
     ): SkuDetailResponse
+
+    /** 查询SKU实际总库存 */
+    @GET("api/sku/{skuOuterId}/stock")
+    suspend fun getSkuStock(
+        @Header("X-User-Token") token: String,
+        @Path("skuOuterId") skuOuterId: String
+    ): SkuStockResponse
 }

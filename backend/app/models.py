@@ -284,3 +284,8 @@ class SkuDetailResponse(BaseModel):
     sysItemId: int = 0
     sysSkuId: int = 0
     itemOuterId: str = ""
+
+
+class SkuStockResponse(BaseModel):
+    skuOuterId: str = ""
+    totalStock: Optional[int] = None

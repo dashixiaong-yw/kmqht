@@ -55,7 +55,8 @@ data class ProductUiState(
     val showConfirmDialog: ConfirmType? = null,
     val scanInput: String = "",
     val isLoadingSuppliers: Boolean = false,
-    val supplierError: String? = null
+    val supplierError: String? = null,
+    val totalStock: Long? = null  // null=未加载
 )
 
 /** 确认对话框类型 */
@@ -119,7 +120,12 @@ class ProductViewModel @Inject constructor(
      */
     fun loadSkuInfo(skuOuterId: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = false, error = null, skuOuterId = skuOuterId)
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                error = null,
+                skuOuterId = skuOuterId,
+                totalStock = null
+            )
             currentSkuDetail = null
             currentItem = null
             try {
@@ -138,6 +144,16 @@ class ProductViewModel @Inject constructor(
                     )
                     loaded = true
                     currentSkuDetail = detail
+                    // 异步查询库存（不阻塞主流程）
+                    viewModelScope.launch {
+                        try {
+                            val token = prefs.getString(PrefsKeys.KEY_USER_TOKEN, "") ?: ""
+                            val resp = systemApiService.getSkuStock(token, skuOuterId)
+                            _uiState.value = _uiState.value.copy(totalStock = resp.totalStock)
+                        } catch (e: Exception) {
+                            Log.w(TAG, "查询库存失败: ${e.message}")
+                        }
+                    }
                     val item = if (currentOrderId > 0) {
                         pickItemDao.getByOrderIdAndSkuOuterId(currentOrderId, skuOuterId)
                     } else {

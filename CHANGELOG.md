@@ -1,5 +1,13 @@
 # 快麦取货通 - 变更日志
 
+## 2.47 (2026-06-26)
+
+### 新增
+- 商品详情页 SkuInfoCard 新增"实际库存"展示（供应商名下方，14sp）
+- 取货单详情页 PickItemRow 新增"实际库存"展示（供应商名下方，12sp）
+- 后端新增 `/api/sku/{sku_outer_id}/stock` 端点，调用快麦 `erp.item.warehouse.list.get`
+- 修复 `kuaimai_api.py` 预存 bug：补充 `import asyncio`
+
 ## 2.46 (2026-06-26)
 
 ### 修改
