@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kuaimai.pda.data.api.OrderApiService
 import com.kuaimai.pda.data.api.dto.AddOrderItemRequest
+import com.kuaimai.pda.data.api.dto.OrderDetailResponse
 import com.kuaimai.pda.data.api.dto.OrderItemResponse
 import com.kuaimai.pda.data.db.entity.PickItemEntity
 import com.kuaimai.pda.data.db.entity.PickOrderEntity
@@ -20,6 +21,7 @@ import com.kuaimai.pda.util.AppConstants
 import com.kuaimai.pda.util.PrefsKeys
 import com.kuaimai.pda.util.TimeUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -142,8 +144,6 @@ class PickDetailViewModel @Inject constructor(
                     _imageUrlsMap.value = current + map
                 }
         }
-        // 加载库存数据
-        viewModelScope.launch { loadStocks() }
     }
 
     /**
@@ -265,6 +265,13 @@ class PickDetailViewModel @Inject constructor(
                 createdAt = TimeUtils.parseBeijingTime(r.createdAt).let { if (it > 0) it else TimeUtils.now() }
             )
             pickOrderRepository.insertItem(item)
+            // 实时获取新商品库存
+            viewModelScope.launch {
+                try {
+                    val resp = systemApiService.getSkuStock(token, r.skuOuterId)
+                    resp.totalStock?.let { _stockMap.value = _stockMap.value + (r.skuOuterId to it) }
+                } catch (e: Exception) { Log.w(TAG, "库存查询失败: ${r.skuOuterId}", e) }
+            }
             val newSupplier = r.supplierName
             if (newSupplier.isNotEmpty() && !_suppliers.value.contains(newSupplier)) {
                 _suppliers.value = _suppliers.value + newSupplier
@@ -372,9 +379,10 @@ class PickDetailViewModel @Inject constructor(
     fun refresh() {
         viewModelScope.launch {
             _isRefreshing.value = true
+            var detail: OrderDetailResponse? = null
             try {
                 val token = userRepository.getToken()
-                val detail = orderApiService.getOrderDetail(token, orderId)
+                detail = orderApiService.getOrderDetail(token, orderId)
                 // 更新本地取货单信息（使用后端返回的真实时间）
                 val orderEntity = PickOrderEntity(
                     id = detail.id,
@@ -401,7 +409,11 @@ class PickDetailViewModel @Inject constructor(
             } catch (e: Exception) {
                 _errorMessage.value = "刷新失败: ${e.message}"
             } finally {
-                viewModelScope.launch { loadStocks() }
+                if (detail != null) {
+                    viewModelScope.launch {
+                        loadStocksForSkus(detail.items.map { it.skuOuterId }.distinct())
+                    }
+                }
                 _isRefreshing.value = false
             }
         }
@@ -477,24 +489,31 @@ class PickDetailViewModel @Inject constructor(
                 upsertItemFromResponse(itemResponse)
             }
             loadSuppliers()
+            // 实时获取库存
+            viewModelScope.launch {
+                loadStocksForSkus(detail.items.map { it.skuOuterId }.distinct())
+            }
         } catch (e: Exception) {
             Log.w(TAG, "syncItemsFromBackend失败: ${e.message}")
         }
     }
 
     /**
-     * 加载所有明细SKU的库存数据
+     * 加载指定SKU列表的库存数据（实时从快麦获取，不使用缓存）
      */
-    private suspend fun loadStocks() {
+    private suspend fun loadStocksForSkus(skuList: List<String>) {
         val token = userRepository.getToken()
         if (token.isEmpty()) return
-        items.value.forEach { item ->
-            try {
-                val resp = systemApiService.getSkuStock(token, item.skuOuterId)
-                resp.totalStock?.let { stock ->
-                    _stockMap.value = _stockMap.value + (item.skuOuterId to stock)
+        _stockMap.value = emptyMap()
+        coroutineScope {
+            skuList.forEach { sku ->
+                launch {
+                    try {
+                        val resp = systemApiService.getSkuStock(token, sku)
+                        resp.totalStock?.let { _stockMap.value = _stockMap.value + (sku to it) }
+                    } catch (e: Exception) { Log.w(TAG, "库存查询失败: $sku", e) }
                 }
-            } catch (e: Exception) { Log.w(TAG, "库存查询失败: ${item.skuOuterId}", e) }
+            }
         }
     }
 

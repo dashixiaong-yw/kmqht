@@ -1,5 +1,14 @@
 # 快麦取货通 - 变更日志
 
+## 2.50 (2026-06-29)
+
+### 修复
+- **取货单详情库存不显示**：loadStocks在init中与syncItemsFromBackend并发导致遍历空列表
+  - 删除init中无效loadStocks调用，改为syncItemsFromBackend末尾从API响应的detail.items提取SKU列表加载
+  - _executeAddItem成功路径新增单SKU即时库存查询
+  - refresh()中detail提升到try外作用域，finally改用loadStocksForSkus
+  - loadStocks()重写为loadStocksForSkus(skuList)，每次清空旧缓存确保实时数据，并发查询(coroutineScope+launch)
+
 ## 2.49 (2026-06-29)
 
 ### 修复
